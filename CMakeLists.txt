@@ -1,6 +1,12 @@
 project(FALCON)
 
-add_executable(falcon src/main.cpp src/graph.cpp)
+add_executable(falcon
+  src/main.cpp
+  src/graph.cpp
+  src/json/json.c
+  src/json/parser.cpp)
+
+include_directories(src)
 
 # This project uses C++11
 set (CMAKE_CXX_FLAGS "-Wall -std=c++11")
