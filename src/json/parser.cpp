@@ -184,10 +184,6 @@ JsonVal const* JsonVal::getObject (std::string const& key) const
         {
           ret = it->second;
 	}
-        else
-        {
-          ret = it->second->getObject (key);
-        }
       }
     }
     break;

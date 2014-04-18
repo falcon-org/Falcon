@@ -1,0 +1,24 @@
+{
+  "rules":
+    [
+    {
+      "inputs": [ "test" ],
+      "outputs": [ "all" ]
+    },
+    {
+      "inputs": [ "CMakeFiles/test.dir/main.cpp.o", "CMakeFiles/test.dir/test.cpp.o" ],
+      "outputs": [ "test" ],
+      "cmd": ": && /usr/bin/c++      CMakeFiles/test.dir/main.cpp.o CMakeFiles/test.dir/test.cpp.o  -o test  -rdynamic && :"
+    },
+    {
+      "inputs": [ "main.cpp" ],
+      "outputs": [ "CMakeFiles/test.dir/main.cpp.o" ],
+      "cmd": "/usr/bin/c++     -MMD -MT CMakeFiles/test.dir/main.cpp.o -MF \"CMakeFiles/test.dir/main.cpp.o.d\" -o CMakeFiles/test.dir/main.cpp.o -c main.cpp"
+    },
+    {
+      "inputs": [ "test.cpp" ],
+      "outputs": [ "CMakeFiles/test.dir/test.cpp.o" ],
+      "cmd": "/usr/bin/c++     -MMD -MT CMakeFiles/test.dir/test.cpp.o -MF \"CMakeFiles/test.dir/test.cpp.o.d\" -o CMakeFiles/test.dir/test.cpp.o -c test.cpp"
+    }
+    ]
+}

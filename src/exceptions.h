@@ -23,7 +23,7 @@
     throw Exception (__func__, __FILE__, __LINE__, code, message); \
   } while (0)
 
-# if defined (DEBUG) && DEBUG
+# if defined (DEBUG)
 #  define THROW_FORWARD_ERROR(e)                         \
     do {                                                 \
       throw Exception (e.getErrorMessage (),         \
@@ -179,7 +179,7 @@ class Exception: public std::exception
         oss << this->_upper << std::endl << "[FORWARD] ";
       }
 
-#if defined (DEBUG) && DEBUG
+#if defined (DEBUG)
       oss << "[" << this->_function << "]"
           << "[" << this->_file << ":" << this->_line << "]"
           << "[" << strerror (this->_code) << "] "

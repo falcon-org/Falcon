@@ -34,8 +34,6 @@ namespace falcon
       std::string _data;
   };
 
-  std::ostream& operator<< (std::ostream& os, JsonVal const& obj);
-
   class JsonParser
   {
     public:
@@ -52,5 +50,7 @@ namespace falcon
       json_parser_dom _dom;
   };
 }
+
+std::ostream& operator<< (std::ostream& os, falcon::JsonVal const& obj);
 
 #endif /* !FALCON_JSON_PARSER_H_ */

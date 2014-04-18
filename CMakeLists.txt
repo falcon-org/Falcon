@@ -1,10 +1,13 @@
 project(FALCON)
 
+SET (CMAKE_C_COMPILER "/usr/bin/clang")
+
 add_executable(falcon
   src/main.cpp
   src/graph.cpp
   src/json/json.c
-  src/json/parser.cpp)
+  src/json/parser.cpp
+  src/graphbuilder.cpp)
 
 include_directories(src)
 
