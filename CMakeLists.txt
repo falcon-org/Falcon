@@ -1,6 +1,6 @@
 project(FALCON)
 
-add_executable(falcon src/main.cpp)
+add_executable(falcon src/main.cpp src/graph.cpp)
 
 # This project uses C++11
 set (CMAKE_CXX_FLAGS "-Wall -std=c++11")
