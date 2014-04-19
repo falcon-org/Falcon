@@ -3,8 +3,8 @@
  * LICENSE : see accompanying LICENSE file for details.
  */
 
-#ifndef FALCON_GRAPHBUILDER_H_
-# define FALCON_GRAPHBUILDER_H_
+#ifndef FALCON_GRAPHPARSER_H_
+# define FALCON_GRAPHPARSER_H_
 
 # include <memory>
 # include "graph.h"
@@ -13,7 +13,7 @@
 namespace falcon {
 
 /*!
- * @class GraphBuilder
+ * @class GraphParser
  *
  * Graph builder: build an array of Rules from the given JSon entry
  *
@@ -21,15 +21,15 @@ namespace falcon {
  * if your build system has 2 configuration files linked together:
  *
  * @code
- * GraphBuilder gb;
+ * GraphParser gb;
  *
- * gb.processFile ("file1");
- * gb.processFile ("file2");
+ * gb.processFile("file1");
+ * gb.processFile("file2");
  * @code
  */
-class GraphBuilder {
+class GraphParser {
   public:
-    GraphBuilder ();
+    GraphParser();
 
     std::unique_ptr<Graph> getGraph() const;
 
@@ -44,10 +44,10 @@ class GraphBuilder {
     NodeMap nodeMap_;
     NodeSet nodeSet_;
 
-    GraphBuilder(const GraphBuilder& other) = delete;
-    GraphBuilder& operator=(const GraphBuilder&) = delete;
+    GraphParser(const GraphParser& other) = delete;
+    GraphParser& operator=(const GraphParser&) = delete;
 };
 
 } // namespace falcon
 
-#endif /* !FALCON_GRAPHBUILDER_H_ */
+#endif /* !FALCON_GRAPHPARSER_H_ */

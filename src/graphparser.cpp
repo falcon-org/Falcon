@@ -9,17 +9,17 @@
 #include <exceptions.h>
 #include <iostream>
 #include "json/json.h"
-#include "graphbuilder.h"
+#include "graphparser.h"
 
 namespace falcon {
 
-GraphBuilder::GraphBuilder() { }
+GraphParser::GraphParser() { }
 
-std::unique_ptr<Graph> GraphBuilder::getGraph() const {
+std::unique_ptr<Graph> GraphParser::getGraph() const {
   return std::unique_ptr<Graph>(new Graph(nodeSet_, nodeMap_));
 }
 
-void GraphBuilder::processFile(std::string const& filepath)
+void GraphParser::processFile(std::string const& filepath)
 {
   JsonParser parser;
 
@@ -27,32 +27,32 @@ void GraphBuilder::processFile(std::string const& filepath)
     std::ifstream ifs;
     unsigned int lineCounter = 0;
 
-    ifs.open (filepath.c_str (), std::ifstream::in);
+    ifs.open(filepath.c_str (), std::ifstream::in);
     do {
       /* TODO: change the way to read it from the json file */
       char lineBuffer[4096];
-      memset (lineBuffer, 0, sizeof (lineBuffer));
-      ifs.getline (lineBuffer, sizeof (lineBuffer) - 1);
+      memset(lineBuffer, 0, sizeof(lineBuffer));
+      ifs.getline(lineBuffer, sizeof(lineBuffer) - 1);
       try {
-        std::string theLine (lineBuffer);
-        parser.parse (lineCounter++, theLine);
+        std::string theLine(lineBuffer);
+        parser.parse(lineCounter++, theLine);
       } catch (Exception& e) {
-        ifs.close ();
-        THROW_FORWARD_ERROR (e);
+        ifs.close();
+        THROW_FORWARD_ERROR(e);
       }
-    }  while (ifs.good ());
-    ifs.close ();
+    }  while(ifs.good ());
+    ifs.close();
   }
 
-  JsonVal* dom = parser.getDom ();
+  JsonVal* dom = parser.getDom();
 
   if (!dom) {
-    THROW_ERROR (EINVAL, "No dom for this json file");
+    THROW_ERROR(EINVAL, "No dom for this json file");
   }
-  JsonVal const* rules = dom->getObject ("rules");
+  JsonVal const* rules = dom->getObject("rules");
 
   if (rules && rules->_type == JSON_ARRAY_BEGIN) {
-    this->processJson(rules);
+    processJson(rules);
   } else {
     THROW_ERROR(EINVAL, "No rules in the given JSon File");
   }
@@ -61,9 +61,9 @@ void GraphBuilder::processFile(std::string const& filepath)
   // std::cout << *rules;
 }
 
-void GraphBuilder::checkNode(JsonVal const* json, NodeArray& nodeArray) {
-  for (std::deque<JsonVal*>::const_iterator it = json->_array.cbegin ();
-       it != json->_array.cend ();
+void GraphParser::checkNode(JsonVal const* json, NodeArray& nodeArray) {
+  for (std::deque<JsonVal*>::const_iterator it = json->_array.cbegin();
+       it != json->_array.cend();
        it++) {
     JsonVal const* json_string = *it;
 
@@ -82,7 +82,7 @@ void GraphBuilder::checkNode(JsonVal const* json, NodeArray& nodeArray) {
   }
 }
 
-void GraphBuilder::processJson(JsonVal const* rules)
+void GraphParser::processJson(JsonVal const* rules)
 {
   for (std::deque<JsonVal*>::const_iterator it = rules->_array.cbegin();
        it != rules->_array.cend();
@@ -107,8 +107,8 @@ void GraphBuilder::processJson(JsonVal const* rules)
     }
 
     try {
-      this->checkNode(ruleInputs, inputs);
-      this->checkNode(ruleOutputs, outputs);
+      checkNode(ruleInputs, inputs);
+      checkNode(ruleOutputs, outputs);
     } catch (Exception& e) {
       THROW_FORWARD_ERROR(e);
     }

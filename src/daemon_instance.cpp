@@ -1,6 +1,6 @@
 #include "daemon_instance.h"
 
-#include "graphbuilder.h"
+#include "graphparser.h"
 
 namespace falcon {
 
@@ -8,9 +8,9 @@ DaemonInstance::DaemonInstance() {
 }
 
 void DaemonInstance::loadConf(const std::string& confPath) {
-  GraphBuilder graphBuilder;
-  graphBuilder.processFile(confPath);
-  graph_ = graphBuilder.getGraph();
+  GraphParser graphParser;
+  graphParser.processFile(confPath);
+  graph_ = graphParser.getGraph();
 }
 
 void DaemonInstance::start() {
