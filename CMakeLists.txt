@@ -7,7 +7,8 @@ add_executable(falcon
   src/graph.cpp
   src/json/json.c
   src/json/parser.cpp
-  src/graphbuilder.cpp)
+  src/graphbuilder.cpp
+  src/daemon_instance.cpp)
 
 include_directories(src)
 
