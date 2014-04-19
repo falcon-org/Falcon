@@ -15,15 +15,15 @@ namespace falcon {
 
 GraphBuilder::GraphBuilder() { }
 
-const std::vector<Rule*>& GraphBuilder::getResult() const {
-  return this->result_;
+std::unique_ptr<Graph> GraphBuilder::getGraph() const {
+  return std::unique_ptr<Graph>(new Graph(nodeSet_, nodeMap_));
 }
 
 void GraphBuilder::processFile(std::string const& filepath)
 {
   JsonParser parser;
 
-  {
+  { // Use a scope for input file stream reading
     std::ifstream ifs;
     unsigned int lineCounter = 0;
 
@@ -70,6 +70,7 @@ void GraphBuilder::checkNode(JsonVal const* json, NodeArray& nodeArray) {
     if (!node) {
       node = new Node(json_string->_data);
       this->nodeMap_[json_string->_data] = node;
+      this->nodeSet_.insert(node);
     }
 
     nodeArray.push_back(node);
@@ -84,15 +85,15 @@ void GraphBuilder::processJson(JsonVal const* rules)
     NodeArray inputs;
     NodeArray outputs;
 
-    JsonVal const* rule = *it;
+    JsonVal const* jsonRule = *it;
 
-    if (rule->_type != JSON_OBJECT_BEGIN) {
+    if (jsonRule->_type != JSON_OBJECT_BEGIN) {
       continue;
     }
 
-    JsonVal const* ruleInputs  = rule->getObject("inputs");
-    JsonVal const* ruleOutputs = rule->getObject("outputs");
-    JsonVal const* ruleCmd     = rule->getObject("cmd");
+    JsonVal const* ruleInputs  = jsonRule->getObject("inputs");
+    JsonVal const* ruleOutputs = jsonRule->getObject("outputs");
+    JsonVal const* ruleCmd     = jsonRule->getObject("cmd");
 
     /* TODO: MANAGE ERROR ?
      * should I have to expect to have at least one input and one outputs ? */
@@ -107,14 +108,25 @@ void GraphBuilder::processJson(JsonVal const* rules)
       THROW_FORWARD_ERROR(e);
     }
 
+    Rule* rule;
     if (ruleCmd) {
       if (ruleCmd->_type != JSON_STRING) {
         THROW_ERROR(EINVAL, "invalid entry: expect a STRING");
       }
 
-      this->result_.push_back(new Rule(inputs, outputs, ruleCmd->_data));
+      rule = new Rule(inputs, outputs, ruleCmd->_data);
     } else {
-      this->result_.push_back(new Rule(inputs, outputs.front()));
+      rule = new Rule(inputs, outputs.front());
+    }
+
+    for (auto it = inputs.begin(); it != inputs.end(); it++) {
+      (*it)->addParentRule(rule);
+      this->nodeSet_.erase(*it);
+    }
+    for (auto it = outputs.begin(); it != outputs.end(); it++) {
+      /* TODO: check that the rule has not already a child...
+       * Warn: the assert will raise */
+      (*it)->setChild(rule);
     }
   }
 }
