@@ -6,13 +6,13 @@
 #ifndef FALCON_JSON_PARSER_H_
 # define FALCON_JSON_PARSER_H_
 
-# include <json/json.h>
-
 # include <map>
 # include <deque>
 # include <string>
 # include <ostream>
 # include <istream>
+
+# include "json/json.h"
 
 namespace falcon
 {

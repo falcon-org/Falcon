@@ -16,6 +16,11 @@ void DaemonInstance::loadConf(const std::string& confPath) {
 void DaemonInstance::start() {
   /* TODO: start monitoring source files with watchman. */
   /* TODO: start accepting client connections. */
+
+#if defined(DEBUG)
+  GraphMakefilePrinter gpp;
+  gpp.visit(*graph_);
+#endif
 }
 
 } // namespace falcon

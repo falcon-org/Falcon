@@ -10,7 +10,7 @@
 namespace falcon {
 
 Node::Node(const std::string& path)
- : path_(path) { }
+ : path_(path), childRule_(nullptr) { }
 
 const std::string& Node::getPath() const {
   return path_;
@@ -21,8 +21,14 @@ void Node::setChild(Rule* rule) {
   childRule_ = rule;
 }
 
+Rule* Node::getChild() const { return childRule_; }
+
 void Node::addParentRule(Rule* rule) {
   parentRules_.push_back(rule);
+}
+
+void Node::accept(GraphVisitor& v) {
+  v.visit(*this);
 }
 
 const NodeArray& Rule::getInputs() const {
@@ -48,6 +54,10 @@ const std::string& Rule::getCommand() const {
   return command_;
 }
 
+void Rule::accept(GraphVisitor& v) {
+  v.visit(*this);
+}
+
 Graph::Graph(const NodeSet& roots, const NodeMap& nodes)
     : roots_(roots), nodes_(nodes) {}
 
@@ -57,6 +67,10 @@ const NodeSet& Graph::getRoots() const {
 
 const NodeMap& Graph::getNodes() const {
   return nodes_;
+}
+
+void Graph::accept(GraphVisitor& v) {
+  v.visit(*this);
 }
 
 } // namespace falcon

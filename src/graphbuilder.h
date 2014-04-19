@@ -7,8 +7,8 @@
 # define FALCON_GRAPHBUILDER_H_
 
 # include <memory>
-# include <graph.h>
-# include <json/parser.h>
+# include "graph.h"
+# include "json/parser.h"
 
 namespace falcon {
 

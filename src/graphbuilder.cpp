@@ -3,13 +3,13 @@
  * LICENSE : see accompanying LICENSE file for details.
  */
 
-#include <graphbuilder.h>
 #include <fstream>
 #include <cstring>
 
 #include <exceptions.h>
 #include <iostream>
-#include <json/json.h>
+#include "json/json.h"
+#include "graphbuilder.h"
 
 namespace falcon {
 
@@ -29,7 +29,8 @@ void GraphBuilder::processFile(std::string const& filepath)
 
     ifs.open (filepath.c_str (), std::ifstream::in);
     do {
-      char lineBuffer[256];
+      /* TODO: change the way to read it from the json file */
+      char lineBuffer[4096];
       memset (lineBuffer, 0, sizeof (lineBuffer));
       ifs.getline (lineBuffer, sizeof (lineBuffer) - 1);
       try {
@@ -44,6 +45,10 @@ void GraphBuilder::processFile(std::string const& filepath)
   }
 
   JsonVal* dom = parser.getDom ();
+
+  if (!dom) {
+    THROW_ERROR (EINVAL, "No dom for this json file");
+  }
   JsonVal const* rules = dom->getObject ("rules");
 
   if (rules && rules->_type == JSON_ARRAY_BEGIN) {
