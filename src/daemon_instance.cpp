@@ -1,5 +1,12 @@
-#include "daemon_instance.h"
+/**
+ * Copyright : falcon build system (c) 2014.
+ * LICENSE : see accompanying LICENSE file for details.
+ */
 
+#include <iostream>
+
+#include "daemon_instance.h"
+#include "graph_sequential_builder.h"
 #include "graphparser.h"
 
 namespace falcon {
@@ -21,6 +28,14 @@ void DaemonInstance::start() {
   GraphGraphizPrinter gpp;
   gpp.visit(*graph_);
 #endif
+
+  startBuild();
+}
+
+void DaemonInstance::startBuild() {
+  std::cout << "building..." << std::endl;
+  GraphSequentialBuilder builder(*graph_.get());
+  builder.build(graph_->getRoots());
 }
 
 } // namespace falcon

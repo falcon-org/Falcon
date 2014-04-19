@@ -10,7 +10,7 @@
 namespace falcon {
 
 Node::Node(const std::string& path)
- : path_(path), childRule_(nullptr) { }
+ : path_(path), childRule_(nullptr), state_(State::OUT_OF_DATE) { }
 
 const std::string& Node::getPath() const {
   return path_;
@@ -21,30 +21,38 @@ void Node::setChild(Rule* rule) {
   childRule_ = rule;
 }
 
-Rule* Node::getChild() const { return childRule_; }
+const Rule* Node::getChild() const { return childRule_; }
+Rule* Node::getChild() { return childRule_; }
 
 void Node::addParentRule(Rule* rule) {
   parentRules_.push_back(rule);
 }
 
+const RuleArray& Node::getParents() const { return parentRules_; }
+RuleArray& Node::getParents() { return parentRules_; }
+
+State Node::getState() const { return state_; }
+
+void Node::setState(State state) { state_ = state; }
+
 void Node::accept(GraphVisitor& v) {
   v.visit(*this);
 }
 
-const NodeArray& Rule::getInputs() const {
-  return inputs_;
-}
+const NodeArray& Rule::getInputs() const { return inputs_; }
+NodeArray& Rule::getInputs() { return inputs_; }
 
-const NodeArray& Rule::getOutputs() const {
-  return outputs_;
-}
+const NodeArray& Rule::getOutputs() const { return outputs_; }
+NodeArray& Rule::getOutputs() { return outputs_; }
 
 Rule::Rule(const NodeArray& inputs, const NodeArray& outputs,
            const std::string& cmd)
-  : inputs_(inputs), outputs_(outputs), command_(cmd), isPhony_(false) { }
+  : inputs_(inputs), outputs_(outputs), command_(cmd), isPhony_(false),
+    state_(State::OUT_OF_DATE) { }
 
 Rule::Rule(const NodeArray& inputs, Node* output)
-    : inputs_(inputs), outputs_(1, output), isPhony_(true) { }
+    : inputs_(inputs), outputs_(1, output), isPhony_(true),
+      state_(State::OUT_OF_DATE) { }
 
 bool Rule::isPhony() const {
   return isPhony_;
@@ -54,6 +62,10 @@ const std::string& Rule::getCommand() const {
   return command_;
 }
 
+State Rule::getState() const { return state_; }
+
+void Rule::setState(State state) { state_ = state; }
+
 void Rule::accept(GraphVisitor& v) {
   v.visit(*this);
 }
@@ -61,17 +73,14 @@ void Rule::accept(GraphVisitor& v) {
 Graph::Graph(const NodeSet& roots, const NodeSet& sources, const NodeMap& nodes)
     : roots_(roots), sources_(sources), nodes_(nodes) {}
 
-const NodeSet& Graph::getRoots() const {
-  return roots_;
-}
+const NodeSet& Graph::getRoots() const { return roots_; }
+NodeSet& Graph::getRoots() { return roots_; }
 
-const NodeSet& Graph::getSources() const {
-  return sources_;
-}
+const NodeSet& Graph::getSources() const { return sources_; }
+NodeSet& Graph::getSources() { return sources_; }
 
-const NodeMap& Graph::getNodes() const {
-  return nodes_;
-}
+const NodeMap& Graph::getNodes() const { return nodes_; }
+NodeMap& Graph::getNodes() { return nodes_; }
 
 void Graph::accept(GraphVisitor& v) {
   v.visit(*this);

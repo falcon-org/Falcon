@@ -77,6 +77,7 @@ void GraphParser::checkNode(JsonVal const* json, NodeArray& nodeArray) {
       node = new Node(json_string->_data);
       nodeMap_[json_string->_data] = node;
       rootSet_.insert(node);
+      sourceSet_.insert(node);
     }
 
     nodeArray.push_back(node);

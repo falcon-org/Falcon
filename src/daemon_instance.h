@@ -25,13 +25,15 @@ class DaemonInstance {
    */
   void loadConf(const std::string& confPath);
 
-
   /**
    * Start the daemon.
    */
   void start();
 
  private:
+
+  void startBuild();
+
   std::unique_ptr<Graph> graph_;
 };
 

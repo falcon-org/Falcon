@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 2.8)
+
 project(FALCON)
 
 add_executable(falcon
@@ -7,8 +9,9 @@ add_executable(falcon
   src/json/parser.cpp
   src/graphparser.cpp
   src/graphvisitors.cpp
-  src/daemon_instance.cpp)
-
+  src/daemon_instance.cpp
+  src/graph_sequential_builder.cpp
+  src/posix_subprocess.cpp)
 include_directories(src)
 
 # This project uses C++11
