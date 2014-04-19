@@ -18,7 +18,7 @@ void DaemonInstance::start() {
   /* TODO: start accepting client connections. */
 
 #if !defined(NDEBUG)
-  GraphMakefilePrinter gpp;
+  GraphGraphizPrinter gpp;
   gpp.visit(*graph_);
 #endif
 }

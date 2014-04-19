@@ -160,13 +160,16 @@ class GraphVisitor {
 class GraphMakefilePrinter : public GraphVisitor {
   public:
     // TODO: improvement : initialize with a ostream
-
     virtual void visit(Graph& g);
     virtual void visit(Node& g);
     virtual void visit(Rule& g);
+};
 
-  private:
-    unsigned int depth_;
+class GraphGraphizPrinter : public GraphVisitor {
+  public:
+    virtual void visit(Graph& g);
+    virtual void visit(Node& g);
+    virtual void visit(Rule& g);
 };
 
 }
