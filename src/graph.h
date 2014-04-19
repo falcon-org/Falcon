@@ -120,9 +120,10 @@ class Rule {
  */
 class Graph {
  public:
-  Graph(const NodeSet& roots, const NodeMap& nodes);
+  Graph(const NodeSet& roots, const NodeSet& sources, const NodeMap& nodes);
 
   const NodeSet& getRoots() const;
+  const NodeSet& getSources() const;
   const NodeMap& getNodes() const;
 
   void accept(GraphVisitor& v);
@@ -132,6 +133,9 @@ class Graph {
   /* Contains all the root nodes, ie the nodes that are not an input to any
    * Rule. Typically, 'all' is a root node. */
   NodeSet roots_;
+
+  /* Contains all the leaf nodes, ie the sources. */
+  NodeSet sources_;
 
   /* Contains all the nodes, mapped by their path. */
   NodeMap nodes_;

@@ -58,11 +58,15 @@ void Rule::accept(GraphVisitor& v) {
   v.visit(*this);
 }
 
-Graph::Graph(const NodeSet& roots, const NodeMap& nodes)
-    : roots_(roots), nodes_(nodes) {}
+Graph::Graph(const NodeSet& roots, const NodeSet& sources, const NodeMap& nodes)
+    : roots_(roots), sources_(sources), nodes_(nodes) {}
 
 const NodeSet& Graph::getRoots() const {
   return roots_;
+}
+
+const NodeSet& Graph::getSources() const {
+  return sources_;
 }
 
 const NodeMap& Graph::getNodes() const {

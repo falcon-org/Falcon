@@ -40,9 +40,13 @@ class GraphParser {
 
   private:
     void checkNode(JsonVal const* json, NodeArray& nodeArray);
-    /* Keep a hash of the Node in memory in order to avoid deplicated Node */
+
+    /* Map to store all the nodes in the graph. */
     NodeMap nodeMap_;
-    NodeSet nodeSet_;
+    /* Set that contains the root nodes of the graph. */
+    NodeSet rootSet_;
+    /* Set that contains the leaf nodes of the graph. */
+    NodeSet sourceSet_;
 
     GraphParser(const GraphParser& other) = delete;
     GraphParser& operator=(const GraphParser&) = delete;

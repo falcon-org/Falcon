@@ -17,7 +17,7 @@ void DaemonInstance::start() {
   /* TODO: start monitoring source files with watchman. */
   /* TODO: start accepting client connections. */
 
-#if defined(DEBUG)
+#if !defined(NDEBUG)
   GraphMakefilePrinter gpp;
   gpp.visit(*graph_);
 #endif

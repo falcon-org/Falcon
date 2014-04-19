@@ -6,17 +6,18 @@
 #include <fstream>
 #include <cstring>
 
-#include <exceptions.h>
 #include <iostream>
-#include "json/json.h"
+
+#include "exceptions.h"
 #include "graphparser.h"
+#include "json/json.h"
 
 namespace falcon {
 
 GraphParser::GraphParser() { }
 
 std::unique_ptr<Graph> GraphParser::getGraph() const {
-  return std::unique_ptr<Graph>(new Graph(nodeSet_, nodeMap_));
+  return std::unique_ptr<Graph>(new Graph(rootSet_, sourceSet_, nodeMap_));
 }
 
 void GraphParser::processFile(std::string const& filepath)
@@ -71,11 +72,11 @@ void GraphParser::checkNode(JsonVal const* json, NodeArray& nodeArray) {
       THROW_ERROR(EINVAL, "invalid JSON entry: expect a STRING");
     }
 
-    Node* node = this->nodeMap_[json_string->_data];
+    Node* node = nodeMap_[json_string->_data];
     if (!node) {
       node = new Node(json_string->_data);
-      this->nodeMap_[json_string->_data] = node;
-      this->nodeSet_.insert(node);
+      nodeMap_[json_string->_data] = node;
+      rootSet_.insert(node);
     }
 
     nodeArray.push_back(node);
@@ -126,12 +127,13 @@ void GraphParser::processJson(JsonVal const* rules)
 
     for (auto it = inputs.begin(); it != inputs.end(); it++) {
       (*it)->addParentRule(rule);
-      this->nodeSet_.erase(*it);
+      rootSet_.erase(*it);
     }
     for (auto it = outputs.begin(); it != outputs.end(); it++) {
       /* TODO: check that the rule has not already a child...
        * Warn: the assert will raise */
       (*it)->setChild(rule);
+      sourceSet_.erase(*it);
     }
   }
 }
