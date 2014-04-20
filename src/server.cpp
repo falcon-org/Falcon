@@ -19,12 +19,38 @@ int64_t FalconServiceHandler::getPid() {
   return getpid();
 }
 
-void FalconServiceHandler::startBuild() {
+StartBuildResult::type FalconServiceHandler::startBuild() {
   std::cout << "Building..." << std::endl;
+
+  /* TODO: implement. */
+
+  return StartBuildResult::OK;
+}
+
+FalconStatus::type FalconServiceHandler::getStatus() {
+  /* TODO: implement. */
+
+  return FalconStatus::IDLE;
+}
+
+void FalconServiceHandler::interruptBuild() {
+  /* TODO: implement. */
+
+}
+
+void FalconServiceHandler::getDirtySources(
+    std::set<std::basic_string<char>>& sources) {
+  /* TODO: implement. */
+}
+
+void FalconServiceHandler::setDirty(const std::string& target) {
+  /* TODO: implement. */
 }
 
 void FalconServiceHandler::shutdown() {
   std::cout << "Shutting down..." << std::endl;
+
+  /* TODO: implement. */
 }
 
 Server::Server(int port) {

@@ -26,7 +26,11 @@ class FalconServiceHandler : virtual public FalconServiceIf {
  public:
   FalconServiceHandler();
   int64_t getPid();
-  void startBuild();
+  StartBuildResult::type startBuild();
+  FalconStatus::type getStatus();
+  void getDirtySources(std::set<std::basic_string<char>>& sources);
+  void setDirty(const std::string& target);
+  void interruptBuild();
   void shutdown();
 };
 
