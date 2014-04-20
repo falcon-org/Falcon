@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "graph.h"
+#include "graphparser.h"
 
 namespace falcon {
 
@@ -20,19 +21,21 @@ class DaemonInstance {
   DaemonInstance();
 
   /**
-   * Load a configuration file and build the internal graph.
-   * @param confPath Path where to find the configuration file.
+   * load a new graph
    */
-  void loadConf(const std::string& confPath);
+  void loadConf(std::unique_ptr<Graph> g);
 
   /**
    * Start the daemon.
    */
   void start();
 
- private:
-
+  /**
+   * Start a sequential build
+   */
   void startBuild();
+
+ private:
 
   std::unique_ptr<Graph> graph_;
 };

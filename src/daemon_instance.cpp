@@ -14,20 +14,13 @@ namespace falcon {
 DaemonInstance::DaemonInstance() {
 }
 
-void DaemonInstance::loadConf(const std::string& confPath) {
-  GraphParser graphParser;
-  graphParser.processFile(confPath);
-  graph_ = graphParser.getGraph();
+void DaemonInstance::loadConf(std::unique_ptr<Graph> gp) {
+  graph_ = std::move(gp);
 }
 
 void DaemonInstance::start() {
   /* TODO: start monitoring source files with watchman. */
   /* TODO: start accepting client connections. */
-
-#if !defined(NDEBUG)
-  GraphGraphizPrinter gpp;
-  gpp.visit(*graph_);
-#endif
 
   startBuild();
 }
