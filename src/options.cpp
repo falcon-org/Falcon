@@ -10,28 +10,43 @@
 namespace falcon {
 
 Options::Options()
-  : desc_ ("Generic OptionsParser")
+  : cliDesc_   ("Command Line options")
+  , cFileDesc_ ("Configuration options")
+  , desc_      ()
   , vm_ ()
 {
-  desc_.add_options() ("help,h", "produce this help message");
+  cliDesc_.add_options() ("help,h", "produce this help message");
 }
 Options::~Options() {}
 
 
-void Options::addOption(char const* name, char const* desc)
+void Options::addCLIOption(char const* name, char const* desc)
 {
-  this->desc_.add_options() (name, desc);
+  this->cliDesc_.add_options() (name, desc);
 }
 
-void Options::addOption(char const* name,
-                        po::value_semantic const* vm,
-                        char const* desc)
+void Options::addCLIOption(char const* name,
+                           po::value_semantic const* vm,
+                           char const* desc)
 {
-  this->desc_.add_options() (name, vm, desc);
+  this->cliDesc_.add_options() (name, vm, desc);
+}
+
+void Options::addCFileOption(char const* name, char const* desc)
+{
+  this->cFileDesc_.add_options() (name, desc);
+}
+
+void Options::addCFileOption(char const* name,
+                             po::value_semantic const* vm,
+                             char const* desc)
+{
+  this->cFileDesc_.add_options() (name, vm, desc);
 }
 
 void Options::parseOptions(int const argc, char const* const* argv)
 {
+  desc_.add(cliDesc_).add(cFileDesc_);
   try
   {
     po::store(po::parse_command_line(argc, argv, desc_), vm_);
@@ -39,6 +54,21 @@ void Options::parseOptions(int const argc, char const* const* argv)
   } catch (std::exception& e) {
     THROW_ERROR(EINVAL, e.what());
   }
+
+  /* This part will be enable in future when we will use a configuration file
+   * TODO: see main.cpp to enable the --config|-f option */
+#if 0
+  try
+  {
+    std::string configFileName = vm_["config"].as<std::string>();
+    po::store(po::parse_config_file<char>(vm_["config"].as<std::string>().c_str(),
+                                          cFileDesc_),
+              vm_);
+    po::notify(vm_);
+  } catch (std::exception& e) {
+    THROW_ERROR(EINVAL, e.what());
+  }
+#endif
 
   if (vm_.count("help")) {
     std::cout << desc_ << std::endl;

@@ -10,12 +10,28 @@
 #include "exceptions.h"
 
 static void set_options(falcon::Options& opt) {
-  opt.addOption("daemon,d", "daemonize the build system");
-  opt.addOption("build,b", "launch a sequential build (default)");
-  opt.addOption("graph,g",
-                po::value<std::string>()->default_value("makefile.json"),
-                "falcon graph file");
-  opt.addOption("module,M", po::value<std::string>(), "use -M help for more info");
+  /* *********************************************************************** */
+  /* add command line options */
+  opt.addCLIOption("daemon,d", "daemonize the build system");
+  opt.addCLIOption("build,b", "launch a sequential build (default)");
+  opt.addCLIOption("module,M",
+                   po::value<std::string>(),
+                   "use -M help for more info");
+  /* Option disable until we will need a configuration file
+   * TODO: when enable it, see options.cpp to enable the configuration file
+   * parsing */
+#if 0
+  opt.addCLIOption("config,f",
+                   po::value<std::string>()->default_value("falcon.conf"),
+                   "falcon configuration file");
+#endif
+
+  /* *********************************************************************** */
+  /* add command line option and configuration file option (this options can be
+   * setted on both configuration file or from the CLI) */
+  opt.addCFileOption("graph,g",
+                     po::value<std::string>()->default_value("makefile.json"),
+                     "falcon graph file");
 }
 
 static int load_module(std::unique_ptr<falcon::Graph> g, std::string const& s) {
