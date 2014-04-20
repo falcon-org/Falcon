@@ -59,6 +59,29 @@ public:
   po::variables_map vm_;/*!< see bosst::program_option */
 };
 
+class GlobalConfig {
+public:
+  GlobalConfig(Options const& opt);
+
+  /* *********************************************************************** */
+  /* Option that can be changed at run-time */
+private: /* variables */
+  std::string jsonGraphFile_;
+public: /* Accessors */
+  std::string const& getJsonGraphFile() const;
+  void setJsonGraphFile(std::string const& f);
+
+  /* *********************************************************************** */
+  /* Option that will need to restart the falcon process */
+private: /* variables */
+  bool runSequentialBuild_;
+  bool runDaemonBuilder_;
+public: /* Accessors */
+  bool runSequentialBuild() const;
+  bool runDaemonBuilder() const;
+
+};
+
 }
 
 #endif /* !FALCON_OPTIONS_H_ */

@@ -11,7 +11,8 @@
 
 namespace falcon {
 
-DaemonInstance::DaemonInstance() {
+DaemonInstance::DaemonInstance(std::unique_ptr<GlobalConfig> gc) {
+  config_ = std::move(gc);
 }
 
 void DaemonInstance::loadConf(std::unique_ptr<Graph> gp) {
@@ -19,10 +20,14 @@ void DaemonInstance::loadConf(std::unique_ptr<Graph> gp) {
 }
 
 void DaemonInstance::start() {
+  if (config_->runSequentialBuild()) {
+    startBuild();
+  } else {
   /* TODO: start monitoring source files with watchman. */
   /* TODO: start accepting client connections. */
 
-  startBuild();
+    startBuild();
+  }
 }
 
 void DaemonInstance::startBuild() {

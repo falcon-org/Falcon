@@ -50,4 +50,33 @@ bool Options::isOptionSetted(std::string const& opt) const {
   return vm_.count(opt);
 }
 
+GlobalConfig::GlobalConfig(Options const& opt) {
+  jsonGraphFile_ = opt.isOptionSetted("graph")
+                 ? opt.vm_["graph"].as<std::string>()
+                 : "makefile.json";
+
+
+  if (!opt.isOptionSetted("daemon") || opt.isOptionSetted("build")) {
+    runSequentialBuild_ = true;
+    runDaemonBuilder_ = false;
+  } else {
+    runDaemonBuilder_ = true;
+    runSequentialBuild_ = false;
+  }
+}
+
+std::string const& GlobalConfig::getJsonGraphFile() const {
+  return jsonGraphFile_;
+}
+void GlobalConfig::setJsonGraphFile(std::string const& f) {
+  jsonGraphFile_ = f;
+}
+
+bool GlobalConfig::runSequentialBuild() const {
+  return runSequentialBuild_;
+}
+bool GlobalConfig::runDaemonBuilder() const {
+  return runDaemonBuilder_;
+}
+
 }

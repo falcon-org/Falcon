@@ -10,6 +10,7 @@
 
 #include "graph.h"
 #include "graphparser.h"
+#include "options.h"
 
 namespace falcon {
 
@@ -18,7 +19,7 @@ namespace falcon {
  */
 class DaemonInstance {
  public:
-  DaemonInstance();
+  DaemonInstance(std::unique_ptr<GlobalConfig> gc);
 
   /**
    * load a new graph
@@ -30,14 +31,14 @@ class DaemonInstance {
    */
   void start();
 
+ private:
   /**
    * Start a sequential build
    */
   void startBuild();
 
- private:
-
   std::unique_ptr<Graph> graph_;
+  std::unique_ptr<GlobalConfig> config_;
 };
 
 } // namespace falcon
