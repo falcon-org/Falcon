@@ -51,10 +51,7 @@ bool Options::isOptionSetted(std::string const& opt) const {
 }
 
 GlobalConfig::GlobalConfig(Options const& opt) {
-  jsonGraphFile_ = opt.isOptionSetted("graph")
-                 ? opt.vm_["graph"].as<std::string>()
-                 : "makefile.json";
-
+  jsonGraphFile_ = opt.vm_["graph"].as<std::string>();
 
   if (!opt.isOptionSetted("daemon") || opt.isOptionSetted("build")) {
     runSequentialBuild_ = true;

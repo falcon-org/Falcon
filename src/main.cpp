@@ -11,8 +11,10 @@
 
 static void set_options(falcon::Options& opt) {
   opt.addOption("daemon,d", "daemonize the build system");
-  opt.addOption("build,b", "launch a sequential build");
-  opt.addOption("graph,g", po::value<std::string>(), "falcon graph file");
+  opt.addOption("build,b", "launch a sequential build (default)");
+  opt.addOption("graph,g",
+                po::value<std::string>()->default_value("makefile.json"),
+                "falcon graph file");
   opt.addOption("module,M", po::value<std::string>(), "use -M help for more info");
 }
 
