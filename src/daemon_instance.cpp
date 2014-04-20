@@ -8,6 +8,7 @@
 #include "daemon_instance.h"
 #include "graph_sequential_builder.h"
 #include "graphparser.h"
+#include "server.h"
 
 namespace falcon {
 
@@ -22,12 +23,23 @@ void DaemonInstance::loadConf(std::unique_ptr<Graph> gp) {
 void DaemonInstance::start() {
   if (config_->runSequentialBuild()) {
     startBuild();
-  } else {
-  /* TODO: start monitoring source files with watchman. */
-  /* TODO: start accepting client connections. */
-
-    startBuild();
+    return;
   }
+
+  /* Start the server. This will block until the server terminates. */
+  startServer();
+}
+
+void DaemonInstance::startServer() {
+  assert(!serverThread_.joinable());
+  serverThread_ = std::thread(&DaemonInstance::serverThread, this);
+  serverThread_.join();
+}
+
+void DaemonInstance::serverThread() {
+  std::cout << "Starting server..." << std::endl;
+  Server server(4242);
+  server.start();
 }
 
 void DaemonInstance::startBuild() {

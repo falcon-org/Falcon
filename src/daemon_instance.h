@@ -7,6 +7,7 @@
 #define FALCON_DAEMON_INSTANCE_H_
 
 #include <memory>
+#include <thread>
 
 #include "graph.h"
 #include "graphparser.h"
@@ -37,8 +38,19 @@ class DaemonInstance {
    */
   void startBuild();
 
+  /**
+   * Start the server, must be called only once.
+   */
+  void startServer();
+
+  /**
+   * Member function executed by the server thread.
+   */
+  void serverThread();
+
   std::unique_ptr<Graph> graph_;
   std::unique_ptr<GlobalConfig> config_;
+  std::thread serverThread_;
 };
 
 } // namespace falcon
