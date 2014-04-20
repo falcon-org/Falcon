@@ -9,7 +9,7 @@
 #include "FalconService.h"
 
 #include <thrift/protocol/TBinaryProtocol.h>
-#include <thrift/server/TSimpleServer.h>
+#include <thrift/server/TThreadedServer.h>
 #include <thrift/transport/TServerSocket.h>
 #include <thrift/transport/TBufferTransports.h>
 
@@ -42,7 +42,7 @@ class Server {
   boost::shared_ptr<TTransportFactory> transportFactory_;
   boost::shared_ptr<TProtocolFactory> protocolFactory_;
 
-  std::unique_ptr<TSimpleServer> server_;
+  std::unique_ptr<TThreadedServer> server_;
 
   Server(const Server& other) = delete;
   Server& operator=(const Server&) = delete;

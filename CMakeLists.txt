@@ -35,7 +35,8 @@ include_directories(src
 
 target_link_libraries(falcon
   ${thrift_LIBRARIES}
-  ${Boost_PROGRAM_OPTIONS_LIBRARY})
+  ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  pthread)
 
 # This project uses C++11
 set (CMAKE_CXX_FLAGS "-Wall -std=c++11 -ggdb3")

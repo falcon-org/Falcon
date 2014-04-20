@@ -34,8 +34,8 @@ Server::Server(int port) {
   transportFactory_.reset(new TBufferedTransportFactory());
   protocolFactory_.reset(new TBinaryProtocolFactory());
 
-  server_.reset(new TSimpleServer(processor_, serverTransport_,
-                                  transportFactory_, protocolFactory_));
+  server_.reset(new TThreadedServer(processor_, serverTransport_,
+                                    transportFactory_, protocolFactory_));
 }
 
 void Server::start() {
