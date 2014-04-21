@@ -3,7 +3,7 @@ project(FALCON)
 
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(thrift_USE_STATIC_LIBS "TRUE")
-
+set(Boost_USE_STATIC_LIBS OFF)
 
 find_package( Boost "1.55" REQUIRED COMPONENTS program_options log)
 find_package(Thrift REQUIRED)
@@ -20,6 +20,7 @@ add_executable(falcon
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService_constants.cpp
   src/main.cpp
   src/options.cpp
+  src/logging.cpp
   src/graph.cpp
   src/json/json.c
   src/json/parser.cpp
