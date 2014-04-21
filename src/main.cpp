@@ -8,6 +8,7 @@
 #include "options.h"
 #include "daemon_instance.h"
 #include "exceptions.h"
+#include "logging.h"
 
 static void set_options(falcon::Options& opt) {
   /* *********************************************************************** */
@@ -30,9 +31,14 @@ static void set_options(falcon::Options& opt) {
   opt.addCFileOption("port,p",
                      po::value<int>()->default_value(4242),
                      "the API listening port");
+  opt.addCFileOption("log-level",
+                     po::value<falcon::Log::Level>()->default_value(falcon::Log::Level::error),
+                     "the API listening port");
 }
 
 static int load_module(std::unique_ptr<falcon::Graph> g, std::string const& s) {
+
+  LOG(info) << "load module '" << s << "'";
 
   if (0 == s.compare("dot")) {
     falcon::GraphGraphizPrinter ggp;
@@ -45,7 +51,7 @@ static int load_module(std::unique_ptr<falcon::Graph> g, std::string const& s) {
       << "  dot    show the graph in DOT format" << std::endl
       << "  make   show the graph in Makefile format" << std::endl;
   } else {
-    std::cerr << "module not supported: " << s << std::endl;
+    LOG(error) << "module '" << s << "' not supported";
     return 1;
   }
 
@@ -55,6 +61,8 @@ static int load_module(std::unique_ptr<falcon::Graph> g, std::string const& s) {
 int main (int const argc, char const* const* argv)
 {
   falcon::Options opt;
+  /* at the initialization part: set the log level to ERROR */
+  falcon::initlogging(falcon::Log::Level::error);
 
   /* set the falcon's options */
   set_options(opt);
@@ -64,7 +72,7 @@ int main (int const argc, char const* const* argv)
     opt.parseOptions(argc, argv);
   } catch (falcon::Exception e) {
     if (e.getCode () != 0) { // the help throw a SUCCESS code, no error to show
-      std::cerr << e.getErrorMessage() << std::endl;
+      LOG(error) << e.getErrorMessage();
     }
     return e.getCode();
   }
@@ -76,7 +84,7 @@ int main (int const argc, char const* const* argv)
   try {
     graphParser.processFile(config->getJsonGraphFile());
   } catch (falcon::Exception e) {
-    std::cerr << e.getErrorMessage () << std::endl;
+    LOG(error) << e.getErrorMessage ();
     return e.getCode();
   }
 

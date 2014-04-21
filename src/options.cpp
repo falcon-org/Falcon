@@ -5,6 +5,7 @@
 
 #include "options.h"
 #include "exceptions.h"
+#include "logging.h"
 #include <iostream>
 
 namespace falcon {
@@ -87,6 +88,9 @@ GlobalConfig::GlobalConfig(Options const& opt) {
   this->setJsonGraphFile(opt.vm_["graph"].as<std::string>());
   this->setNetworkAPIPort(opt.vm_["port"].as<int>());
 
+  /* Set the log system level */
+  initlogging(opt.vm_["log-level"].as<falcon::Log::Level>());
+
   if (opt.isOptionSetted("build")) {
     runSequentialBuild_ = true;
   }
@@ -100,10 +104,14 @@ std::string const& GlobalConfig::getJsonGraphFile() const {
   return jsonGraphFile_;
 }
 void GlobalConfig::setJsonGraphFile(std::string const& f) {
+  LOG(info) << "set json graph file: " << f << "'";
   jsonGraphFile_ = f;
 }
 int const& GlobalConfig::getNetworkAPIPort() const { return networkAPIPort_; }
-void GlobalConfig::setNetworkAPIPort(int const& p) { networkAPIPort_ = p; }
+void GlobalConfig::setNetworkAPIPort(int const& p) {
+  LOG(info) << "set network API port: " << p << "'";
+  networkAPIPort_ = p;
+}
 
 bool GlobalConfig::runSequentialBuild() const {
   return runSequentialBuild_;
