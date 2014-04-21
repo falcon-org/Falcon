@@ -69,6 +69,7 @@ private:
   po::options_description desc_;
 public:
   po::variables_map vm_;/*!< see bosst::program_option */
+  po::variables_map vmFile_;/*!< see bosst::program_option */
 };
 
 class GlobalConfig {
@@ -79,9 +80,12 @@ public:
   /* Option that can be changed at run-time */
 private: /* variables */
   std::string jsonGraphFile_;
+  int networkAPIPort_;
 public: /* Accessors */
   std::string const& getJsonGraphFile() const;
   void setJsonGraphFile(std::string const& f);
+  int const& getNetworkAPIPort() const;
+  void setNetworkAPIPort(int const& p);
 
   /* *********************************************************************** */
   /* Option that will need to restart the falcon process */

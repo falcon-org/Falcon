@@ -55,20 +55,23 @@ void Options::parseOptions(int const argc, char const* const* argv)
     THROW_ERROR(EINVAL, e.what());
   }
 
-  /* This part will be enable in future when we will use a configuration file
-   * TODO: see main.cpp to enable the --config|-f option */
-#if 0
-  try
-  {
-    std::string configFileName = vm_["config"].as<std::string>();
-    po::store(po::parse_config_file<char>(vm_["config"].as<std::string>().c_str(),
-                                          cFileDesc_),
-              vm_);
-    po::notify(vm_);
-  } catch (std::exception& e) {
-    THROW_ERROR(EINVAL, e.what());
+  /* If a configuration file is given has parameter, then load the options from
+   * this given file, but load the CLI options again to ensure we keep the
+   * options from the CLI (They have higher priority). */
+  if (vm_.count("config")) {
+    try {
+      std::string configFileName = vm_["config"].as<std::string>();
+      po::store(po::parse_config_file<char>(vm_["config"].as<std::string>().c_str(),
+                                            cFileDesc_),
+                vmFile_);
+
+      // To ensure the CLI options get the most priority from the
+      po::store(po::parse_command_line(argc, argv, desc_), vm_);
+      po::notify(vm_);
+    } catch (std::exception& e) {
+      THROW_ERROR(EINVAL, e.what());
+    }
   }
-#endif
 
   if (vm_.count("help")) {
     std::cout << desc_ << std::endl;
@@ -81,14 +84,15 @@ bool Options::isOptionSetted(std::string const& opt) const {
 }
 
 GlobalConfig::GlobalConfig(Options const& opt) {
-  jsonGraphFile_ = opt.vm_["graph"].as<std::string>();
+  this->setJsonGraphFile(opt.vm_["graph"].as<std::string>());
+  this->setNetworkAPIPort(opt.vm_["port"].as<int>());
 
-  if (!opt.isOptionSetted("daemon") || opt.isOptionSetted("build")) {
+  if (opt.isOptionSetted("build")) {
     runSequentialBuild_ = true;
-    runDaemonBuilder_ = false;
-  } else {
+  }
+
+  if (opt.isOptionSetted("daemon")) {
     runDaemonBuilder_ = true;
-    runSequentialBuild_ = false;
   }
 }
 
@@ -98,6 +102,8 @@ std::string const& GlobalConfig::getJsonGraphFile() const {
 void GlobalConfig::setJsonGraphFile(std::string const& f) {
   jsonGraphFile_ = f;
 }
+int const& GlobalConfig::getNetworkAPIPort() const { return networkAPIPort_; }
+void GlobalConfig::setNetworkAPIPort(int const& p) { networkAPIPort_ = p; }
 
 bool GlobalConfig::runSequentialBuild() const {
   return runSequentialBuild_;

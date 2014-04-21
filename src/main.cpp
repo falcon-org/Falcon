@@ -17,14 +17,9 @@ static void set_options(falcon::Options& opt) {
   opt.addCLIOption("module,M",
                    po::value<std::string>(),
                    "use -M help for more info");
-  /* Option disable until we will need a configuration file
-   * TODO: when enable it, see options.cpp to enable the configuration file
-   * parsing */
-#if 0
   opt.addCLIOption("config,f",
-                   po::value<std::string>()->default_value("falcon.conf"),
+                   po::value<std::string>(),
                    "falcon configuration file");
-#endif
 
   /* *********************************************************************** */
   /* add command line option and configuration file option (this options can be
@@ -32,6 +27,9 @@ static void set_options(falcon::Options& opt) {
   opt.addCFileOption("graph,g",
                      po::value<std::string>()->default_value("makefile.json"),
                      "falcon graph file");
+  opt.addCFileOption("port,p",
+                     po::value<int>()->default_value(4242),
+                     "the API listening port");
 }
 
 static int load_module(std::unique_ptr<falcon::Graph> g, std::string const& s) {

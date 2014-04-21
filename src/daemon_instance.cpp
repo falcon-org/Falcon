@@ -38,7 +38,7 @@ void DaemonInstance::startServer() {
 
 void DaemonInstance::serverThread() {
   std::cout << "Starting server..." << std::endl;
-  Server server(4242);
+  Server server(config_->getNetworkAPIPort());
   server.start();
 }
 
