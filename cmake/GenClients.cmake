@@ -32,8 +32,6 @@ function(genPythonClient)
       )
   endforeach()
 
-  message(STATUS "${FILES_MOVED}")
-
   # Create a custom target that
   add_custom_target(python_client ALL DEPENDS ${FILES_MOVED})
 endfunction()
