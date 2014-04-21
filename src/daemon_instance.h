@@ -7,11 +7,15 @@
 #define FALCON_DAEMON_INSTANCE_H_
 
 #include <memory>
+#include <mutex>
 #include <thread>
 
 #include "graph.h"
+#include "graph_sequential_builder.h"
 #include "graphparser.h"
 #include "options.h"
+
+#include "FalconService.h"
 
 namespace falcon {
 
@@ -32,28 +36,34 @@ class DaemonInstance {
    */
   void start();
 
+  /* Commands.
+   * See thrift/FalconService.thrift for a description of these commands. */
+
+  StartBuildResult::type startBuild();
+  FalconStatus::type getStatus();
+  void getDirtySources(std::set<std::basic_string<char>>& sources);
+  void setDirty(const std::string& target);
+  void interruptBuild();
+  void shutdown();
+
  private:
-  /**
-   * Start a sequential build
-   */
-  void startBuild();
 
-  /**
-   * Start the server, must be called only once.
-   */
-  void startServer();
-
-  /**
-   * Member function executed by the server thread.
-   */
-  void serverThread();
+  void onBuildCompleted(BuildResult res);
 
   std::unique_ptr<Graph> graph_;
   std::unique_ptr<GlobalConfig> config_;
   std::thread serverThread_;
+
+  std::unique_ptr<IGraphBuilder> builder_;
+  bool isBuilding_;
+
+  /* Mutex to protect concurrent access to graph_ and isBuilding_. */
+  std::mutex mutex_;
+  typedef std::lock_guard<std::mutex> lock_guard;
+
 };
 
 } // namespace falcon
 
-#endif // FALCON_DAEMON_INSTANCE_H_
+#endif // falcon_daemon_instance_h_
 

@@ -12,28 +12,63 @@
 namespace falcon {
 
 GraphSequentialBuilder::GraphSequentialBuilder(Graph& graph)
-    : graph_(graph) { }
+    : graph_(graph), interrupted_(false) { }
 
-bool GraphSequentialBuilder::build(NodeSet& targets) {
+GraphSequentialBuilder::~GraphSequentialBuilder() {
+  /* Make sure the thread finishes before going out of scope. */
+  if (thread_.joinable()) {
+    thread_.join();
+  }
+}
+
+void GraphSequentialBuilder::startBuild(NodeSet& targets,
+                                        onBuildCompletedFn cb) {
+  assert(cb);
+  interrupted_ = false;
+  callback_ = cb;
+
+  thread_ = std::thread(std::bind(&GraphSequentialBuilder::buildThread,
+                        this, targets));
+}
+
+void GraphSequentialBuilder::buildThread(NodeSet& targets) {
+  auto res = BuildResult::SUCCEEDED;
   for (auto it = targets.begin(); it != targets.end(); ++it) {
-    if (!buildTarget(*it)) {
-      return false;
+    res = buildTarget(*it);
+    if (res != BuildResult::SUCCEEDED) {
+      break;
     }
   }
 
-  return true;
+  callback_(res);
 }
 
-bool GraphSequentialBuilder::buildTarget(Node* target) {
+void GraphSequentialBuilder::interrupt() {
+  interrupted_ = true;
+}
+
+void GraphSequentialBuilder::wait() {
+  if (thread_.joinable()) {
+    thread_.join();
+  }
+}
+
+BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
+  std::cout << "Building " << target->getPath() << std::endl;
+  if (interrupted_) {
+    return BuildResult::INTERRUPTED;
+  }
+
   if (target->getState() == State::UP_TO_DATE) {
-    return true;
+    std::cout << target->getPath() << " is up to date" << std::endl;
+    return BuildResult::SUCCEEDED;
   }
 
   Rule *rule = target->getChild();
   if (rule == nullptr) {
     /* This is a source file. */
     target->setState(State::UP_TO_DATE);
-    return true;
+    return BuildResult::SUCCEEDED;
   }
 
   /* If the target is out of date, the rule should be out of date as well. */
@@ -44,8 +79,9 @@ bool GraphSequentialBuilder::buildTarget(Node* target) {
   for (auto it = inputs.begin(); it != inputs.end(); ++it) {
     Node* input = *it;
     if (input->getState() == State::OUT_OF_DATE) {
-      if (!buildTarget(input)) {
-        return false;
+      auto res = buildTarget(input);
+      if (res != BuildResult::SUCCEEDED) {
+        return res;
       }
     }
   }
@@ -57,7 +93,7 @@ bool GraphSequentialBuilder::buildTarget(Node* target) {
     PosixSubProcess process(rule->getCommand());
     auto status = process.start();
     if (status != SubProcessExitStatus::SUCCEEDED) {
-      return false;
+      return BuildResult::FAILED;
     }
   }
 
@@ -65,7 +101,7 @@ bool GraphSequentialBuilder::buildTarget(Node* target) {
   target->setState(State::UP_TO_DATE);
   rule->setState(State::UP_TO_DATE);
 
-  return true;
+  return BuildResult::SUCCEEDED;
 }
 
 } // namespace falcon

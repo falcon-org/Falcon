@@ -11,13 +11,18 @@ function(buildThriftCpp thriftFile)
   get_filename_component(fileName "${thriftFile}" NAME_WE)
   get_filename_component(filePath "${thriftFile}" PATH)
   set(OUTPUT_PREFIX ${CMAKE_BINARY_DIR}/${filePath}/gen-cpp/${fileName})
-  set(OUTPUT_CPP_FILE ${OUTPUT_PREFIX}.cpp)
-  set(OUTPUT_H_FILE ${OUTPUT_PREFIX}.h)
+  set(OUTPUT_FILES
+    ${OUTPUT_PREFIX}.cpp
+    ${OUTPUT_PREFIX}_types.cpp
+    ${OUTPUT_PREFIX}_constants.cpp
+    ${OUTPUT_PREFIX}.h
+    ${OUTPUT_PREFIX}_types.h
+    ${OUTPUT_PREFIX}_constants.h)
   add_custom_command(
-    OUTPUT ${OUTPUT_CPP_FILE} ${OUTPUT_H_FILE}
+    OUTPUT ${OUTPUT_FILES}
     COMMAND ${thrift_COMPILER} --gen cpp -o ${CMAKE_BINARY_DIR}/${filePath} ${thriftFile}
     DEPENDS ${thriftFile}
-    COMMENT Generating ${OUTPUT_CPP_FILE}
+    COMMENT Generating cpp thrift module for ${thriftFile}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
   # Create output directory
@@ -42,7 +47,7 @@ function(buildThriftPy thriftFile)
     OUTPUT ${OUTPUT_FILES}
     COMMAND ${thrift_COMPILER} --gen py -o ${CMAKE_BINARY_DIR}/${filePath} ${thriftFile}
     DEPENDS ${thriftFile}
-    COMMENT Generating ${OUTPUT_FILE}
+    COMMENT Generating python thrift module for ${thriftFile}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
   # Create output directory

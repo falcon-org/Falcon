@@ -1,14 +1,14 @@
-namespace cpp Test
-
 enum FalconStatus {
   BUILDING,
   IDLE
 }
 
 enum StartBuildResult {
-  OK,  /* The build was properly started. */
-  BUSY /* A build is already ongoing. */
+  OK,         /* The build was properly started. */
+  BUSY        /* A build is already ongoing. */
 }
+
+exception TargetNotFound {}
 
 service FalconService {
   /* Get the pid of the Falcon daemon. */
@@ -27,7 +27,7 @@ service FalconService {
   set<string> getDirtySources()
 
   /* Mark the given target as dirty. */
-  void setDirty(1:string target)
+  void setDirty(1:string target) throws(1:TargetNotFound e)
 
   /* Stop the daemon. Will interrupt the current build, if any. */
   void shutdown()

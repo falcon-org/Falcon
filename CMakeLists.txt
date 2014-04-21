@@ -16,6 +16,8 @@ genPythonClient()
 
 add_executable(falcon
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService.cpp
+  ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService_types.cpp
+  ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService_constants.cpp
   src/main.cpp
   src/options.cpp
   src/graph.cpp

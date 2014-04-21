@@ -3,6 +3,7 @@
  * LICENSE : see accompanying LICENSE file for details.
  */
 
+#include <cassert>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -10,9 +11,13 @@
 
 #include "server.h"
 
+#include "daemon_instance.h"
+
 namespace falcon {
 
-FalconServiceHandler::FalconServiceHandler() {
+FalconServiceHandler::FalconServiceHandler(DaemonInstance* daemon)
+    : daemon_(daemon) {
+  assert(daemon != nullptr);
 }
 
 int64_t FalconServiceHandler::getPid() {
@@ -20,41 +25,31 @@ int64_t FalconServiceHandler::getPid() {
 }
 
 StartBuildResult::type FalconServiceHandler::startBuild() {
-  std::cout << "Building..." << std::endl;
-
-  /* TODO: implement. */
-
-  return StartBuildResult::OK;
+  return daemon_->startBuild();
 }
 
 FalconStatus::type FalconServiceHandler::getStatus() {
-  /* TODO: implement. */
-
-  return FalconStatus::IDLE;
+  return daemon_->getStatus();
 }
 
 void FalconServiceHandler::interruptBuild() {
-  /* TODO: implement. */
-
+  daemon_->interruptBuild();
 }
 
-void FalconServiceHandler::getDirtySources(
-    std::set<std::basic_string<char>>& sources) {
-  /* TODO: implement. */
+void FalconServiceHandler::getDirtySources(std::set<std::string>& sources) {
+  daemon_->getDirtySources(sources);
 }
 
 void FalconServiceHandler::setDirty(const std::string& target) {
-  /* TODO: implement. */
+  daemon_->setDirty(target);
 }
 
 void FalconServiceHandler::shutdown() {
-  std::cout << "Shutting down..." << std::endl;
-
-  /* TODO: implement. */
+  daemon_->shutdown();
 }
 
-Server::Server(int port) {
-  handler_.reset(new FalconServiceHandler());
+Server::Server(DaemonInstance* daemon, int port) {
+  handler_.reset(new FalconServiceHandler(daemon));
   processor_.reset(new FalconServiceProcessor(handler_));
   serverTransport_.reset(new TServerSocket(port));
   transportFactory_.reset(new TBufferedTransportFactory());

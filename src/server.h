@@ -15,16 +15,18 @@
 
 namespace falcon {
 
+class DaemonInstance;
+
 using namespace ::apache::thrift;
 using namespace ::apache::thrift::protocol;
 using namespace ::apache::thrift::transport;
 using namespace ::apache::thrift::server;
 
-using namespace  ::Test;
-
 class FalconServiceHandler : virtual public FalconServiceIf {
  public:
-  FalconServiceHandler();
+  FalconServiceHandler(DaemonInstance* daemon);
+
+  /* See thrift/FalconService.thrift for a description of these commands. */
   int64_t getPid();
   StartBuildResult::type startBuild();
   FalconStatus::type getStatus();
@@ -32,11 +34,14 @@ class FalconServiceHandler : virtual public FalconServiceIf {
   void setDirty(const std::string& target);
   void interruptBuild();
   void shutdown();
+
+ private:
+  DaemonInstance* daemon_;
 };
 
 class Server {
  public:
-  explicit Server(int port);
+  explicit Server(DaemonInstance* daemon, int port);
   void start();
 
  private:
@@ -45,8 +50,9 @@ class Server {
   boost::shared_ptr<TServerTransport> serverTransport_;
   boost::shared_ptr<TTransportFactory> transportFactory_;
   boost::shared_ptr<TProtocolFactory> protocolFactory_;
-
   std::unique_ptr<TThreadedServer> server_;
+
+  DaemonInstance* daemon_;
 
   Server(const Server& other) = delete;
   Server& operator=(const Server&) = delete;

@@ -66,6 +66,8 @@ class Node {
   State getState() const;
   void setState(State state);
 
+  void markDirty();
+
   void accept(GraphVisitor& v);
  private:
   std::string path_;
@@ -117,6 +119,8 @@ class Rule {
 
   State getState() const;
   void setState(State state);
+
+  void markDirty();
 
   void accept(GraphVisitor& v);
  private:

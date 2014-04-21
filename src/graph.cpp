@@ -10,7 +10,7 @@
 namespace falcon {
 
 Node::Node(const std::string& path)
- : path_(path), childRule_(nullptr), state_(State::OUT_OF_DATE) { }
+ : path_(path), childRule_(nullptr), state_(State::UP_TO_DATE) { }
 
 const std::string& Node::getPath() const {
   return path_;
@@ -35,6 +35,19 @@ State Node::getState() const { return state_; }
 
 void Node::setState(State state) { state_ = state; }
 
+void Node::markDirty() {
+  if (state_ == State::OUT_OF_DATE) {
+    /* This node is already dirty. */
+    return;
+  }
+  state_ = State::OUT_OF_DATE;
+
+  /* Mark all the parent rules dirty. */
+  for (auto it = parentRules_.begin(); it != parentRules_.end(); ++it) {
+    (*it)->markDirty();
+  }
+}
+
 void Node::accept(GraphVisitor& v) {
   v.visit(*this);
 }
@@ -48,11 +61,11 @@ NodeArray& Rule::getOutputs() { return outputs_; }
 Rule::Rule(const NodeArray& inputs, const NodeArray& outputs,
            const std::string& cmd)
   : inputs_(inputs), outputs_(outputs), command_(cmd), isPhony_(false),
-    state_(State::OUT_OF_DATE) { }
+    state_(State::UP_TO_DATE) { }
 
 Rule::Rule(const NodeArray& inputs, Node* output)
     : inputs_(inputs), outputs_(1, output), isPhony_(true),
-      state_(State::OUT_OF_DATE) { }
+      state_(State::UP_TO_DATE) { }
 
 bool Rule::isPhony() const {
   return isPhony_;
@@ -65,6 +78,20 @@ const std::string& Rule::getCommand() const {
 State Rule::getState() const { return state_; }
 
 void Rule::setState(State state) { state_ = state; }
+
+void Rule::markDirty() {
+  if (state_ == State::OUT_OF_DATE) {
+    /* This rule is already dirty. */
+    return;
+  }
+
+  state_ = State::OUT_OF_DATE;
+
+  /* Mark all the outputs dirty. */
+  for (auto it = outputs_.begin(); it != outputs_.end(); ++it) {
+    (*it)->markDirty();
+  }
+}
 
 void Rule::accept(GraphVisitor& v) {
   v.visit(*this);
