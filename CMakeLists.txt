@@ -4,7 +4,8 @@ project(FALCON)
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(thrift_USE_STATIC_LIBS "TRUE")
 
-find_package( Boost REQUIRED COMPONENTS program_options )
+
+find_package( Boost "1.55" REQUIRED COMPONENTS program_options log)
 find_package(Thrift REQUIRED)
 
 include (cmake/GenThrift.cmake)
@@ -36,6 +37,7 @@ include_directories(src
 target_link_libraries(falcon
   ${thrift_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  ${Boost_LOG_LIBRARY}
   pthread)
 
 # This project uses C++11
