@@ -12,6 +12,7 @@
 #include <queue>
 
 #include "graph.h"
+#include "posix_subprocess.h"
 
 namespace falcon {
 
@@ -66,6 +67,8 @@ class GraphSequentialBuilder : public IGraphBuilder {
    *         BuildResult::FAILED if one of the sub commands failed.
    */
   BuildResult buildTarget(Node* target);
+
+  PosixSubProcessManager manager_;
 
   Graph& graph_;
   std::atomic_bool interrupted_;

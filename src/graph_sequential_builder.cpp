@@ -7,7 +7,6 @@
 #include <iostream>
 
 #include "graph_sequential_builder.h"
-#include "posix_subprocess.h"
 
 namespace falcon {
 
@@ -54,7 +53,6 @@ void GraphSequentialBuilder::wait() {
 }
 
 BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
-  std::cout << "Building " << target->getPath() << std::endl;
   if (interrupted_) {
     return BuildResult::INTERRUPTED;
   }
@@ -90,9 +88,19 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
   if (!rule->isPhony()) {
     assert(!rule->getCommand().empty());
     std::cout << rule->getCommand() << std::endl;
-    PosixSubProcess process(rule->getCommand());
-    auto status = process.start();
+
+    manager_.addProcess(rule->getCommand());
+    PosixSubProcessPtr proc = manager_.waitForNext();
+
+    std::string stdout = proc->flushStdout();
+    std::string stderr = proc->flushStderr();
+    std::cout << "Command completed." << std::endl;
+    std::cout << "STDOUT: [" << stdout << "]" << std::endl;
+    std::cout << "STDERR: [" << stderr << "]" << std::endl;
+
+    auto status = proc->status();
     if (status != SubProcessExitStatus::SUCCEEDED) {
+      std::cout << "Build failed" << std::endl;
       return BuildResult::FAILED;
     }
   }
