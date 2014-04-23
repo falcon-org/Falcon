@@ -44,8 +44,9 @@ StartBuildResult::type DaemonInstance::startBuild() {
 
   isBuilding_ = true;
 
-  builder_.reset(new GraphSequentialBuilder(*graph_.get(),
-                                            config_->getWorkingDirectoryPath()));
+  builder_.reset(
+      new GraphSequentialBuilder(*graph_.get(),
+                                 config_->getWorkingDirectoryPath()));
   builder_->startBuild(graph_->getRoots(),
       std::bind(&DaemonInstance::onBuildCompleted, this, _1));
 
@@ -65,8 +66,7 @@ void DaemonInstance::onBuildCompleted(BuildResult res) {
 FalconStatus::type DaemonInstance::getStatus() {
   lock_guard g(mutex_);
 
-  return isBuilding_ ? FalconStatus::BUILDING
-                     : FalconStatus::IDLE;
+  return isBuilding_ ? FalconStatus::BUILDING : FalconStatus::IDLE;
 }
 
 void DaemonInstance::interruptBuild() {
@@ -91,16 +91,12 @@ void DaemonInstance::getDirtySources(std::set<std::string>& sources) {
 void DaemonInstance::setDirty(const std::string& target) {
   lock_guard g(mutex_);
 
-  std::cout << "set " << target << " to be dirty" << std::endl;
-
   /* Find the target. */
   auto& map = graph_->getNodes();
   auto it = map.find(target);
   if (it == map.end()) {
-    std::cout << "could not find " << target << std::endl;
     throw TargetNotFound();
   }
-  std::cout << target << " found: " << it->second << std::endl;
   it->second->markDirty();
 }
 

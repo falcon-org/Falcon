@@ -15,7 +15,7 @@ namespace falcon {
 /*!
  * @class GraphParser
  *
- * Graph builder: build an array of Rules from the given JSon entry
+ * Graph builder: build an array of Rules from the given JSon entry.
  *
  * Actually, there is no clear of the array of Rule.
  * if your build system has 2 configuration files linked together:

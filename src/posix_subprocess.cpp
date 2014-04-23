@@ -80,7 +80,8 @@ void PosixSubProcess::childProcess(int stdout, int stderr) {
      * command line */
     if (chdir (workingDirectory_.c_str()) != 0) {
 
-      LOG(fatal) << "unable to set the working directory before executing the command";
+      LOG(fatal) << "unable to set the working directory before executing "
+                    "the command";
       THROW_ERROR_CODE(errno);
     }
 
@@ -88,7 +89,8 @@ void PosixSubProcess::childProcess(int stdout, int stderr) {
     execl("/bin/sh", "/bin/sh", "-c", command_.c_str(), (char *) NULL);
   } while(false);
 
-  /* If we get here, something failed. TODO: display error message to user. */
+  /* If we get here, something failed. */
+  LOG(fatal) << "Error, failed to execute command in child process";
   _exit(1);
 }
 

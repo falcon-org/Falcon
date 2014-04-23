@@ -154,7 +154,8 @@ class Rule {
  */
 class Graph {
  public:
-  Graph(const NodeSet& roots, const NodeSet& sources, const NodeMap& nodes, const RuleArray& rules);
+  Graph(const NodeSet& roots, const NodeSet& sources, const NodeMap& nodes,
+        const RuleArray& rules);
 
   const NodeSet& getRoots() const;
   NodeSet& getRoots();
@@ -222,15 +223,14 @@ public:
   /* Use std::cout by default */
   GraphMakefilePrinter();
   GraphMakefilePrinter(std::ostream& os);
-  // TODO: improvement : initialize with a ostream
   virtual void visit(Graph& g);
   virtual void visit(Node& g);
   virtual void visit(Rule& g);
 };
 
 /* Print a graphiz output:
- * the output could be use with dot or graphiz to generate a picture of the
- * graph */
+ * the output could be used with dot or graphviz to generate a picture of the
+ * graph. */
 class GraphGraphizPrinter : public GraphVisitorPrinter {
 public:
   /* Use std::cout by default */

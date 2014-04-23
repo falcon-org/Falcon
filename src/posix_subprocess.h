@@ -118,7 +118,8 @@ class PosixSubProcessManager {
    *
    * @param command Command to run.
    */
-  void addProcess(const std::string& command, const std::string& workingDirectory);
+  void addProcess(const std::string& command,
+                  const std::string& workingDirectory);
 
   /**
    * Use ppoll to monitor the file descriptors of the running processes and read

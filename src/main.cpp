@@ -47,7 +47,8 @@ static void set_options(falcon::Options& opt) {
                      po::value<int>()->default_value(4343),
                      "stream port");
   opt.addCFileOption("log-level",
-                     po::value<falcon::Log::Level>()->default_value(falcon::Log::Level::error),
+                     po::value<falcon::Log::Level>()->default_value(
+                       falcon::Log::Level::error),
                      "define the log level");
 }
 
@@ -76,10 +77,8 @@ static int load_module(std::unique_ptr<falcon::Graph> g, std::string const& s) {
 int main (int const argc, char const* const* argv)
 {
   falcon::Options opt;
-  /* at the initialization part: set the log level to ERROR */
   falcon::initlogging(falcon::Log::Level::error);
 
-  /* set the falcon's options */
   set_options(opt);
 
   /* parse the command line options */

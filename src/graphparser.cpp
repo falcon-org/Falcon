@@ -25,7 +25,7 @@ void GraphParser::processFile(std::string const& filepath)
 {
   JsonParser parser;
 
-  { // Use a scope for input file stream reading
+  {
     std::ifstream ifs;
     unsigned int lineCounter = 0;
 
@@ -132,7 +132,7 @@ void GraphParser::processJson(JsonVal const* rules)
       rootSet_.erase(*it);
     }
     for (auto it = outputs.begin(); it != outputs.end(); it++) {
-      /* TODO: check that the rule has not already a child...
+      /* TODO: check that the rule does not already have a child...
        * Warn: the assert will raise */
       (*it)->setChild(rule);
       sourceSet_.erase(*it);
