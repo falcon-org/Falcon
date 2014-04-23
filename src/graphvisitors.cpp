@@ -8,56 +8,59 @@
 
 namespace falcon {
 
-void GraphMakefilePrinter::visit(Graph& g) {
-  NodeSet const& nodeSet = g.getRoots();
+/* ************************************************************************* */
+/* Makefile printer                                                          */
+/* ************************************************************************* */
 
-  for (NodeSet::const_iterator it = nodeSet.cbegin();
-       it != nodeSet.cend(); it++) {
+GraphMakefilePrinter::GraphMakefilePrinter() : GraphVisitorPrinter(std::cout) {}
+GraphMakefilePrinter::GraphMakefilePrinter(std::ostream& os) :
+  GraphVisitorPrinter(os) {}
+
+void GraphMakefilePrinter::visit(Graph& g) {
+  auto rules = g.getRules();
+
+  for (auto it = rules.cbegin(); it != rules.cend(); it++) {
     (*it)->accept(*this);
   }
 }
 
-void GraphMakefilePrinter::visit(Node& n) {
-  Rule* child = n.getChild();
-  if (child != nullptr) {
-    child->accept(*this);
-  }
-}
+void GraphMakefilePrinter::visit(Node& n) { /* nothing to do */ }
 
 void GraphMakefilePrinter::visit(Rule& r) {
-  NodeArray const& inputs = r.getInputs();
-  NodeArray const& outputs = r.getOutputs();
+  auto inputs = r.getInputs();
+  auto outputs = r.getOutputs();
 
-  for (NodeArray::const_iterator it = outputs.cbegin();
-       it != outputs.cend(); it++) {
-    std::cout << (*it)->getPath() << " ";
+  for (auto it = outputs.cbegin(); it != outputs.cend(); it++) {
+    os_ << (*it)->getPath() << " ";
   }
 
-  std::cout << ": ";
+  os_ << ": ";
 
-  for (NodeArray::const_iterator it = inputs.cbegin();
-       it != inputs.cend(); it++) {
-    std::cout << (*it)->getPath() << " ";
+  for (auto it = inputs.cbegin(); it != inputs.cend(); it++) {
+    os_ << (*it)->getPath() << " ";
   }
 
-  std::cout << std::endl;
-  std::cout << "\t" << r.getCommand() << std::endl;
-
-  for (NodeArray::const_iterator it = inputs.cbegin(); it != inputs.cend(); it++) {
-    (*it)->accept(*this);
-  }
+  os_ << std::endl;
+  os_ << "\t" << r.getCommand() << std::endl;
 }
 
+/* ************************************************************************* */
+/* Graphiz printer                                                           */
+/* ************************************************************************* */
 
+GraphGraphizPrinter::GraphGraphizPrinter()
+  : GraphVisitorPrinter(std::cout) {}
+GraphGraphizPrinter::GraphGraphizPrinter(std::ostream& os) :
+  GraphVisitorPrinter(os) {}
 
 void GraphGraphizPrinter::visit(Graph& g) {
   NodeMap const& nodeMap = g.getNodes();
   RuleArray const& rules = g.getRules();
 
-  std::cout << "digraph Falcon {" << std::endl;
-  std::cout << "rankdir=\"LR\"" << std::endl;
-  std::cout << "node [fontsize=10, shape=box, height=0.25]" << std::endl;
-  std::cout << "edge [fontsize=10]" << std::endl;
+  os_ << "digraph Falcon {" << std::endl;
+  os_ << "rankdir=\"LR\"" << std::endl;
+  os_ << "node [fontsize=10, shape=box, height=0.25, style=filled]" << std::endl;
+  os_ << "edge [fontsize=10]" << std::endl;
 
   /* print all the Nodes */
   for (auto it = nodeMap.cbegin(); it != nodeMap.cend(); it++) {
@@ -69,22 +72,35 @@ void GraphGraphizPrinter::visit(Graph& g) {
     (*it)->accept(*this);
   }
 
-  std::cout << "}" << std::endl;
+  os_ << "}" << std::endl;
 }
 
 void GraphGraphizPrinter::visit(Node& n) {
-  std::cout << "\"" << &n << "\" [label=\""
-            << n.getPath() << "\"]" << std::endl;
+  std::string color = (n.getState() == State::OUT_OF_DATE)
+                    ? nodeColorOutOfDate_
+                    : nodeColorUpToDate_;
+  std::string fillColor = (n.getState() == State::OUT_OF_DATE)
+                        ? nodeFillColorOutOfDate_
+                        : nodeFillColorUpToDate_;
+
+  os_ << "\"" << &n << "\" [label=\"" << n.getPath()
+                    << "\"  color=\"" << color
+                    << "\"  fillcolor=\"" << fillColor
+                    << "\" ]" << std::endl;
 }
 
 void GraphGraphizPrinter::visit(Rule& r) {
   NodeArray const& inputs = r.getInputs();
   NodeArray const& outputs = r.getOutputs();
 
+  std::string color = (r.getState() == State::OUT_OF_DATE)
+                    ? ruleColorOutOfDate_
+                    : ruleColorUpToDate_;
+
   for (auto iit = inputs.cbegin(); iit != inputs.cend(); iit++) {
     for (auto oit = outputs.cbegin(); oit != outputs.cend(); oit++) {
-      std::cout << "\"" << (*iit) << "\" ->"
-                << "\"" << (*oit) << "\""<< std::endl;
+      os_ << "\"" << (*iit) << "\" ->" << "\"" << (*oit)
+          << "\" [ color=\"" << color << "\"]" << std::endl;
     }
 
   }

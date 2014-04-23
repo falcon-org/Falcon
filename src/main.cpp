@@ -41,10 +41,10 @@ static int load_module(std::unique_ptr<falcon::Graph> g, std::string const& s) {
   LOG(info) << "load module '" << s << "'";
 
   if (0 == s.compare("dot")) {
-    falcon::GraphGraphizPrinter ggp;
+    falcon::GraphGraphizPrinter ggp(std::cout);
     g->accept(ggp);
   } else if (0 == s.compare("make")) {
-    falcon::GraphMakefilePrinter gmp;
+    falcon::GraphMakefilePrinter gmp(std::cout);
     g->accept(gmp);
   } else if (0 == s.compare("help")) {
     std::cout << "list of available modules: " << std::endl
