@@ -83,23 +83,26 @@ public:
 private: /* variables */
   std::string jsonGraphFile_;
   int networkAPIPort_;
+  int networkStreamPort_;
+  std::string workingDirectoryPath_;
 public: /* Accessors */
   std::string const& getJsonGraphFile() const;
   void setJsonGraphFile(std::string const& f);
-  int const& getNetworkAPIPort() const;
+  int getNetworkAPIPort() const;
   void setNetworkAPIPort(int const& p);
+  int getNetworkStreamPort() const;
+  void setNetworkStreamPort(int const& p);
+  std::string const& getWorkingDirectoryPath() const;
+  void setWorkingDirectoryPath(std::string const&);
 
   /* *********************************************************************** */
   /* Option that will need to restart the falcon process */
 private: /* variables */
   bool runSequentialBuild_;
   bool runDaemonBuilder_;
-  std::string workingDirectoryPath_;
 public: /* Accessors */
   bool runSequentialBuild() const;
   bool runDaemonBuilder() const;
-  std::string const& getWorkingDirectoryPath() const;
-
 };
 
 }

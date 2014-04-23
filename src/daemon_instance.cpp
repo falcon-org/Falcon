@@ -29,7 +29,7 @@ void DaemonInstance::start() {
 
   /* Start the server. This will block until the server terminates. */
   std::cout << "Starting server..." << std::endl;
-  Server server(this, 4242);
+  Server server(this, config_->getNetworkAPIPort());
   server.start();
 }
 

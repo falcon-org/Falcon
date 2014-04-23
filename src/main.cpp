@@ -45,7 +45,7 @@ static void set_options(falcon::Options& opt) {
                      "the API listening port");
   opt.addCFileOption("stream-port",
                      po::value<int>()->default_value(4343),
-                     "steam port (get building outputs)");
+                     "stream port");
   opt.addCFileOption("log-level",
                      po::value<falcon::Log::Level>()->default_value(falcon::Log::Level::error),
                      "define the log level");

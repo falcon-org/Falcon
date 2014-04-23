@@ -85,8 +85,10 @@ bool Options::isOptionSetted(std::string const& opt) const {
 }
 
 GlobalConfig::GlobalConfig(Options const& opt) {
-  this->setJsonGraphFile(opt.vm_["graph"].as<std::string>());
-  this->setNetworkAPIPort(opt.vm_["port"].as<int>());
+  setJsonGraphFile(opt.vm_["graph"].as<std::string>());
+  setNetworkAPIPort(opt.vm_["api-port"].as<int>());
+  setNetworkStreamPort(opt.vm_["stream-port"].as<int>());
+  setWorkingDirectoryPath(opt.vm_["working-directory"].as<std::string>());
 
   /* Set the log system level */
   initlogging(opt.vm_["log-level"].as<falcon::Log::Level>());
@@ -98,27 +100,33 @@ GlobalConfig::GlobalConfig(Options const& opt) {
   if (opt.isOptionSetted("daemon")) {
     runDaemonBuilder_ = true;
   }
-
-  workingDirectoryPath_ = opt.vm_["working-directory"].as<std::string>();
 }
 
 std::string const& GlobalConfig::getJsonGraphFile() const {
   return jsonGraphFile_;
 }
 void GlobalConfig::setJsonGraphFile(std::string const& f) {
-  LOG(info) << "set json graph file: " << f << "'";
+  LOG(info) << "set json graph file: '" << f << "'";
   jsonGraphFile_ = f;
 }
-int const& GlobalConfig::getNetworkAPIPort() const { return networkAPIPort_; }
+int GlobalConfig::getNetworkAPIPort() const { return networkAPIPort_; }
 void GlobalConfig::setNetworkAPIPort(int const& p) {
-  LOG(info) << "set network API port: " << p << "'";
+  LOG(info) << "set network API port: '" << p << "'";
   networkAPIPort_ = p;
 }
-
-bool GlobalConfig::runSequentialBuild() const { return runSequentialBuild_; }
-bool GlobalConfig::runDaemonBuilder() const { return runDaemonBuilder_; }
+int GlobalConfig::getNetworkStreamPort() const { return networkStreamPort_; }
+void GlobalConfig::setNetworkStreamPort(int const& p) {
+  LOG(info) << "set network Stream port: '" << p << "'";
+  networkStreamPort_ = p;
+}
+void GlobalConfig::setWorkingDirectoryPath(std::string const& s) {
+  LOG(info) << "set working directory: '" << s << "'";
+  workingDirectoryPath_ = s;
+}
 std::string const& GlobalConfig::getWorkingDirectoryPath() const {
   return workingDirectoryPath_;
 }
 
+bool GlobalConfig::runSequentialBuild() const { return runSequentialBuild_; }
+bool GlobalConfig::runDaemonBuilder() const { return runDaemonBuilder_; }
 }
