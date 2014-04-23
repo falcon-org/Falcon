@@ -98,6 +98,8 @@ GlobalConfig::GlobalConfig(Options const& opt) {
   if (opt.isOptionSetted("daemon")) {
     runDaemonBuilder_ = true;
   }
+
+  workingDirectoryPath_ = opt.vm_["working-directory"].as<std::string>();
 }
 
 std::string const& GlobalConfig::getJsonGraphFile() const {
@@ -113,11 +115,10 @@ void GlobalConfig::setNetworkAPIPort(int const& p) {
   networkAPIPort_ = p;
 }
 
-bool GlobalConfig::runSequentialBuild() const {
-  return runSequentialBuild_;
-}
-bool GlobalConfig::runDaemonBuilder() const {
-  return runDaemonBuilder_;
+bool GlobalConfig::runSequentialBuild() const { return runSequentialBuild_; }
+bool GlobalConfig::runDaemonBuilder() const { return runDaemonBuilder_; }
+std::string const& GlobalConfig::getWorkingDirectoryPath() const {
+  return workingDirectoryPath_;
 }
 
 }

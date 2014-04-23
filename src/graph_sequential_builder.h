@@ -55,7 +55,6 @@ class GraphSequentialBuilder : public IGraphBuilder {
   void wait();
 
  private:
-
   /* Entry point of the thread that performs the build. */
   void buildThread(NodeSet& targets);
 
@@ -72,6 +71,9 @@ class GraphSequentialBuilder : public IGraphBuilder {
 
   Graph& graph_;
   std::atomic_bool interrupted_;
+  /* use to keep the depth when building */
+  unsigned depth_;
+
   onBuildCompletedFn callback_;
   std::thread thread_;
 };

@@ -5,7 +5,10 @@ set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(thrift_USE_STATIC_LIBS "TRUE")
 set(Boost_USE_STATIC_LIBS OFF)
 
-find_package( Boost "1.55" REQUIRED COMPONENTS program_options log)
+find_package( Boost "1.55" REQUIRED
+  COMPONENTS program_options
+             log
+  )
 find_package(Thrift REQUIRED)
 
 include (cmake/GenThrift.cmake)

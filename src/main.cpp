@@ -4,6 +4,7 @@
  */
 
 #include <iostream>
+#include <cstdlib>
 
 #include "options.h"
 #include "daemon_instance.h"
@@ -11,6 +12,15 @@
 #include "logging.h"
 
 static void set_options(falcon::Options& opt) {
+  /* get the default working directory path from then environment variable */
+  char const* pwd = NULL;
+  pwd = getenv("PWD"); /* No need to free this string */
+  if (!pwd) {
+    LOG(fatal) << "enable to get the PWD";
+    return;
+  }
+  std::string pwdString(pwd);
+
   /* *********************************************************************** */
   /* add command line options */
   opt.addCLIOption("daemon,d", "daemonize the build system");
@@ -21,6 +31,9 @@ static void set_options(falcon::Options& opt) {
   opt.addCLIOption("config,f",
                    po::value<std::string>(),
                    "falcon configuration file");
+  opt.addCLIOption("working-directory",
+                   po::value<std::string>()->default_value(pwdString),
+                   "falcon working directory path (set the build directory)");
 
   /* *********************************************************************** */
   /* add command line option and configuration file option (this options can be

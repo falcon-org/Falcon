@@ -6,12 +6,13 @@
 #include <cassert>
 #include <iostream>
 
+#include "logging.h"
 #include "graph_sequential_builder.h"
 
 namespace falcon {
 
 GraphSequentialBuilder::GraphSequentialBuilder(Graph& graph)
-    : graph_(graph), interrupted_(false) { }
+    : graph_(graph), interrupted_(false), depth_(0) { }
 
 GraphSequentialBuilder::~GraphSequentialBuilder() {
   /* Make sure the thread finishes before going out of scope. */
@@ -57,8 +58,12 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
     return BuildResult::INTERRUPTED;
   }
 
+  depth_++;
+
+  LOG(debug) << "(" << depth_ << ") building " << target->getPath();
+
   if (target->getState() == State::UP_TO_DATE) {
-    std::cout << target->getPath() << " is up to date" << std::endl;
+    LOG(trace) << "(" << depth_-- << ")" << "target is up to date";
     return BuildResult::SUCCEEDED;
   }
 
@@ -66,6 +71,7 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
   if (rule == nullptr) {
     /* This is a source file. */
     target->setState(State::UP_TO_DATE);
+    depth_--;
     return BuildResult::SUCCEEDED;
   }
 
@@ -79,6 +85,7 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
     if (input->getState() == State::OUT_OF_DATE) {
       auto res = buildTarget(input);
       if (res != BuildResult::SUCCEEDED) {
+        depth_--;
         return res;
       }
     }
@@ -94,14 +101,19 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
 
     std::string stdout = proc->flushStdout();
     std::string stderr = proc->flushStderr();
-    std::cout << "Command completed." << std::endl;
+    LOG(info) << "(" << depth_ << ") Command completed.";
     std::cout << "STDOUT: [" << stdout << "]" << std::endl;
-    std::cout << "STDERR: [" << stderr << "]" << std::endl;
+    std::cerr << "STDERR: [" << stderr << "]" << std::endl;
 
     auto status = proc->status();
     if (status != SubProcessExitStatus::SUCCEEDED) {
-      std::cout << "Build failed" << std::endl;
+      LOG(error) << "(" << depth_-- << ") Build failed" << std::endl;
       return BuildResult::FAILED;
+    }
+
+    NodeArray& outputs = rule->getOutputs();
+    for (auto it = outputs.begin(); it != outputs.end(); it++) {
+      (*it)->setState(State::UP_TO_DATE);
     }
   }
 
@@ -109,6 +121,7 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
   target->setState(State::UP_TO_DATE);
   rule->setState(State::UP_TO_DATE);
 
+  depth_--;
   return BuildResult::SUCCEEDED;
 }
 

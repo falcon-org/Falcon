@@ -64,8 +64,10 @@ public:
 
   bool isOptionSetted(std::string const& opt) const;
 private:
-  po::options_description cliDesc_;/*!< see bosst::program_option */
-  po::options_description cFileDesc_;/*!< see bosst::program_option */
+  /* Command line options description */
+  po::options_description cliDesc_;
+  /* Option that will be available from file and from CLI */
+  po::options_description cFileDesc_;
   po::options_description desc_;
 public:
   po::variables_map vm_;/*!< see bosst::program_option */
@@ -92,9 +94,11 @@ public: /* Accessors */
 private: /* variables */
   bool runSequentialBuild_;
   bool runDaemonBuilder_;
+  std::string workingDirectoryPath_;
 public: /* Accessors */
   bool runSequentialBuild() const;
   bool runDaemonBuilder() const;
+  std::string const& getWorkingDirectoryPath() const;
 
 };
 

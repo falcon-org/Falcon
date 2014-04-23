@@ -4,12 +4,12 @@
  */
 
 #ifndef FALCON_GRAPH_H_
-#define FALCON_GRAPH_H_
+# define FALCON_GRAPH_H_
 
-#include <set>
-#include <string>
-#include <vector>
-#include <unordered_map>
+# include <set>
+# include <string>
+# include <vector>
+# include <unordered_map>
 
 /** This file defines the data structure for storing the Graph of Nodes and
  * Rules.
@@ -62,10 +62,15 @@ class Node {
   const RuleArray& getParents() const;
 
   /* State management */
-  State getState() const;
+  State const& getState() const;
+  State& getState();
   void setState(State state);
   /* Set the state as Dirty and mark all the dependencies as dirty too */
   void markDirty();
+
+  /* Operators */
+  bool operator==(Node const& n) const;
+  bool operator!=(Node const& n) const;
 
   void accept(GraphVisitor& v);
 
@@ -118,7 +123,8 @@ class Rule {
   const std::string& getCommand() const;
 
   /* State management */
-  State getState() const;
+  State const& getState() const;
+  State& getState();
   void setState(State state);
   /* Set the state as dirty and mark all the dependencies as dirty too */
   void markDirty();

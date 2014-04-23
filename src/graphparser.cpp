@@ -14,7 +14,7 @@
 
 namespace falcon {
 
-GraphParser::GraphParser() { }
+GraphParser::GraphParser() {}
 
 std::unique_ptr<Graph> GraphParser::getGraph() const {
   Graph* g = new Graph(rootSet_, sourceSet_, nodeMap_, ruleArray_);

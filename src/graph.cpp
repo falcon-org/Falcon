@@ -9,29 +9,32 @@
 
 namespace falcon {
 
-Node::Node(const std::string& path)
- : path_(path), childRule_(nullptr), state_(State::UP_TO_DATE) { }
+/* ************************************************************************* */
+/*                                Node                                       */
+/* ************************************************************************* */
 
-const std::string& Node::getPath() const {
-  return path_;
-}
+Node::Node(const std::string& path)
+ : path_(path)
+ , childRule_(nullptr)
+ , state_(State::OUT_OF_DATE) { }
+
+const std::string& Node::getPath() const { return path_; }
+
+const Rule* Node::getChild() const { return childRule_; }
+Rule*       Node::getChild()       { return childRule_; }
 
 void Node::setChild(Rule* rule) {
   assert(childRule_ == nullptr);
   childRule_ = rule;
 }
 
-const Rule* Node::getChild() const { return childRule_; }
-Rule* Node::getChild() { return childRule_; }
-
-void Node::addParentRule(Rule* rule) {
-  parentRules_.push_back(rule);
-}
-
 const RuleArray& Node::getParents() const { return parentRules_; }
-RuleArray& Node::getParents() { return parentRules_; }
+RuleArray&       Node::getParents()       { return parentRules_; }
 
-State Node::getState() const { return state_; }
+void Node::addParentRule(Rule* rule) { parentRules_.push_back(rule); }
+
+State const& Node::getState() const { return state_; }
+State&       Node::getState()       { return state_; }
 
 void Node::setState(State state) { state_ = state; }
 
@@ -48,35 +51,41 @@ void Node::markDirty() {
   }
 }
 
-void Node::accept(GraphVisitor& v) {
-  v.visit(*this);
-}
+bool Node::operator==(Node const& n) const { return getPath() == n.getPath(); }
+bool Node::operator!=(Node const& n) const { return getPath() != n.getPath(); }
 
-const NodeArray& Rule::getInputs() const { return inputs_; }
-NodeArray& Rule::getInputs() { return inputs_; }
+void Node::accept(GraphVisitor& v) { v.visit(*this); }
 
-const NodeArray& Rule::getOutputs() const { return outputs_; }
-NodeArray& Rule::getOutputs() { return outputs_; }
+/* ************************************************************************* */
+/*                                Rule                                       */
+/* ************************************************************************* */
 
 Rule::Rule(const NodeArray& inputs, const NodeArray& outputs,
            const std::string& cmd)
-  : inputs_(inputs), outputs_(outputs), command_(cmd), isPhony_(false),
-    state_(State::UP_TO_DATE) { }
+  : inputs_(inputs)
+  , outputs_(outputs)
+  , command_(cmd)
+  , isPhony_(false)
+  , state_(State::OUT_OF_DATE) { }
 
 Rule::Rule(const NodeArray& inputs, Node* output)
-    : inputs_(inputs), outputs_(1, output), isPhony_(true),
-      state_(State::UP_TO_DATE) { }
+    : inputs_(inputs)
+    , outputs_(1, output)
+    , isPhony_(true)
+    , state_(State::OUT_OF_DATE) { }
 
-bool Rule::isPhony() const {
-  return isPhony_;
-}
+const NodeArray& Rule::getInputs() const { return inputs_; }
+NodeArray&       Rule::getInputs()       { return inputs_; }
 
-const std::string& Rule::getCommand() const {
-  return command_;
-}
+const NodeArray& Rule::getOutputs() const { return outputs_; }
+NodeArray&       Rule::getOutputs()       { return outputs_; }
 
-State Rule::getState() const { return state_; }
+bool Rule::isPhony() const { return isPhony_; }
 
+const std::string& Rule::getCommand() const { return command_; }
+
+State const& Rule::getState() const { return state_; }
+State&       Rule::getState()       { return state_; }
 void Rule::setState(State state) { state_ = state; }
 
 void Rule::markDirty() {
@@ -97,6 +106,10 @@ void Rule::accept(GraphVisitor& v) {
   v.visit(*this);
 }
 
+/* ************************************************************************* */
+/*                                Graph                                      */
+/* ************************************************************************* */
+
 Graph::Graph(const NodeSet& roots, const NodeSet& sources,
              const NodeMap& nodes, const RuleArray& rules)
     : roots_(roots)
@@ -116,8 +129,6 @@ NodeMap& Graph::getNodes() { return nodes_; }
 const RuleArray& Graph::getRules() const { return rules_; }
 RuleArray& Graph::getRules() { return rules_; }
 
-void Graph::accept(GraphVisitor& v) {
-  v.visit(*this);
-}
+void Graph::accept(GraphVisitor& v) { v.visit(*this); }
 
 } // namespace falcon
