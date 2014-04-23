@@ -16,12 +16,16 @@
 
 #include "exceptions.h"
 #include "posix_subprocess.h"
+#include "logging.h"
 
 namespace falcon {
 
-PosixSubProcess::PosixSubProcess(const std::string& command)
-  : command_(command), stdoutFd_(-1), stderrFd_(-1),
-    pid_(-1), status_(SubProcessExitStatus::UNKNOWN) { }
+PosixSubProcess::PosixSubProcess(const std::string& command,
+                                 const std::string& workingDirectory)
+  : command_(command)
+  , workingDirectory_(workingDirectory)
+  , stdoutFd_(-1), stderrFd_(-1)
+  , pid_(-1), status_(SubProcessExitStatus::UNKNOWN) { }
 
 void PosixSubProcess::start() {
   /* Create pipe for stdout redirection. */
@@ -71,6 +75,14 @@ void PosixSubProcess::childProcess(int stdout, int stderr) {
     /* Change stderr. */
     if (dup2(stderr, 2) < 0) { break; }
     close(stderr);
+
+    /* Since we have forked, we can change the directory before executing the
+     * command line */
+    if (chdir (workingDirectory_.c_str()) != 0) {
+
+      LOG(fatal) << "unable to set the working directory before executing the command";
+      THROW_ERROR_CODE(errno);
+    }
 
     /* Run the command. */
     execl("/bin/sh", "/bin/sh", "-c", command_.c_str(), (char *) NULL);
@@ -135,8 +147,9 @@ PosixSubProcessManager::~PosixSubProcessManager() {
   assert(nbRunning() == 0);
 }
 
-void PosixSubProcessManager::addProcess(const std::string& command) {
-  PosixSubProcessPtr proc(new PosixSubProcess(command));
+void PosixSubProcessManager::addProcess(const std::string& command,
+                                        const std::string& workingDirectory) {
+  PosixSubProcessPtr proc(new PosixSubProcess(command, workingDirectory));
   proc->start();
   int stdout = proc->stdoutFd_;
   int stderr = proc->stderrFd_;

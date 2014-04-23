@@ -11,8 +11,12 @@
 
 namespace falcon {
 
-GraphSequentialBuilder::GraphSequentialBuilder(Graph& graph)
-    : graph_(graph), interrupted_(false), depth_(0) { }
+GraphSequentialBuilder::GraphSequentialBuilder(Graph& graph,
+                                               std::string const& workingDirectory)
+    : graph_(graph)
+    , workingDirectory_(workingDirectory)
+    , interrupted_(false)
+    , depth_(0) { }
 
 GraphSequentialBuilder::~GraphSequentialBuilder() {
   /* Make sure the thread finishes before going out of scope. */
@@ -96,7 +100,7 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
     assert(!rule->getCommand().empty());
     std::cout << rule->getCommand() << std::endl;
 
-    manager_.addProcess(rule->getCommand());
+    manager_.addProcess(rule->getCommand(), workingDirectory_);
     PosixSubProcessPtr proc = manager_.waitForNext();
 
     std::string stdout = proc->flushStdout();

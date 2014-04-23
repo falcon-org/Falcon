@@ -44,7 +44,8 @@ StartBuildResult::type DaemonInstance::startBuild() {
 
   isBuilding_ = true;
 
-  builder_.reset(new GraphSequentialBuilder(*graph_.get()));
+  builder_.reset(new GraphSequentialBuilder(*graph_.get(),
+                                            config_->getWorkingDirectoryPath()));
   builder_->startBuild(graph_->getRoots(),
       std::bind(&DaemonInstance::onBuildCompleted, this, _1));
 

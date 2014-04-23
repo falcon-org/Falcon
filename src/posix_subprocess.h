@@ -22,7 +22,8 @@ enum class SubProcessExitStatus { UNKNOWN, SUCCEEDED, INTERRUPTED, FAILED };
  */
 class PosixSubProcess {
  public:
-  explicit PosixSubProcess(const std::string& command);
+  explicit PosixSubProcess(const std::string& command,
+                           const std::string& workingDirectory);
 
   /** Start the process. */
   void start();
@@ -80,6 +81,7 @@ class PosixSubProcess {
 
 
   std::string command_;
+  std::string workingDirectory_;
 
   /* File descriptors from which to read the output and error streams.
    * Set to -1 if the file descriptor was closed. */
@@ -116,7 +118,7 @@ class PosixSubProcessManager {
    *
    * @param command Command to run.
    */
-  void addProcess(const std::string& command);
+  void addProcess(const std::string& command, const std::string& workingDirectory);
 
   /**
    * Use ppoll to monitor the file descriptors of the running processes and read

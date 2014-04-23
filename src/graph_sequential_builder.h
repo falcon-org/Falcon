@@ -45,7 +45,7 @@ class IGraphBuilder {
 
 class GraphSequentialBuilder : public IGraphBuilder {
  public:
-  GraphSequentialBuilder(Graph& graph);
+  GraphSequentialBuilder(Graph& graph, std::string const& workingDirectory);
   ~GraphSequentialBuilder();
 
   void startBuild(NodeSet& targets, onBuildCompletedFn cb);
@@ -70,6 +70,7 @@ class GraphSequentialBuilder : public IGraphBuilder {
   PosixSubProcessManager manager_;
 
   Graph& graph_;
+  std::string workingDirectory_;
   std::atomic_bool interrupted_;
   /* use to keep the depth when building */
   unsigned depth_;
