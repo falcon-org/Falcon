@@ -17,7 +17,8 @@ namespace falcon {
 GraphParser::GraphParser() { }
 
 std::unique_ptr<Graph> GraphParser::getGraph() const {
-  return std::unique_ptr<Graph>(new Graph(rootSet_, sourceSet_, nodeMap_));
+  Graph* g = new Graph(rootSet_, sourceSet_, nodeMap_, ruleArray_);
+  return std::unique_ptr<Graph>(g);
 }
 
 void GraphParser::processFile(std::string const& filepath)
@@ -57,9 +58,6 @@ void GraphParser::processFile(std::string const& filepath)
   } else {
     THROW_ERROR(EINVAL, "No rules in the given JSon File");
   }
-
-  // DEBUG: uncomment to show the rules DOM
-  // std::cout << *rules;
 }
 
 void GraphParser::checkNode(JsonVal const* json, NodeArray& nodeArray) {
@@ -125,6 +123,9 @@ void GraphParser::processJson(JsonVal const* rules)
     } else {
       rule = new Rule(inputs, outputs.front());
     }
+
+    /* keep the rule in memory */
+    ruleArray_.push_back(rule);
 
     for (auto it = inputs.begin(); it != inputs.end(); it++) {
       (*it)->addParentRule(rule);

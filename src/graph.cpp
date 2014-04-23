@@ -97,8 +97,12 @@ void Rule::accept(GraphVisitor& v) {
   v.visit(*this);
 }
 
-Graph::Graph(const NodeSet& roots, const NodeSet& sources, const NodeMap& nodes)
-    : roots_(roots), sources_(sources), nodes_(nodes) {}
+Graph::Graph(const NodeSet& roots, const NodeSet& sources,
+             const NodeMap& nodes, const RuleArray& rules)
+    : roots_(roots)
+    , sources_(sources)
+    , nodes_(nodes)
+    , rules_(rules) {}
 
 const NodeSet& Graph::getRoots() const { return roots_; }
 NodeSet& Graph::getRoots() { return roots_; }
@@ -108,6 +112,9 @@ NodeSet& Graph::getSources() { return sources_; }
 
 const NodeMap& Graph::getNodes() const { return nodes_; }
 NodeMap& Graph::getNodes() { return nodes_; }
+
+const RuleArray& Graph::getRules() const { return rules_; }
+RuleArray& Graph::getRules() { return rules_; }
 
 void Graph::accept(GraphVisitor& v) {
   v.visit(*this);

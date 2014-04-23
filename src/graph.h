@@ -147,7 +147,7 @@ class Rule {
  */
 class Graph {
  public:
-  Graph(const NodeSet& roots, const NodeSet& sources, const NodeMap& nodes);
+  Graph(const NodeSet& roots, const NodeSet& sources, const NodeMap& nodes, const RuleArray& rules);
 
   const NodeSet& getRoots() const;
   NodeSet& getRoots();
@@ -157,6 +157,9 @@ class Graph {
 
   const NodeMap& getNodes() const;
   NodeMap& getNodes();
+
+  const RuleArray& getRules() const;
+  RuleArray& getRules();
 
   void accept(GraphVisitor& v);
 
@@ -171,6 +174,9 @@ class Graph {
 
   /* Contains all the nodes, mapped by their path. */
   NodeMap nodes_;
+
+  /* Contains all the rules */
+  RuleArray rules_;
 
   Graph(const Graph& other) = delete;
   Graph& operator=(const Graph&) = delete;

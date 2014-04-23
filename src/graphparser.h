@@ -48,6 +48,9 @@ class GraphParser {
     /* Set that contains the leaf nodes of the graph. */
     NodeSet sourceSet_;
 
+    /* Array of all the built rules */
+    RuleArray ruleArray_;
+
     GraphParser(const GraphParser& other) = delete;
     GraphParser& operator=(const GraphParser&) = delete;
 };
