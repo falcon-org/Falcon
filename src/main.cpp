@@ -31,22 +31,24 @@ static void set_options(falcon::Options& opt) {
   opt.addCLIOption("config,f",
                    po::value<std::string>(),
                    "falcon configuration file");
-  opt.addCLIOption("working-directory",
-                   po::value<std::string>()->default_value(pwdString),
-                   "falcon working directory path (set the build directory)");
-
   /* *********************************************************************** */
   /* add command line option and configuration file option (this options can be
    * setted on both configuration file or from the CLI) */
-  opt.addCFileOption("graph,g",
+  opt.addCFileOption("working-directory",
+                     po::value<std::string>()->default_value(pwdString),
+                     "falcon working directory path");
+  opt.addCFileOption("graph",
                      po::value<std::string>()->default_value("makefile.json"),
                      "falcon graph file");
-  opt.addCFileOption("port,p",
+  opt.addCFileOption("api-port",
                      po::value<int>()->default_value(4242),
                      "the API listening port");
+  opt.addCFileOption("stream-port",
+                     po::value<int>()->default_value(4343),
+                     "steam port (get building outputs)");
   opt.addCFileOption("log-level",
                      po::value<falcon::Log::Level>()->default_value(falcon::Log::Level::error),
-                     "the API listening port");
+                     "define the log level");
 }
 
 static int load_module(std::unique_ptr<falcon::Graph> g, std::string const& s) {
