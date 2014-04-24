@@ -21,18 +21,20 @@ add_executable(falcon
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService.cpp
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService_types.cpp
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService_constants.cpp
-  src/main.cpp
-  src/options.cpp
-  src/logging.cpp
+  src/daemon_instance.cpp
   src/graph.cpp
-  src/json/json.c
-  src/json/parser.cpp
+  src/graph_sequential_builder.cpp
   src/graphparser.cpp
   src/graphvisitors.cpp
-  src/daemon_instance.cpp
-  src/graph_sequential_builder.cpp
+  src/json/json.c
+  src/json/parser.cpp
+  src/logging.cpp
+  src/main.cpp
+  src/options.cpp
   src/posix_subprocess.cpp
   src/server.cpp
+  src/stream_consumer.cpp
+  src/stream_server.cpp
   )
 
 include_directories(src

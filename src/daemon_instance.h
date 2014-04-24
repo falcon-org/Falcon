@@ -10,12 +10,12 @@
 #include <mutex>
 #include <thread>
 
+#include "FalconService.h"
 #include "graph.h"
 #include "graph_sequential_builder.h"
 #include "graphparser.h"
 #include "options.h"
-
-#include "FalconService.h"
+#include "stream_server.h"
 
 namespace falcon {
 
@@ -35,6 +35,11 @@ class DaemonInstance {
    * Start the daemon.
    */
   void start();
+
+  /**
+   * Entry point of the stream server's thread.
+   */
+  void streamServerThread();
 
   /* Commands.
    * See thrift/FalconService.thrift for a description of these commands. */
@@ -61,6 +66,8 @@ class DaemonInstance {
   std::mutex mutex_;
   typedef std::lock_guard<std::mutex> lock_guard;
 
+  std::thread streamServerThread_;
+  StreamServer streamServer_;
 };
 
 } // namespace falcon

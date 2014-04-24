@@ -13,6 +13,8 @@
 #include <string>
 #include <vector>
 
+#include "stream_consumer.h"
+
 namespace falcon {
 
 enum class SubProcessExitStatus { UNKNOWN, SUCCEEDED, INTERRUPTED, FAILED };
@@ -23,8 +25,9 @@ enum class SubProcessExitStatus { UNKNOWN, SUCCEEDED, INTERRUPTED, FAILED };
 class PosixSubProcess {
  public:
   explicit PosixSubProcess(const std::string& command,
-                           const std::string& workingDirectory);
-
+                           const std::string& workingDirectory_,
+                           unsigned int id,
+                           IStreamConsumer* consumer);
   /** Start the process. */
   void start();
 
@@ -41,23 +44,23 @@ class PosixSubProcess {
 
   /**
    * Try to read some data from fd, and write it to strBuf.
-   * @param fd     Fd from which to read. Must be stdoutFd_ or stderrFd_.
-   * @param strBuf Buffer where to write the read data.
+   * @param fd       Fd from which to read. Must be stdoutFd_ or stderrFd_.
+   * @param isStdout Set to true if is stdout, false if stderr.
    * @return true if read EOF.
    */
-  bool onFdReady(int& fd, std::string& strBuf);
+  bool onFdReady(int& fd, bool isStdout);
 
   /**
    * Try to read some data from stdoutFd_.
    * @return true if read EOF.
    */
-  bool readStdout() { return onFdReady(stdoutFd_, stdoutBuf_); }
+  bool readStdout() { return onFdReady(stdoutFd_, true); }
 
   /**
    * Try to read some data from stderrFd_.
    * @return true if read EOF.
    */
-  bool readStderr() { return onFdReady(stderrFd_, stderrBuf_); }
+  bool readStderr() { return onFdReady(stderrFd_, false); }
 
   /**
    * Wait until a process has finished running.
@@ -79,6 +82,7 @@ class PosixSubProcess {
    */
   std::string flushStderr();
 
+  unsigned int id_;
 
   std::string command_;
   std::string workingDirectory_;
@@ -88,11 +92,7 @@ class PosixSubProcess {
   int stdoutFd_;
   int stderrFd_;
 
-  /* Buffers to store the output and error streams.
-   * Data is appended to these buffers each time readStdout and readStderr
-   * are called. */
-  std::string stdoutBuf_;
-  std::string stderrBuf_;
+  IStreamConsumer* consumer_;
 
   pid_t pid_;
 
@@ -108,6 +108,8 @@ typedef std::unique_ptr<PosixSubProcess> PosixSubProcessPtr;
  */
 class PosixSubProcessManager {
  public:
+
+  PosixSubProcessManager(IStreamConsumer *consumer);
 
   ~PosixSubProcessManager();
 
@@ -171,6 +173,9 @@ class PosixSubProcessManager {
    * @param fd from which to read.
    */
   void readFd(int fd);
+
+  unsigned int id_;
+  IStreamConsumer* consumer_;
 
   /** List of processes currently running. */
   RunningProcesses running_;

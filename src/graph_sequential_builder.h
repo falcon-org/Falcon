@@ -16,6 +16,8 @@
 
 namespace falcon {
 
+class StreamConsumer;
+
 enum class BuildResult { SUCCEEDED, INTERRUPTED, FAILED };
 
 typedef std::function<void(BuildResult)> onBuildCompletedFn;
@@ -45,7 +47,8 @@ class IGraphBuilder {
 
 class GraphSequentialBuilder : public IGraphBuilder {
  public:
-  GraphSequentialBuilder(Graph& graph, std::string const& workingDirectory);
+  GraphSequentialBuilder(Graph& graph, std::string const& workingDirectory,
+                         IStreamConsumer* consumer);
   ~GraphSequentialBuilder();
 
   void startBuild(NodeSet& targets, onBuildCompletedFn cb);

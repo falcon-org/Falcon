@@ -12,8 +12,9 @@
 namespace falcon {
 
 GraphSequentialBuilder::GraphSequentialBuilder(Graph& graph,
-                                               std::string const& workingDirectory)
-    : graph_(graph)
+    std::string const& workingDirectory, IStreamConsumer* consumer)
+    : manager_(consumer)
+    , graph_(graph)
     , workingDirectory_(workingDirectory)
     , interrupted_(false)
     , depth_(0) { }
@@ -102,12 +103,6 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
 
     manager_.addProcess(rule->getCommand(), workingDirectory_);
     PosixSubProcessPtr proc = manager_.waitForNext();
-
-    std::string stdout = proc->flushStdout();
-    std::string stderr = proc->flushStderr();
-    LOG(info) << "(" << depth_ << ") Command completed.";
-    std::cout << "STDOUT: [" << stdout << "]" << std::endl;
-    std::cerr << "STDERR: [" << stderr << "]" << std::endl;
 
     auto status = proc->status();
     if (status != SubProcessExitStatus::SUCCEEDED) {

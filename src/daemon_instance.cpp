@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include "daemon_instance.h"
+
 #include "graphparser.h"
 #include "server.h"
 
@@ -14,7 +15,9 @@ using namespace std::placeholders;
 namespace falcon {
 
 DaemonInstance::DaemonInstance(std::unique_ptr<GlobalConfig> gc)
-    : config_(std::move(gc)), isBuilding_(false) {
+    : config_(std::move(gc)), isBuilding_(false),
+      streamServer_(config_->getNetworkStreamPort()) {
+
 }
 
 void DaemonInstance::loadConf(std::unique_ptr<Graph> gp) {
@@ -27,10 +30,17 @@ void DaemonInstance::start() {
     return;
   }
 
+  /* Start the stream server in a seperate thread. */
+  streamServerThread_ = std::thread(&DaemonInstance::streamServerThread, this);
+
   /* Start the server. This will block until the server terminates. */
   std::cout << "Starting server..." << std::endl;
   Server server(this, config_->getNetworkAPIPort());
   server.start();
+}
+
+void DaemonInstance::streamServerThread() {
+  streamServer_.run();
 }
 
 /* Commands */
@@ -46,7 +56,8 @@ StartBuildResult::type DaemonInstance::startBuild() {
 
   builder_.reset(
       new GraphSequentialBuilder(*graph_.get(),
-                                 config_->getWorkingDirectoryPath()));
+                                 config_->getWorkingDirectoryPath(),
+                                 &streamServer_));
   builder_->startBuild(graph_->getRoots(),
       std::bind(&DaemonInstance::onBuildCompleted, this, _1));
 

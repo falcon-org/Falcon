@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
 host = "localhost"
-port = 4242
+cmd_port = 4242
+stream_port = 4343
 
 import sys
 import getopt
+import socket
 
 from optparse import OptionParser
 
@@ -24,6 +26,21 @@ def help():
   print "  -g                         Print the list of dirty sources"
   print "  -p                         Print the pid of the daemon"
   print "  -d <file> | --dirty=<file> Mark <file> to be dirty"
+
+def build(client):
+  # Start a build
+  r = client.startBuild()
+  if r == 1:
+    print "Already building..."
+    return
+
+  # Connect to the streaming server and read indefinitely.
+  sock = socket.socket()
+  sock.connect(("localhost", stream_port))
+  while 1:
+    data = sock.recv(1024)
+    print data
+    if not data: break
 
 
 def main(argv):
@@ -47,18 +64,14 @@ def main(argv):
   ret = 0
 
   try:
-    transport = TSocket.TSocket(host, port)
+    transport = TSocket.TSocket(host, cmd_port)
     transport = TTransport.TBufferedTransport(transport)
     protocol = TBinaryProtocol.TBinaryProtocol(transport)
     client = Client(protocol)
     transport.open()
 
     if opt == '-b':
-      # Start a build
-      r = client.startBuild()
-      if r == 1:
-        print "Already building..."
-
+      build(client)
     elif opt == '-g':
       # Retrieve the dirty sources
       src = client.getDirtySources()

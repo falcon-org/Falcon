@@ -93,13 +93,8 @@ GlobalConfig::GlobalConfig(Options const& opt) {
   /* Set the log system level */
   initlogging(opt.vm_["log-level"].as<falcon::Log::Level>());
 
-  if (opt.isOptionSetted("build")) {
-    runSequentialBuild_ = true;
-  }
-
-  if (opt.isOptionSetted("daemon")) {
-    runDaemonBuilder_ = true;
-  }
+  runSequentialBuild_ = opt.isOptionSetted("build");
+  runDaemonBuilder_ = opt.isOptionSetted("daemon");
 }
 
 std::string const& GlobalConfig::getJsonGraphFile() const {

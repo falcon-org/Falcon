@@ -21,11 +21,13 @@
 namespace falcon {
 
 PosixSubProcess::PosixSubProcess(const std::string& command,
-                                 const std::string& workingDirectory)
-  : command_(command)
+                                 const std::string& workingDirectory,
+                                 unsigned int id,
+                                 IStreamConsumer* consumer)
+  : id_(id), command_(command)
   , workingDirectory_(workingDirectory)
   , stdoutFd_(-1), stderrFd_(-1)
-  , pid_(-1), status_(SubProcessExitStatus::UNKNOWN) { }
+  , consumer_(consumer), pid_(-1), status_(SubProcessExitStatus::UNKNOWN) { }
 
 void PosixSubProcess::start() {
   /* Create pipe for stdout redirection. */
@@ -98,12 +100,18 @@ bool PosixSubProcess::completed() {
   return stdoutFd_ == -1 && stderrFd_ == -1;
 }
 
-bool PosixSubProcess::onFdReady(int& fd, std::string& strBuf) {
+bool PosixSubProcess::onFdReady(int& fd, bool isStdout) {
   assert(fd != -1);
   char buf[4 << 10];
   ssize_t len = read(fd, buf, sizeof(buf));
   if (len > 0) {
-    strBuf.append(buf, len);
+    if (consumer_ != nullptr) {
+      if (isStdout) {
+        consumer_->writeStdout(id_, buf, len);
+      } else {
+        consumer_->writeStderr(id_, buf, len);
+      }
+    }
   } else if (len < 0) {
     THROW_ERROR(errno, "Read error");
   } else /* EOF */ {
@@ -135,13 +143,8 @@ void PosixSubProcess::waitFinished() {
   status_ = SubProcessExitStatus::FAILED;
 }
 
-std::string PosixSubProcess::flushStdout() {
-  return std::move(stdoutBuf_);
-}
-
-std::string PosixSubProcess::flushStderr() {
-  return std::move(stderrBuf_);
-}
+PosixSubProcessManager::PosixSubProcessManager(IStreamConsumer *consumer)
+    : consumer_(consumer) { }
 
 PosixSubProcessManager::~PosixSubProcessManager() {
   /* The user should wait for all the processes to complete before
@@ -151,7 +154,8 @@ PosixSubProcessManager::~PosixSubProcessManager() {
 
 void PosixSubProcessManager::addProcess(const std::string& command,
                                         const std::string& workingDirectory) {
-  PosixSubProcessPtr proc(new PosixSubProcess(command, workingDirectory));
+  PosixSubProcessPtr proc(new PosixSubProcess(command, workingDirectory,
+                                              id_++, consumer_));
   proc->start();
   int stdout = proc->stdoutFd_;
   int stderr = proc->stderrFd_;
