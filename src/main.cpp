@@ -102,6 +102,13 @@ int main (int const argc, char const* const* argv)
     return e.getCode();
   }
 
+  { /* Update the graph timestamp (initialize the new timestamp) */
+    falcon::GraphTimeStampUpdater gtsu;
+    /* initialize the first timestamp (by default all the timestamp are 0) */
+    graphParser.getGraph()->accept(gtsu);
+    /* update the state of every nodes and rules */
+    graphParser.getGraph()->accept(gtsu);
+  }
   /* if a module has been requested to execute then load it and return */
   if (opt.isOptionSetted("module")) {
     return load_module(graphParser.getGraph(),

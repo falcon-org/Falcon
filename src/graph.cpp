@@ -6,6 +6,7 @@
 #include <cassert>
 
 #include "graph.h"
+#include "logging.h"
 
 namespace falcon {
 
@@ -16,7 +17,9 @@ namespace falcon {
 Node::Node(const std::string& path)
  : path_(path)
  , childRule_(nullptr)
- , state_(State::OUT_OF_DATE) { }
+ , state_(State::OUT_OF_DATE)
+ , newTimeStamp_(0)
+ , oldTimeStamp_(0) { }
 
 const std::string& Node::getPath() const { return path_; }
 
@@ -49,6 +52,26 @@ void Node::markDirty() {
   for (auto it = parentRules_.begin(); it != parentRules_.end(); ++it) {
     (*it)->markDirty();
   }
+}
+void Node::markUpToDate() {
+  if (state_ == State::UP_TO_DATE) {
+    return;
+  }
+  state_ = State::UP_TO_DATE;
+
+  /* Mark all the parent rules up to date. */
+  for (auto it = parentRules_.begin(); it != parentRules_.end(); ++it) {
+    (*it)->markUpToDate();
+  }
+}
+
+TimeStamp Node::getTimeStamp() const { return newTimeStamp_; }
+TimeStamp Node::getPreviousTimeStamp() const { return oldTimeStamp_; }
+void Node::updateTimeStamp(TimeStamp const t) {
+  oldTimeStamp_ = newTimeStamp_;
+  newTimeStamp_ = t;
+  LOG(trace) << "node(" << path_ << ") update timestamp: ("
+             << oldTimeStamp_ << ") -> (" << newTimeStamp_ << ")";
 }
 
 bool Node::operator==(Node const& n) const { return getPath() == n.getPath(); }
@@ -99,6 +122,18 @@ void Rule::markDirty() {
   /* Mark all the outputs dirty. */
   for (auto it = outputs_.begin(); it != outputs_.end(); ++it) {
     (*it)->markDirty();
+  }
+}
+void Rule::markUpToDate() {
+  if (state_ == State::UP_TO_DATE) {
+    return;
+  }
+
+  state_ = State::UP_TO_DATE;
+
+  /* Mark all the outputs UpToDate. */
+  for (auto it = outputs_.begin(); it != outputs_.end(); ++it) {
+    (*it)->markUpToDate();
   }
 }
 

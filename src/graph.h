@@ -34,6 +34,7 @@ typedef std::vector<Node*>                     NodeArray;
 typedef std::set<Node*>                        NodeSet;
 typedef std::unordered_map<std::string, Node*> NodeMap;
 typedef std::vector<Rule*>                     RuleArray;
+typedef unsigned int                           TimeStamp;
 
 /** Define the state of a node or rule. */
 enum class State { UP_TO_DATE, OUT_OF_DATE };
@@ -67,6 +68,12 @@ class Node {
   void setState(State state);
   /* Set the state as Dirty and mark all the dependencies as dirty too */
   void markDirty();
+  /* Set the state as Up to date and mark all the dependencies */
+  void markUpToDate();
+
+  TimeStamp getTimeStamp() const;
+  TimeStamp getPreviousTimeStamp () const;
+  void updateTimeStamp(TimeStamp const);
 
   /* Operators */
   bool operator==(Node const& n) const;
@@ -87,6 +94,8 @@ class Node {
   RuleArray parentRules_;
 
   State state_;
+  TimeStamp newTimeStamp_;
+  TimeStamp oldTimeStamp_;
 
   Node(const Node& other) = delete;
   Node& operator=(const Node&) = delete;
@@ -128,6 +137,8 @@ class Rule {
   void setState(State state);
   /* Set the state as dirty and mark all the dependencies as dirty too */
   void markDirty();
+  /* Set the state as Up to date and mark all the dependencies */
+  void markUpToDate();
 
   void accept(GraphVisitor& v);
  private:
@@ -202,6 +213,14 @@ class GraphVisitor {
     virtual void visit(Graph&) = 0;
     virtual void visit(Node&) = 0;
     virtual void visit(Rule&) = 0;
+};
+
+/* A visitor to update the states depending on the node's timestamp */
+class GraphTimeStampUpdater : public GraphVisitor {
+public:
+  virtual void visit(Graph& g);
+  virtual void visit(Node& g);
+  virtual void visit(Rule& g);
 };
 
 /* Graph Printer visitor */

@@ -3,8 +3,13 @@
  * LICENSE : see accompanying LICENSE file for details.
  */
 
-#include <graph.h>
 #include <iostream>
+#include <algorithm>
+
+#include "graph.h"
+#include "logging.h"
+#include <sys/types.h>
+#include <sys/stat.h>
 
 namespace falcon {
 
@@ -104,6 +109,102 @@ void GraphGraphizPrinter::visit(Rule& r) {
     }
 
   }
+}
+
+/* ************************************************************************* */
+/* TimeStamp updater                                                         */
+/* ************************************************************************* */
+
+void GraphTimeStampUpdater::visit(Graph& g) {
+  auto nodeMap = g.getNodes();
+  auto rules = g.getRules();
+
+  /* Update the timestamp of every node */
+  for (auto it = nodeMap.cbegin(); it != nodeMap.cend(); it++) {
+    it->second->accept(*this);
+  }
+
+  /* Update the state of every rules (also update the state of the nodes) */
+  for (auto it = rules.cbegin(); it != rules.cend(); it++) {
+    (*it)->accept(*this);
+  }
+}
+
+/* Update the timestamp of a Node:
+ * If it is an iNode (a linux file): stat will return the last modification
+ *    time (st_mtime) : then we update the time stamp.
+ * Else stat will return an error:
+ *   if errno == (ENOENT or ENOTDIR):
+ *      the node represents an action to perform (a rule will generate this
+ *      node
+ *   else stat was unable to return the stat for multiple reasons (concurent
+ *        access or whatever: see "man 2 stat") I decided to not raised an
+ *        exception: there is an error, but the rule's command may fixe it. */
+void GraphTimeStampUpdater::visit(Node& n) {
+  struct stat st;
+  TimeStamp t = 0;
+
+  if (stat(n.getPath().c_str(), &st) < 0) {
+    if (errno != ENOENT && errno != ENOTDIR) {
+      LOG(fatal) << "stat(" << n.getPath()
+                 << "): [" << errno << "] " << strerror(errno);
+    }
+  } else {
+    t = st.st_mtime;
+  }
+
+  n.updateTimeStamp(t);
+
+  /* if the timestamp changed since the last check (the previous time stamp is
+   * smaller than the new one) or if the new timestamp is 0 (for example: the
+   * file has been deleted), then mark the node dirty */
+  if ((n.getPreviousTimeStamp() < n.getTimeStamp()) ||
+      (n.getTimeStamp() == 0)) {
+    n.markDirty();
+
+    /* If this node also has a child, then mark it dirty too */
+    Rule* child = n.getChild();
+    if (child != nullptr) {
+      child->markDirty();
+    }
+  } else {
+    n.markUpToDate();
+  }
+}
+
+void GraphTimeStampUpdater::visit(Rule& r) {
+  /* Get the oldest output */
+  auto outputs = r.getOutputs();
+  auto itOldestOutput = std::min_element(outputs.cbegin(), outputs.cend(),
+      [](Node const* o1, Node const* o2) {
+        return o1->getTimeStamp() < o2->getTimeStamp();
+      }
+    );
+  TimeStamp oldestOutputTimeStamp = (*itOldestOutput)->getTimeStamp();
+
+  /* Get the newest input */
+  auto inputs  = r.getInputs();
+  auto itNewerInput = std::find_if(inputs.begin(), inputs.end(),
+      [oldestOutputTimeStamp](Node const* inputNode) {
+        return inputNode->getTimeStamp() > oldestOutputTimeStamp;
+      }
+    );
+
+  /* if there is at least one input newer than the oldest ouput */
+  if (itNewerInput != inputs.end()) {
+    Node* input = *itNewerInput;
+
+    Rule* child = input->getChild();
+    if (child == nullptr) { /* in the case of the input is a leaf */
+      input->setState(State::OUT_OF_DATE);
+    }
+
+    r.markDirty();
+  } else {
+    /* No newer input: the rule is up to date */
+    r.markUpToDate();
+  }
+
 }
 
 }
