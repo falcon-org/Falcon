@@ -144,7 +144,7 @@ void PosixSubProcess::waitFinished() {
 }
 
 PosixSubProcessManager::PosixSubProcessManager(IStreamConsumer *consumer)
-    : consumer_(consumer) { }
+    : id_(0), consumer_(consumer) { }
 
 PosixSubProcessManager::~PosixSubProcessManager() {
   /* The user should wait for all the processes to complete before

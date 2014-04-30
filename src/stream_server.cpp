@@ -59,13 +59,6 @@ StreamServer::StreamServer(unsigned int port) {
     THROW_ERROR(errno, "eventfd");
   }
 
-  /* monitor the server socket for read so that we can now when it is ready to
-   * accept. */
-  fds_.push_back({ serverSocket_, POLLIN });
-
-  /* monitor the event fd so that poll can be notified when the set of fds to
-   * monitor has changed. */
-  fds_.push_back({ eventFd_, POLLIN });
 }
 
 StreamServer::~StreamServer() {
@@ -73,11 +66,10 @@ StreamServer::~StreamServer() {
 
   /* Make sure all sockets are closed. */
   for (auto it = map_.begin(); it != map_.end(); ++it) {
-    closeClient(fds_[it->second.fdPos].fd);
+    closeClient(*it->second.itFd);
   }
 
   /* Only the server socket should remain in fds_. Close it. */
-  assert(fds_.size() == 2);
   close(eventFd_);
   close(serverSocket_);
 }
@@ -89,15 +81,64 @@ void StreamServer::run() {
   }
 }
 
+/* Locking is performed by the callers (closeClient, endBuild). */
+void StreamServer::removeBuild(std::list<BuildInfo>::iterator it) {
+  assert(it->refcount == 0);
+  assert(it->buildCompleted);
+  builds_.erase(it);
+}
+
+void StreamServer::newBuild(unsigned int buildId) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  /* The previous build might be ready for removal if there are no more clients
+   * reading its output. */
+  if (builds_.size() > 0) {
+    /* endBuild should have been called prior to calling newBuild. */
+    assert(builds_.front().buildCompleted);
+    if (builds_.front().refcount == 0) {
+      removeBuild(builds_.begin());
+    }
+  }
+
+  auto info = BuildInfo(buildId);
+  builds_.push_front(std::move(info));
+
+  writeBuf("{\n  \"build\":\n  {\n    \"id\": ");
+  std::ostringstream ss;
+  ss << buildId;
+  writeBuf(ss.str());
+  writeBuf(",\n    \"cmds\":\n      [");
+  flushWaiting();
+}
+
+void StreamServer::endBuild() {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  /* There should be an ongoing build. */
+  assert(builds_.size() > 0 && !builds_.front().buildCompleted);
+
+  writeBuf("      ]\n"
+           "  }\n"
+           "}\n"
+           );
+  flushWaiting();
+
+  builds_.front().buildCompleted = true;
+}
+
 void StreamServer::processEvents() {
   std::vector<pollfd> fds;
   {
     std::lock_guard<std::mutex> lock(mutex_);
     std::for_each(fds_.begin(), fds_.end(),
-        [&fds](const pollfd& p) {
-          fds.push_back(pollfd{p.fd, p.events});
+        [&fds](const int& fd) {
+          fds.push_back({ fd, POLLOUT });
         }
     );
+
+    fds.push_back({ serverSocket_, POLLIN });
+    fds.push_back({ eventFd_, POLLIN });
   }
 
   int r = poll(&fds.front(), fds.size(), -1);
@@ -171,26 +212,24 @@ void StreamServer::acceptClients() {
 
 void StreamServer::createClient(int fd) {
   std::lock_guard<std::mutex> lock(mutex_);
-  bool isWaiting = buf_.size() == 0;
-  size_t fdPos;
 
+  bool isWaiting = builds_.size() == 0
+    || builds_.front().buf.size() == 0;
+
+  std::list<int>::iterator itFd;
   if (isWaiting) {
-    waiting_.push_back(fd);
-    fdPos = waiting_.size() - 1;
+    waiting_.push_front(fd);
+    itFd = waiting_.begin();
   } else {
-    fds_.push_back(pollfd{ fd, POLLOUT });
-    fdPos = fds_.size() - 1;
+    fds_.push_front(fd);
+    itFd = fds_.begin();
   }
 
-  map_[fd] = ClientInfo{0, fdPos, isWaiting};
-}
+  if (builds_.size() > 0) {
+    builds_.front().refcount++;
+  }
 
-void StreamServer::removeFd(size_t fdPos) {
-  assert(fdPos < fds_.size());
-  pollfd fdLast = fds_.back();
-  fds_[fdPos] = fdLast;
-  map_[fdLast.fd].fdPos = fdPos;
-  fds_.pop_back();
+  map_[fd] = ClientInfo{ builds_.begin(), 0, itFd, isWaiting};
 }
 
 void StreamServer::processClient(int fd) {
@@ -198,13 +237,16 @@ void StreamServer::processClient(int fd) {
   auto it = map_.find(fd);
   assert(it != map_.end());
   ClientInfo& info = it->second;
+  auto itBuild = info.itBuild;
 
-  /* There has to be some data to be written, otherwise this fd should have been
-   * on the waiting_ list. */
-  assert(info.bufPtr < buf_.size());
+  /* There should be a build and some data to be read. Otherwise this fd should
+   * be in the waiting list. */
+  assert(itBuild != builds_.end());
+  assert(info.bufPtr < itBuild->buf.size());
 
-  size_t bufSize = buf_.size() - info.bufPtr;
-  const char* bufPtr = &buf_[info.bufPtr];
+  std::string& buf = itBuild->buf;
+  size_t bufSize = buf.size() - info.bufPtr;
+  const char* bufPtr = &buf[info.bufPtr];
   do {
     int r = send(fd, bufPtr, bufSize, MSG_NOSIGNAL);
     if (r < 0) {
@@ -215,42 +257,74 @@ void StreamServer::processClient(int fd) {
     }
     info.bufPtr += r;
     bufSize -= r;
-  } while (info.bufPtr < buf_.size());
+  } while (info.bufPtr < buf.size());
 
   /* If we reach here, it means there is nothing left to write for this
-   * client. Put it in the waiting list. */
-  removeFd(it->second.fdPos);
-  waiting_.push_back(fd);
-  it->second.isWaiting = true;
-  it->second.fdPos = waiting_.size() - 1;
+   * client. */
+
+  if (itBuild->buildCompleted) {
+    closeClient(fd);
+  } else {
+    /* There might be more data. Put it in the waiting list. */
+    fds_.erase(it->second.itFd);
+    waiting_.push_front(fd);
+    it->second.isWaiting = true;
+    it->second.itFd = waiting_.begin();
+  }
 }
 
+/* Locking already performed by processClient (the caller). */
 void StreamServer::closeClient(int fd) {
   auto itMap = map_.find(fd);
   assert(itMap != map_.end());
 
-  removeFd(itMap->second.fdPos);
-  map_.erase(itMap);
+  /* Decrement the refcount of the build. */
+  auto itBuild = itMap->second.itBuild;
+  assert(itBuild != builds_.end());
+  itBuild->refcount--;
 
+  /* Remove the build info if the refcount reaches 0, the build completed, and
+   * we have a more recent build. The last check is here in order to make sure
+   * that we always have at least one build in the list, so that when a new
+   * client connects it is always assigned to a build. */
+  if (itBuild->refcount == 0 && itBuild->buildCompleted
+      && itBuild != builds_.begin()) {
+    removeBuild(itBuild);
+  }
+
+  fds_.erase(itMap->second.itFd);
+  map_.erase(itMap);
   close(fd);
 }
 
-void StreamServer::writeBuf(char* buf, size_t len) {
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
+void StreamServer::flushWaiting() {
+  /* If we are flushing the waiting list, it means there is some new data
+   * and thus we should have an ongoing build. */
+  assert(builds_.size() > 0
+      && !builds_.front().buildCompleted
+      && builds_.front().buf.size() > 0);
 
-    buf_.append(buf, len);
+  for (auto it = waiting_.begin(); it != waiting_.end(); ++it) {
+    /* Move the client fd from waiting_ to fds_. */
+    fds_.push_front(*it);
+    auto itMap = map_.find(*it);
+    assert(itMap != map_.end());
+    itMap->second.itFd = fds_.begin();
+    itMap->second.isWaiting = false;
 
-    /* We have new data, flush the waiting_ list. */
-    for (auto it = waiting_.begin(); it != waiting_.end(); ++it) {
-      fds_.push_back(pollfd{ *it, POLLOUT });
-      auto itMap = map_.find(*it);
-      assert(itMap != map_.end());
-      itMap->second.fdPos = fds_.size() - 1;
-      itMap->second.isWaiting = false;
+    /* Assign the client to the current build, if needed. */
+    if (itMap->second.itBuild == builds_.end()) {
+      itMap->second.itBuild = builds_.begin();
+      itMap->second.itBuild->refcount++;
+    } else {
+      /* If the client in the waiting list was already assigned to a build, it
+       * should be the current build, because we can only do a build at a time,
+       * and any client that was reading the data of a previous build should
+       * have been closed. */
+      assert(itMap->second.itBuild == builds_.begin());
     }
-    waiting_.clear();
   }
+  waiting_.clear();
 
   /* Notifiy poll that fds_ changed by writting to eventFd_. */
   uint64_t u = 1;
@@ -260,14 +334,58 @@ void StreamServer::writeBuf(char* buf, size_t len) {
   }
 }
 
+void StreamServer::writeBuf(const std::string& str) {
+  assert(builds_.size() > 0);
+  builds_.front().buf.append(str);
+}
+
+void StreamServer::writeBufEscapeJson(char* buf, size_t len) {
+  assert(builds_.size() > 0);
+
+  for (size_t i = 0; i < len; i++) {
+    char c = buf[i];
+    if (c == '"' || c == '\\') {
+      builds_.front().buf.push_back('\\');
+      builds_.front().buf.push_back(c);
+    } else if (c == '\n') {
+      builds_.front().buf.append("\\n");
+    } else {
+      builds_.front().buf.push_back(c);
+    }
+  }
+}
+
+void StreamServer::writeCmdOutput(unsigned int cmdId, char* buf,
+                                  size_t len, bool isStdout) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  assert(builds_.size() > 0);
+
+  if (builds_.front().firstChunk) {
+    builds_.front().firstChunk = false;
+  } else {
+    writeBuf(",\n");
+  }
+  writeBuf("        { \"id\": ");
+  std::ostringstream ss;
+  ss << cmdId;
+  writeBuf(ss.str());
+  if (isStdout) {
+    writeBuf(", \"stdout\": \"");
+  } else {
+    writeBuf(", \"stderr\": \"");
+  }
+  writeBufEscapeJson(buf, len);
+  writeBuf("\" }");
+
+  flushWaiting();
+}
+
 void StreamServer::writeStdout(unsigned int cmdId, char* buf, size_t len) {
-  (void)cmdId;
-  writeBuf(buf, len);
+  writeCmdOutput(cmdId, buf, len, true);
 }
 
 void StreamServer::writeStderr(unsigned int cmdId, char* buf, size_t len) {
-  (void)cmdId;
-  writeBuf(buf, len);
+  writeCmdOutput(cmdId, buf, len, false);
 }
 
 } // namespace falcon

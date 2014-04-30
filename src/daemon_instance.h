@@ -55,11 +55,14 @@ class DaemonInstance {
 
   void onBuildCompleted(BuildResult res);
 
+  unsigned int buildId_;
+
   std::unique_ptr<Graph> graph_;
   std::unique_ptr<GlobalConfig> config_;
   std::thread serverThread_;
 
   std::unique_ptr<IGraphBuilder> builder_;
+
   bool isBuilding_;
 
   /* Mutex to protect concurrent access to graph_ and isBuilding_. */

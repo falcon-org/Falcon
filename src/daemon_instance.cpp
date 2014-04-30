@@ -15,7 +15,7 @@ using namespace std::placeholders;
 namespace falcon {
 
 DaemonInstance::DaemonInstance(std::unique_ptr<GlobalConfig> gc)
-    : config_(std::move(gc)), isBuilding_(false),
+    : buildId_(0), config_(std::move(gc)), isBuilding_(false),
       streamServer_(config_->getNetworkStreamPort()) {
 
 }
@@ -54,6 +54,8 @@ StartBuildResult::type DaemonInstance::startBuild() {
 
   isBuilding_ = true;
 
+  streamServer_.newBuild(buildId_);
+
   builder_.reset(
       new GraphSequentialBuilder(*graph_.get(),
                                  config_->getWorkingDirectoryPath(),
@@ -69,6 +71,9 @@ void DaemonInstance::onBuildCompleted(BuildResult res) {
 
   isBuilding_ = false;
   std::cout << "Build completed" << std::endl;
+
+  streamServer_.endBuild();
+  ++buildId_;
 
   /* TODO. */
   (void)res;

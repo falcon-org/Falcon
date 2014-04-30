@@ -7,38 +7,60 @@
 #define FALCON_STREAM_SERVER_H_
 
 #include <condition_variable>
+#include <list>
 #include <mutex>
 #include <string>
 #include <unordered_map>
-#include <vector>
 
 #include "stream_consumer.h"
 
 namespace falcon {
 
 /**
- * Implement a server for streaming the build output to several clients.
- * This class maintains an internal buffer that contains all the data written
- * since its creation. When a new client connects to the server, the whole
- * buffer will be written to the client and then the client will be put in a
- * pool of "waiting" clients. (See waiting_).
+ * -- A server for streaming the build output to several clients.
  *
- * As new data arrives, clients are moved from the pool of waiting clients to
- * the pool of reading clients. (See fds_). The file descriptors of those
- * clients are monitored with poll.
+ * When a client connects to the streaming server, it will receive the output of
+ * the last build that was started (it may be a build that already completed).
+ * If there is no such build (ie we never built before), the client will wait
+ * and receive the data of the next build to start.
+ * A client will only receive the output of one build. When the output of the
+ * build is sent completely, the client socket is closed.
  *
- * For each client, we maintain a pointer in the internal buffer (buf_) so that
- * we keep track of what has been sent to each client.
+ * This class is designed in a way that guarantees that it is possible to start
+ * a new build even if there are still slow client reading the output of a
+ * previous build. Thus, we can have clients that read the output of an old
+ * build and clients that read the output of the current build be connected at
+ * the same time.
  *
- * TODO:
- * - Implement a shutdown mechanism. Right now this runs forever;
- * - When a build completes, clear the internal buffer. We need to wait for
- *   every clients that were reading it to complete before releasing the buffer.
- *   In order to deal with that, we can maintain a doubly-linked of buffers -
- *   one per build - and have a refcounts of the number of clients reading from
- *   each of them. When a buffer has a refcount of zero, it can be free'd.
+ * -- Internal implementation:
  *
- * Usage:
+ * This class maintains a list of 'BuildInfo' structs corresponding to each
+ * build that happened in reverse chronological order, ie the front of the list
+ * is the last build. Each struct contains:
+ * - A buffer containing the output of the build in json format;
+ * - A refcount that counts the number of clients to which the buffer is
+ *   currently being sent.
+ * When a build completes and the refcount reaches 0, the struct is removed from
+ * the list.
+ *
+ * This class maintains two lists:
+ * - waiting_: this is the list of clients' file descriptors that are waiting
+ *   for new data to come;
+ * - fds_: this is the list of clients' file descriptors for which there is new
+ *   data to be sent to. These file descriptors are monitored with poll.
+ * The file descriptors are moved from one list to the other depending on its
+ * state (waiting for new data vs ready to read new data).
+ *
+ * This class maintains a list of 'ClientInfo' structs corresponding to each
+ * connected client. Each struct contains:
+ * - an iterator to the corresponding file descriptor either in waiting_ or
+ *   fds_ depending on the state of the client;
+ * - An iterator to the BuildInfo struct corresponding to the build on which the
+ *   client is reading the output;
+ * - A pointer to indicate the amount of data that has been read in the internal
+ *   buffer of the BuildInfo struct.
+ *
+ * -- Usage:
  *
  * // -- MAIN THREAD
  * // Create a streaming server listening on port 4343.
@@ -47,7 +69,7 @@ namespace falcon {
  * server.run();
  *
  * // -- WRITER THREAD(S)
- * // Write some data to the streaming server.
+ * // Write some data coming from stdout to the streaming server.
  * server.writeStdout(1, buf, len);
  */
 class StreamServer : public IStreamConsumer {
@@ -65,6 +87,18 @@ class StreamServer : public IStreamConsumer {
    * Run the stream server. Will block indefinitely.
    */
   void run();
+
+  /**
+   * Indicate that a new build has started.
+   * Must be called after endBuild was called if it is not the first build.
+   */
+  void newBuild(unsigned int buildId);
+
+  /**
+   * Mark the current build as completed. Must be called after newBuild was
+   * called.
+   */
+  void endBuild();
 
   /**
    * Write a buffer coming from the standard output of a command.
@@ -115,18 +149,44 @@ class StreamServer : public IStreamConsumer {
   void closeClient(int fd);
 
   /**
-   * Write data to all clients.
-   * @param buf Buffer to write.
-   * @param len Size of the buffer.
+   * Move all the file descriptors in the waiting_ list to fds_ so that they are
+   * monitored with poll.
    */
-  void writeBuf(char* buf, size_t len);
+  void flushWaiting();
+
+  void writeBuf(const std::string& str);
+  void writeBufEscapeJson(char* buf, size_t len);
+
+  struct BuildInfo {
+    unsigned int id;
+    std::string buf;
+    /* Refcount that counts the number of clients listening to the output stream
+     * of this build. When it reaches 0 and the build completed, this structure
+     * can be deallocated. */
+    unsigned int refcount;
+    bool buildCompleted;
+
+    /* Used for displaying the trailing comma at the end of each json cmd. */
+    bool firstChunk;
+
+    BuildInfo(unsigned int i)
+      : id(i), refcount(0), buildCompleted(false), firstChunk(true) {}
+  };
+
+  /** Remove a build from the list of builds. */
+  void removeBuild(std::list<BuildInfo>::iterator it);
 
   /**
-   * Remove a file descriptor from the list of file descriptor to be monitored
-   * with poll.
-   * @praram fdPos Position of the file descriptor in fds_.
+   * Helper function for writing a chunk of data comming from a command.
+   * @param cmdId    id of the command;
+   * @param buf      Buffer that contains the data;
+   * @param len      Size of the buffer;
+   * @param isStdout Define if the data comes from the standard output.
    */
-  void removeFd(size_t fdPos);
+  void writeCmdOutput(unsigned int cmdId, char* buf, size_t len, bool isStdout);
+
+  /** Queue of builds. Each new build is pushed to the front. */
+  std::list<BuildInfo> builds_;
 
   /* File descriptor of the server socket. */
   int serverSocket_;
@@ -135,29 +195,30 @@ class StreamServer : public IStreamConsumer {
    * write to this fd in order to wake-up poll. */
   int eventFd_;
 
-  /* List of fds monitored with ppoll. Contains serverSocket_ and eventFd_. */
-  std::vector<pollfd> fds_;
+  /* List of fds monitored with ppoll. */
+  std::list<int> fds_;
 
   /* List of fds for which buf_ has been entirely sent. They are put on hold in
    * this list and will be put back for monitoring each time new data
    * arrives. */
-  std::vector<int> waiting_;
+  std::list<int> waiting_;
 
-  /* Buffer that contains the build output. */
-  std::string buf_;
-
-  /* Mutex to protect accesses to buf_, map_, and waiting_. */
   std::mutex mutex_;
 
   struct ClientInfo {
-    /* Current pointer in buf_. Everything before this pointer has been already
-     * sent. */
+    /* Iterator to the BuildInfo structure corresponding to the build the client
+     * is listening on. Equals to builds_.end() if there are no builds yet. */
+    std::list<BuildInfo>::iterator itBuild;
+    /* Current pointer in itBuild->buf. Everything before this pointer has been
+     * already sent. */
     size_t bufPtr;
-    /* Position of the fd in fds_ or waiting_, depending on isWaiting. */
-    size_t fdPos;
+    /* Iterator to the fd entry in fds_ or waiting_, depending on isWaiting. */
+    std::list<int>::iterator itFd;
     /* Indicate if the fd is waiting for new data. In this case, it is stored in
      * waiting_ and will be moved to fds_ when new data arrives. When a fd is
-     * waiting for new data, bufPtr should be at the end of the buffer. */
+     * waiting for new data, bufPtr should be at the end of the buffer or
+     * itBuild should be equal to builds_.end() (ie not assigned to a build
+     * yet). */
     bool isWaiting;
   };
 
