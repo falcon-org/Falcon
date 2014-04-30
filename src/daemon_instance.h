@@ -12,6 +12,7 @@
 
 #include "FalconService.h"
 #include "graph.h"
+#include "watchman.h"
 #include "graph_sequential_builder.h"
 #include "graphparser.h"
 #include "options.h"

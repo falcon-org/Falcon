@@ -20,7 +20,9 @@
 
 namespace falcon {
 
-StreamServer::StreamServer(unsigned int port) {
+StreamServer::StreamServer() { }
+
+void StreamServer::openPort(unsigned int port) {
   serverSocket_ = socket(AF_INET, SOCK_STREAM, 0);
   if (serverSocket_ < 0) {
     THROW_ERROR(errno, "Failed to open socket");

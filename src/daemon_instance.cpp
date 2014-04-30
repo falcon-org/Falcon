@@ -10,13 +10,17 @@
 #include "graphparser.h"
 #include "server.h"
 
+#include "watchman.h"
+#include "exceptions.h"
+#include "logging.h"
+
 using namespace std::placeholders;
 
 namespace falcon {
 
 DaemonInstance::DaemonInstance(std::unique_ptr<GlobalConfig> gc)
     : buildId_(0), config_(std::move(gc)), isBuilding_(false),
-      streamServer_(config_->getNetworkStreamPort()) {
+      streamServer_() {
 
 }
 
@@ -30,6 +34,15 @@ void DaemonInstance::start() {
     return;
   }
 
+  { /* register to watchman every files */
+    try {
+      WatchmanServer watchmanServer(config_->getWorkingDirectoryPath());
+      watchmanServer.startWatching(graph_.get());
+    } catch (falcon::Exception e) {
+      LOG(fatal) << e.getErrorMessage();
+    }
+  }
+
   /* Start the stream server in a seperate thread. */
   streamServerThread_ = std::thread(&DaemonInstance::streamServerThread, this);
 
@@ -40,6 +53,7 @@ void DaemonInstance::start() {
 }
 
 void DaemonInstance::streamServerThread() {
+  streamServer_.openPort(config_->getNetworkStreamPort());
   streamServer_.run();
 }
 
@@ -106,6 +120,8 @@ void DaemonInstance::getDirtySources(std::set<std::string>& sources) {
 
 void DaemonInstance::setDirty(const std::string& target) {
   lock_guard g(mutex_);
+
+  LOG(debug) << "[DAEMON]: set dirty " << target;
 
   /* Find the target. */
   auto& map = graph_->getNodes();

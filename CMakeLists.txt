@@ -35,6 +35,7 @@ add_executable(falcon
   src/server.cpp
   src/stream_consumer.cpp
   src/stream_server.cpp
+  src/watchman.cpp
   )
 
 include_directories(src

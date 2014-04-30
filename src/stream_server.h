@@ -77,11 +77,12 @@ class StreamServer : public IStreamConsumer {
 
   /**
    * Construct a stream server.
-   * @param port Port on which to listen for connections.
    */
-  explicit StreamServer(unsigned int port);
+  explicit StreamServer();
 
   virtual ~StreamServer();
+
+  void openPort(unsigned int port);
 
   /**
    * Run the stream server. Will block indefinitely.
