@@ -43,6 +43,7 @@ def build(client):
     data = sock.recv(1024)
     if not data: break
     sys.stdout.write(data)
+    sys.stdout.flush()
 
 
 def main(argv):
