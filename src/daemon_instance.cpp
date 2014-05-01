@@ -3,8 +3,6 @@
  * LICENSE : see accompanying LICENSE file for details.
  */
 
-#include <iostream>
-
 #include "daemon_instance.h"
 
 #include "graphparser.h"
@@ -40,6 +38,8 @@ void DaemonInstance::start() {
     return;
   }
 
+  assert(!server_);
+
   { /* register to watchman every files */
     try {
       WatchmanServer watchmanServer(config_->getWorkingDirectoryPath());
@@ -51,12 +51,18 @@ void DaemonInstance::start() {
 
   /* Open the stream server's socket and accept clients in another thread. */
   streamServer_.openPort(config_->getNetworkStreamPort());
-  streamServerThread_ = std::thread(&StreamServer::run, &streamServer_);
+  std::thread streamServerThread = std::thread(&StreamServer::run,
+                                               &streamServer_);
 
-  /* Start the server. This will block until the server terminates. */
-  std::cout << "Starting server..." << std::endl;
-  Server server(this, config_->getNetworkAPIPort());
-  server.start();
+  /* Start the server. This will block until the server shuts down. */
+  LOG(info) << "Starting server...";
+  server_.reset(new Server(this, config_->getNetworkAPIPort()));
+  server_->start();
+
+  /* If we reach here, the server was shut down. */
+  builder_->wait();
+  streamServer_.stop();
+  streamServerThread.join();
 }
 
 /* Commands */
@@ -86,13 +92,11 @@ void DaemonInstance::onBuildCompleted(BuildResult res) {
   lock_guard g(mutex_);
 
   isBuilding_ = false;
-  std::cout << "Build completed" << std::endl;
 
   streamServer_.endBuild();
   ++buildId_;
 
-  /* TODO. */
-  (void)res;
+  LOG(info) << "Build completed. Status: " << toString(res);
 }
 
 FalconStatus::type DaemonInstance::getStatus() {
@@ -103,6 +107,8 @@ FalconStatus::type DaemonInstance::getStatus() {
 
 void DaemonInstance::interruptBuild() {
   lock_guard g(mutex_);
+
+  LOG(info) << "Interrupting build.";
 
   if (builder_) {
     builder_->interrupt();
@@ -123,7 +129,7 @@ void DaemonInstance::getDirtySources(std::set<std::string>& sources) {
 void DaemonInstance::setDirty(const std::string& target) {
   lock_guard g(mutex_);
 
-  LOG(debug) << "[DAEMON]: set dirty " << target;
+  LOG(debug) << target << " is marked dirty.";
 
   /* Find the target. */
   auto& map = graph_->getNodes();
@@ -135,9 +141,15 @@ void DaemonInstance::setDirty(const std::string& target) {
 }
 
 void DaemonInstance::shutdown() {
+  LOG(info) << "Shutting down.";
+
+  /* Interrupt the current build. */
   interruptBuild();
 
-  /* TODO: stop the server. */
+  /* Stop the thrift server. */
+  assert(server_);
+  /* TODO: is this a problem to call stop from a thrift handler? */
+  server_->stop();
 }
 
 } // namespace falcon

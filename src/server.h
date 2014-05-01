@@ -43,6 +43,7 @@ class Server {
  public:
   explicit Server(DaemonInstance* daemon, int port);
   void start();
+  void stop();
 
  private:
   boost::shared_ptr<FalconServiceHandler> handler_;

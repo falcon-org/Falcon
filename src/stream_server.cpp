@@ -20,7 +20,7 @@
 
 namespace falcon {
 
-StreamServer::StreamServer() { }
+StreamServer::StreamServer() : stopped_(false) { }
 
 void StreamServer::openPort(unsigned int port) {
   serverSocket_ = socket(AF_INET, SOCK_STREAM, 0);
@@ -67,8 +67,10 @@ StreamServer::~StreamServer() {
   std::lock_guard<std::mutex> lock(mutex_);
 
   /* Make sure all sockets are closed. */
-  for (auto it = map_.begin(); it != map_.end(); ++it) {
+  for (auto it = map_.begin(); it != map_.end();) {
+    auto next = std::next(it);
     closeClient(*it->second.itFd);
+    it = next;
   }
 
   /* Only the server socket should remain in fds_. Close it. */
@@ -77,10 +79,14 @@ StreamServer::~StreamServer() {
 }
 
 void StreamServer::run() {
-  /* TODO: provide a shutdown mechanism. */
-  while (true) {
+  while (!stopped_) {
     processEvents();
   }
+}
+
+void StreamServer::stop() {
+  stopped_ = true;
+  notifyPoll();
 }
 
 /* Locking is performed by the callers (closeClient, endBuild). */
@@ -328,7 +334,10 @@ void StreamServer::flushWaiting() {
   }
   waiting_.clear();
 
-  /* Notifiy poll that fds_ changed by writting to eventFd_. */
+  notifyPoll();
+}
+
+void StreamServer::notifyPoll() {
   uint64_t u = 1;
   int r = write(eventFd_, &u, sizeof(uint64_t));
   if (r != sizeof(uint64_t)) {

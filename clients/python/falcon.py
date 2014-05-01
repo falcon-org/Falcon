@@ -23,6 +23,8 @@ def help():
   print "falcon.py [OPTION]"
   print "options:"
   print "  -b                         Start a build"
+  print "  -i                         Interrupt the current build"
+  print "  -s                         Shutdown the daemon"
   print "  -g                         Print the list of dirty sources"
   print "  -p                         Print the pid of the daemon"
   print "  -d <file> | --dirty=<file> Mark <file> to be dirty"
@@ -46,7 +48,7 @@ def build(client):
 def main(argv):
 
   try:
-    opts, args = getopt.getopt(argv, "hbgpd:", ["--dirty="])
+    opts, args = getopt.getopt(argv, "hbisgpd:", ["--dirty="])
   except getopt.GetoptError:
     help()
     sys.exit(2)
@@ -72,6 +74,10 @@ def main(argv):
 
     if opt == '-b':
       build(client)
+    elif opt == '-i':
+      client.interruptBuild()
+    elif opt == '-s':
+      client.shutdown()
     elif opt == '-g':
       # Retrieve the dirty sources
       src = client.getDirtySources()

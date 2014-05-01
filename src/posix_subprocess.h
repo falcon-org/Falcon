@@ -8,17 +8,20 @@
 
 #include <list>
 #include <memory>
+#include <mutex>
 #include <poll.h>
 #include <queue>
 #include <string>
 #include <vector>
 #include <unordered_map>
 
+#include "exceptions.h"
 #include "stream_consumer.h"
 
 namespace falcon {
 
 enum class SubProcessExitStatus { UNKNOWN, SUCCEEDED, INTERRUPTED, FAILED };
+std::string toString(SubProcessExitStatus v);
 
 /**
  * Utility class for spawning a posix sub process.
@@ -31,6 +34,9 @@ class PosixSubProcess {
                            IStreamConsumer* consumer);
   /** Start the process. */
   void start();
+
+  /** Interrupt the process by sending the SIGINT signal. */
+  void interrupt();
 
   /**
    * Entry point for the child process.
@@ -82,6 +88,8 @@ class PosixSubProcess {
    * @param buf Buffer to be filled.
    */
   std::string flushStderr();
+
+  pid_t pid() const { return pid_; }
 
   unsigned int id_;
 
@@ -138,16 +146,10 @@ class PosixSubProcessManager {
    */
   PosixSubProcessPtr waitForNext();
 
-  /**
-   * Check if we are ready to read stdout or stderr in the given subprocess.
-   * @param proc being monitored.
-   * @param stdout pollfd for the standard output of the process.
-   * @param stderr pollfd for the error output of the process.
-   * @return true if the process has completed.
-   */
-  bool subProcReadEvents(PosixSubProcess* proc, pollfd stdout, pollfd stderr);
-
   size_t nbRunning() const { return running_.size(); }
+
+  /** Interrupt all the running processes by sending the SIGINT signal. */
+  void interrupt();
 
  private:
 
@@ -188,6 +190,9 @@ class PosixSubProcessManager {
    * information about it, ie the corresponding subprocess, the position of the
    * fd in pollfds_, if it's stdout or stderr. See FdInfo. */
   Map map_;
+
+  /* Protect concurrent access to running_. */
+  std::mutex mutex_;
 };
 
 } // namespace falcon

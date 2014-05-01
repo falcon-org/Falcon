@@ -6,6 +6,7 @@
 #ifndef FALCON_STREAM_SERVER_H_
 #define FALCON_STREAM_SERVER_H_
 
+#include <atomic>
 #include <condition_variable>
 #include <list>
 #include <mutex>
@@ -90,6 +91,11 @@ class StreamServer : public IStreamConsumer {
   void run();
 
   /**
+   * Stop the streaming server.
+   */
+  void stop();
+
+  /**
    * Indicate that a new build has started.
    * Must be called after endBuild was called if it is not the first build.
    */
@@ -154,6 +160,11 @@ class StreamServer : public IStreamConsumer {
    * monitored with poll.
    */
   void flushWaiting();
+
+  /** Write a byte to eventFd_ so that poll is notified and returns.
+   * This is used when we want poll to return because we updated the list of
+   * file descriptors to monitor or because we are shutting down. */
+  void notifyPoll();
 
   void writeBuf(const std::string& str);
   void writeBufEscapeJson(char* buf, size_t len);
@@ -226,6 +237,8 @@ class StreamServer : public IStreamConsumer {
   /* Map a fd to some information about the client, such as the current position
    * in the buffer. */
   std::unordered_map<int, ClientInfo> map_;
+
+  std::atomic_bool stopped_;
 };
 
 } // namespace falcon

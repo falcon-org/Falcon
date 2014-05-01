@@ -11,6 +11,15 @@
 
 namespace falcon {
 
+std::string toString(BuildResult v) {
+  switch (v) {
+    case BuildResult::SUCCEEDED: return "SUCCEEDED";
+    case BuildResult::INTERRUPTED: return "INTERRUPTED";
+    case BuildResult::FAILED: return "FAILED";
+    default: THROW_ERROR(EINVAL, "Unrecognized BuildResult");
+  }
+}
+
 GraphSequentialBuilder::GraphSequentialBuilder(Graph& graph,
     std::string const& workingDirectory, IStreamConsumer* consumer)
     : manager_(consumer)
@@ -51,6 +60,7 @@ void GraphSequentialBuilder::buildThread(NodeSet& targets) {
 
 void GraphSequentialBuilder::interrupt() {
   interrupted_ = true;
+  manager_.interrupt();
 }
 
 void GraphSequentialBuilder::wait() {
@@ -97,18 +107,18 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
     }
   }
 
+  depth_--;
+
   /* Run the command. */
   if (!rule->isPhony()) {
     assert(!rule->getCommand().empty());
-    std::cout << rule->getCommand() << std::endl;
-
     manager_.addProcess(rule->getCommand(), workingDirectory_);
     PosixSubProcessPtr proc = manager_.waitForNext();
 
     auto status = proc->status();
     if (status != SubProcessExitStatus::SUCCEEDED) {
-      LOG(error) << "(" << depth_-- << ") Build failed" << std::endl;
-      return BuildResult::FAILED;
+      return status == SubProcessExitStatus::INTERRUPTED ?
+        BuildResult::INTERRUPTED : BuildResult::FAILED;
     }
 
     NodeArray& outputs = rule->getOutputs();
@@ -121,7 +131,6 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
   target->setState(State::UP_TO_DATE);
   rule->setState(State::UP_TO_DATE);
 
-  depth_--;
   return BuildResult::SUCCEEDED;
 }
 

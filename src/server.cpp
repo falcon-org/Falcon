@@ -63,5 +63,9 @@ void Server::start() {
   server_->serve();
 }
 
+void Server::stop() {
+  server_->stop();
+}
+
 } // namespace falcon
 

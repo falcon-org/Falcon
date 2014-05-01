@@ -16,6 +16,7 @@
 #include "graph_sequential_builder.h"
 #include "graphparser.h"
 #include "options.h"
+#include "server.h"
 #include "stream_server.h"
 
 namespace falcon {
@@ -68,8 +69,10 @@ class DaemonInstance {
   std::mutex mutex_;
   typedef std::lock_guard<std::mutex> lock_guard;
 
-  std::thread streamServerThread_;
   StreamServer streamServer_;
+
+  /* The thrift server. */
+  std::unique_ptr<Server> server_;
 };
 
 } // namespace falcon

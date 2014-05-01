@@ -8,6 +8,7 @@
 #include <cassert>
 #include <fcntl.h>
 #include <poll.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -20,6 +21,16 @@
 
 namespace falcon {
 
+std::string toString(SubProcessExitStatus v) {
+  switch (v) {
+    case SubProcessExitStatus::UNKNOWN: return "UNKNOWN";
+    case SubProcessExitStatus::SUCCEEDED: return "SUCCEEDED";
+    case SubProcessExitStatus::INTERRUPTED: return "INTERRUPTED";
+    case SubProcessExitStatus::FAILED: return "FAILED";
+    default: THROW_ERROR(EINVAL, "Unrecognized SubProcessExitStatus");
+  }
+}
+
 PosixSubProcess::PosixSubProcess(const std::string& command,
                                  const std::string& workingDirectory,
                                  unsigned int id,
@@ -30,6 +41,9 @@ PosixSubProcess::PosixSubProcess(const std::string& command,
   , consumer_(consumer), pid_(-1), status_(SubProcessExitStatus::UNKNOWN) { }
 
 void PosixSubProcess::start() {
+
+  LOG(debug) << "New command: ID = " << id_ << ", CMD = " << command_;
+
   /* Create pipe for stdout redirection. */
   int stdout_pipe[2];
   if (pipe(stdout_pipe) < 0) {
@@ -60,6 +74,13 @@ void PosixSubProcess::start() {
   /* Parent process. */
   close(stdout_pipe[1]);
   close(stderr_pipe[1]);
+}
+
+void PosixSubProcess::interrupt() {
+  assert(pid_ >= 0);
+  if (kill(pid_, SIGINT) < 0) {
+    LOG(error) << "Error, kill: " << strerror(errno);
+  }
 }
 
 void PosixSubProcess::childProcess(int stdout, int stderr) {
@@ -128,19 +149,19 @@ void PosixSubProcess::waitFinished() {
     THROW_ERROR(errno, "waitpid failed");
   }
 
+  status_ = SubProcessExitStatus::FAILED;
   if (WIFEXITED(status)) {
-    int r = WEXITSTATUS(status);
-    if (r == 0) {
+    if (WEXITSTATUS(status) == 0) {
       status_ = SubProcessExitStatus::SUCCEEDED;
-      return;
     }
   } else if (WIFSIGNALED(status)) {
     if (WTERMSIG(status) == SIGINT) {
       status_ = SubProcessExitStatus::INTERRUPTED;
-      return;
     }
   }
-  status_ = SubProcessExitStatus::FAILED;
+
+  LOG(debug) << "Completed command: ID = " << id_ << ", STATUS = "
+    << toString(status_);
 }
 
 PosixSubProcessManager::PosixSubProcessManager(IStreamConsumer *consumer)
@@ -160,7 +181,11 @@ void PosixSubProcessManager::addProcess(const std::string& command,
   int stdout = proc->stdoutFd_;
   int stderr = proc->stderrFd_;
 
-  running_.push_back(std::move(proc));
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    running_.push_back(std::move(proc));
+  }
+
   size_t runningPos = running_.size() - 1;
 
   short events = POLLIN | POLLPRI;
@@ -199,7 +224,16 @@ PosixSubProcessPtr PosixSubProcessManager::waitForNext() {
   PosixSubProcessPtr proc = std::move(finished_.front());
   finished_.pop();
   proc->waitFinished();
+
   return proc;
+}
+
+void PosixSubProcessManager::interrupt() {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  for (auto it = running_.begin(); it != running_.end(); ++it) {
+    (*it)->interrupt();
+  }
 }
 
 void PosixSubProcessManager::readFd(int fd) {
@@ -222,6 +256,8 @@ void PosixSubProcessManager::readFd(int fd) {
       /* Both stdout and stderr fds were closed. The process is complete so we
        * move it from running_ to finished_. */
       finished_.push(std::move(proc));
+
+      std::lock_guard<std::mutex> lock(mutex_);
       running_.erase(running_.begin() + runningPos);
     }
   }

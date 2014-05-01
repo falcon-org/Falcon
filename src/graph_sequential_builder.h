@@ -19,6 +19,7 @@ namespace falcon {
 class StreamConsumer;
 
 enum class BuildResult { SUCCEEDED, INTERRUPTED, FAILED };
+std::string toString(BuildResult v);
 
 typedef std::function<void(BuildResult)> onBuildCompletedFn;
 
