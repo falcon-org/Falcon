@@ -28,7 +28,6 @@ GraphSequentialBuilder::~GraphSequentialBuilder() {
 
 void GraphSequentialBuilder::startBuild(NodeSet& targets,
                                         onBuildCompletedFn cb) {
-  assert(cb);
   interrupted_ = false;
   callback_ = cb;
 
@@ -45,7 +44,9 @@ void GraphSequentialBuilder::buildThread(NodeSet& targets) {
     }
   }
 
-  callback_(res);
+  if (callback_) {
+    callback_(res);
+  }
 }
 
 void GraphSequentialBuilder::interrupt() {

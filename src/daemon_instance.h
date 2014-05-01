@@ -37,11 +37,6 @@ class DaemonInstance {
    */
   void start();
 
-  /**
-   * Entry point of the stream server's thread.
-   */
-  void streamServerThread();
-
   /* Commands.
    * See thrift/FalconService.thrift for a description of these commands. */
 
@@ -55,6 +50,9 @@ class DaemonInstance {
  private:
 
   void onBuildCompleted(BuildResult res);
+
+  /** Wait for the current build to complete. */
+  void waitForBuild();
 
   unsigned int buildId_;
 

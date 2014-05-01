@@ -30,7 +30,13 @@ void DaemonInstance::loadConf(std::unique_ptr<Graph> gp) {
 
 void DaemonInstance::start() {
   if (config_->runSequentialBuild()) {
-    startBuild();
+    StdoutStreamConsumer consumer;
+    GraphSequentialBuilder builder(*graph_.get(),
+                                   config_->getWorkingDirectoryPath(),
+                                   &consumer);
+    builder.startBuild(graph_->getRoots(), false /* No callback. */);
+    builder.wait();
+    /* TODO: get build exit status. */
     return;
   }
 
@@ -43,18 +49,14 @@ void DaemonInstance::start() {
     }
   }
 
-  /* Start the stream server in a seperate thread. */
-  streamServerThread_ = std::thread(&DaemonInstance::streamServerThread, this);
+  /* Open the stream server's socket and accept clients in another thread. */
+  streamServer_.openPort(config_->getNetworkStreamPort());
+  streamServerThread_ = std::thread(&StreamServer::run, &streamServer_);
 
   /* Start the server. This will block until the server terminates. */
   std::cout << "Starting server..." << std::endl;
   Server server(this, config_->getNetworkAPIPort());
   server.start();
-}
-
-void DaemonInstance::streamServerThread() {
-  streamServer_.openPort(config_->getNetworkStreamPort());
-  streamServer_.run();
 }
 
 /* Commands */
