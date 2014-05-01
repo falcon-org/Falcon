@@ -11,7 +11,7 @@ namespace falcon {
 
 TestSuite::TestSuite(std::string title)
   : title_(title), tests_(), passed_(0), failed_(0), errors_()
-{}
+{ }
 
 void TestSuite::add(Test* t) {
   assert(t != nullptr);

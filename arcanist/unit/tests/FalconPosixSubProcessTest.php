@@ -7,6 +7,8 @@ class FalconPosixSubProcessTest extends FalconUnitTestBase {
 
   public function getDependencies() {
     return array(
+      "src/logging.cpp",
+      "src/logging.h",
       "src/tests/posix_subprocess.cpp",
       "src/posix_subprocess.cpp",
       "src/posix_subprocess.h",

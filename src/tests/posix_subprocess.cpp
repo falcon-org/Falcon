@@ -4,6 +4,7 @@
  */
 
 #include "test.h"
+#include "logging.h"
 #include "posix_subprocess.h"
 #include <iostream>
 
@@ -18,6 +19,7 @@ public:
   {}
 
   void prepareTest() {
+    falcon::initlogging(falcon::Log::Level::error);
     psp_ = new falcon::PosixSubProcess(cmd_, ".", 0, &ssc_);
   }
   void runTest() {

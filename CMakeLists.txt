@@ -28,6 +28,7 @@ add_executable(tests/exceptions
   src/tests/exceptions.cpp)
 
 add_executable(tests/posix_subprocess
+  src/logging.cpp
   src/test.cpp
   src/stream_consumer.cpp
   src/posix_subprocess.cpp
