@@ -6,12 +6,13 @@
 #include <iostream>
 #include <cstdlib>
 
-#include "options.h"
 #include "daemon_instance.h"
 #include "exceptions.h"
 #include "logging.h"
+#include "options.h"
+#include "stream_consumer.h"
 
-static void set_options(falcon::Options& opt) {
+static void setOptions(falcon::Options& opt) {
   /* get the default working directory path from then environment variable */
   char const* pwd = NULL;
   pwd = getenv("PWD"); /* No need to free this string */
@@ -52,7 +53,7 @@ static void set_options(falcon::Options& opt) {
                      "define the log level");
 }
 
-static int load_module(std::unique_ptr<falcon::Graph> g, std::string const& s) {
+static int loadModule(std::unique_ptr<falcon::Graph> g, std::string const& s) {
 
   LOG(info) << "load module '" << s << "'";
 
@@ -74,12 +75,41 @@ static int load_module(std::unique_ptr<falcon::Graph> g, std::string const& s) {
   return 0;
 }
 
-int main (int const argc, char const* const* argv)
-{
+/**
+ * Daemonize the current process.
+ */
+static void daemonize(std::unique_ptr<falcon::GlobalConfig> config,
+                      std::unique_ptr<falcon::Graph> graph) {
+
+  /** the double-fork-and-setsid trick establishes a child process that runs in
+   * its own process group with its own session and that won't get killed off
+   * when your shell exits (for example). */
+  if (fork()) { return; }
+  setsid();
+  if (fork()) { _exit(0); }
+
+  falcon::DaemonInstance daemon(std::move(config));
+  daemon.loadConf(std::move(graph));
+  daemon.start();
+}
+
+/** Start a build. */
+static int build(const std::unique_ptr<falcon::GlobalConfig>& config,
+                      const std::unique_ptr<falcon::Graph>& graph) {
+  falcon::StdoutStreamConsumer consumer;
+  falcon::GraphSequentialBuilder builder(*graph,
+                                         config->getWorkingDirectoryPath(),
+                                         &consumer);
+  builder.startBuild(graph->getRoots(), false /* No callback. */);
+  builder.wait();
+  return builder.getResult() == falcon::BuildResult::SUCCEEDED ? 0 : 1;
+}
+
+int main (int const argc, char const* const* argv) {
   falcon::Options opt;
   falcon::initlogging(falcon::Log::Level::error);
 
-  set_options(opt);
+  setOptions(opt);
 
   /* parse the command line options */
   try {
@@ -111,15 +141,16 @@ int main (int const argc, char const* const* argv)
   }
   /* if a module has been requested to execute then load it and return */
   if (opt.isOptionSetted("module")) {
-    return load_module(graphParser.getGraph(),
-                       opt.vm_["module"].as<std::string>());
+    return loadModule(graphParser.getGraph(),
+                      opt.vm_["module"].as<std::string>());
   }
 
-  /* by default, falcon perform a sequential build.
-   * user has to explicitely request to launch it using a daemon */
-  falcon::DaemonInstance daemon(std::move(config));
-  daemon.loadConf(graphParser.getGraph());
-  daemon.start();
+  /* User explicitly requires a build. Do not daemonize.*/
+  if (config->runSequentialBuild()) {
+    return build(config, graphParser.getGraph());
+  }
 
+  /* Start the daemon. */
+  daemonize(std::move(config), std::move(graphParser.getGraph()));
   return 0;
 }

@@ -27,17 +27,7 @@ void DaemonInstance::loadConf(std::unique_ptr<Graph> gp) {
 }
 
 void DaemonInstance::start() {
-  if (config_->runSequentialBuild()) {
-    StdoutStreamConsumer consumer;
-    GraphSequentialBuilder builder(*graph_.get(),
-                                   config_->getWorkingDirectoryPath(),
-                                   &consumer);
-    builder.startBuild(graph_->getRoots(), false /* No callback. */);
-    builder.wait();
-    /* TODO: get build exit status. */
-    return;
-  }
-
+  assert(!config_->runSequentialBuild());
   assert(!server_);
 
   { /* register to watchman every files */

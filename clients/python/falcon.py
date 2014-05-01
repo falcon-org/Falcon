@@ -7,6 +7,8 @@ stream_port = 4343
 import sys
 import getopt
 import socket
+import subprocess
+import time
 
 from optparse import OptionParser
 
@@ -28,6 +30,39 @@ def help():
   print "  -g                         Print the list of dirty sources"
   print "  -p                         Print the pid of the daemon"
   print "  -d <file> | --dirty=<file> Mark <file> to be dirty"
+
+def startDaemon():
+  r = subprocess.call(["falcon", "--log-level", "debug"])
+  return r == 0
+
+def connect():
+  transport = TSocket.TSocket(host, cmd_port)
+  transport = TTransport.TBufferedTransport(transport)
+  protocol = TBinaryProtocol.TBinaryProtocol(transport)
+  client = Client(protocol)
+  transport.open()
+  return (transport, client)
+
+def startAndConnect():
+  # Try to connect first, if we can't, spawn the daemin.
+  try:
+    return connect()
+  except Thrift.TException:
+    print "Starting daemon..."
+    if not startDaemon():
+      print "Could not start falcon daemon."
+      sys.exit(1)
+
+  # We started the daemon, try to connect at regulat intervals.
+  tries = 0
+  while (tries < 40):
+    try:
+      return connect()
+    except Thrift.TException:
+      tries += 1
+      time.sleep(0.05)
+  print "Could not connect to daemon..."
+  sys.exit(1)
 
 def build(client):
   # Start a build
@@ -67,11 +102,7 @@ def main(argv):
   ret = 0
 
   try:
-    transport = TSocket.TSocket(host, cmd_port)
-    transport = TTransport.TBufferedTransport(transport)
-    protocol = TBinaryProtocol.TBinaryProtocol(transport)
-    client = Client(protocol)
-    transport.open()
+    (transport, client) = startAndConnect()
 
     if opt == '-b':
       build(client)

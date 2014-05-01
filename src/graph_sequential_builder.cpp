@@ -13,6 +13,7 @@ namespace falcon {
 
 std::string toString(BuildResult v) {
   switch (v) {
+    case BuildResult::UNKNOWN: return "UNKNOWN";
     case BuildResult::SUCCEEDED: return "SUCCEEDED";
     case BuildResult::INTERRUPTED: return "INTERRUPTED";
     case BuildResult::FAILED: return "FAILED";
@@ -26,7 +27,8 @@ GraphSequentialBuilder::GraphSequentialBuilder(Graph& graph,
     , graph_(graph)
     , workingDirectory_(workingDirectory)
     , interrupted_(false)
-    , depth_(0) { }
+    , depth_(0)
+    , res_(BuildResult::UNKNOWN) { }
 
 GraphSequentialBuilder::~GraphSequentialBuilder() {
   /* Make sure the thread finishes before going out of scope. */
@@ -45,16 +47,16 @@ void GraphSequentialBuilder::startBuild(NodeSet& targets,
 }
 
 void GraphSequentialBuilder::buildThread(NodeSet& targets) {
-  auto res = BuildResult::SUCCEEDED;
+  res_ = BuildResult::SUCCEEDED;
   for (auto it = targets.begin(); it != targets.end(); ++it) {
-    res = buildTarget(*it);
-    if (res != BuildResult::SUCCEEDED) {
+    res_ = buildTarget(*it);
+    if (res_ != BuildResult::SUCCEEDED) {
       break;
     }
   }
 
   if (callback_) {
-    callback_(res);
+    callback_(res_);
   }
 }
 

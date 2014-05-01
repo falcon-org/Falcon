@@ -18,7 +18,7 @@ namespace falcon {
 
 class StreamConsumer;
 
-enum class BuildResult { SUCCEEDED, INTERRUPTED, FAILED };
+enum class BuildResult { UNKNOWN, SUCCEEDED, INTERRUPTED, FAILED };
 std::string toString(BuildResult v);
 
 typedef std::function<void(BuildResult)> onBuildCompletedFn;
@@ -44,6 +44,8 @@ class IGraphBuilder {
    * Wait until the current build completes.
    */
   virtual void wait() = 0;
+
+  virtual BuildResult getResult() const = 0;
 };
 
 class GraphSequentialBuilder : public IGraphBuilder {
@@ -57,6 +59,8 @@ class GraphSequentialBuilder : public IGraphBuilder {
   void interrupt();
 
   void wait();
+
+  BuildResult getResult() const { return res_; }
 
  private:
   /* Entry point of the thread that performs the build. */
@@ -78,6 +82,7 @@ class GraphSequentialBuilder : public IGraphBuilder {
   std::atomic_bool interrupted_;
   /* use to keep the depth when building */
   unsigned depth_;
+  BuildResult res_;
 
   onBuildCompletedFn callback_;
   std::thread thread_;
