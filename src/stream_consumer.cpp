@@ -9,6 +9,14 @@
 
 namespace falcon {
 
+void StdoutStreamConsumer::newCommand(unsigned int cmdId,
+                                      const std::string& cmd) {
+  std::cout << cmd << std::endl;
+}
+
+void StdoutStreamConsumer::endCommand(unsigned int cmdId,
+                                      SubProcessExitStatus status) {}
+
 void StdoutStreamConsumer::writeStdout(unsigned int cmdId,
                                        char* buf, size_t len) {
   std::cout.write(buf, len);
@@ -16,8 +24,14 @@ void StdoutStreamConsumer::writeStdout(unsigned int cmdId,
 
 void StdoutStreamConsumer::writeStderr(unsigned int cmdId,
                                        char* buf, size_t len) {
-  std::cout.write(buf, len);
+  std::cerr.write(buf, len);
 }
+
+void StringStreamConsumer::newCommand(unsigned int cmdId,
+                                      const std::string& cmd) { }
+
+void StringStreamConsumer::endCommand(unsigned int cmdId,
+                                      SubProcessExitStatus status) {}
 
 std::string StringStreamConsumer::getCoutString() const {
   return sscout_.str();

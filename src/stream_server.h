@@ -17,6 +17,8 @@
 
 namespace falcon {
 
+enum class BuildResult;
+
 /**
  * -- A server for streaming the build output to several clients.
  *
@@ -105,7 +107,20 @@ class StreamServer : public IStreamConsumer {
    * Mark the current build as completed. Must be called after newBuild was
    * called.
    */
-  void endBuild();
+  void endBuild(BuildResult result);
+
+  /**
+   * Notify that a new command was started.
+   * @param cmdId Id of the command.
+   * @param cmd   Command being run.
+   */
+  void newCommand(unsigned int cmdId, const std::string& cmd);
+
+  /**
+   * Notify that a command has completed.
+   * @param cmdId  Id of the command.
+   * @param status Exit status of the command. */
+  void endCommand(unsigned int cmdId, SubProcessExitStatus status);
 
   /**
    * Write a buffer coming from the standard output of a command.
@@ -167,7 +182,7 @@ class StreamServer : public IStreamConsumer {
   void notifyPoll();
 
   void writeBuf(const std::string& str);
-  void writeBufEscapeJson(char* buf, size_t len);
+  void writeBufEscapeJson(const char* buf, size_t len);
 
   struct BuildInfo {
     unsigned int id;

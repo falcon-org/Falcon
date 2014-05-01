@@ -16,7 +16,9 @@
 #include "stream_server.h"
 
 #include "exceptions.h"
+#include "graph_sequential_builder.h"
 #include "logging.h"
+#include "posix_subprocess.h"
 
 namespace falcon {
 
@@ -101,7 +103,7 @@ void StreamServer::newBuild(unsigned int buildId) {
 
   /* The previous build might be ready for removal if there are no more clients
    * reading its output. */
-  if (builds_.size() > 0) {
+  if (!builds_.empty()) {
     /* endBuild should have been called prior to calling newBuild. */
     assert(builds_.front().buildCompleted);
     if (builds_.front().refcount == 0) {
@@ -112,24 +114,28 @@ void StreamServer::newBuild(unsigned int buildId) {
   auto info = BuildInfo(buildId);
   builds_.push_front(std::move(info));
 
-  writeBuf("{\n  \"build\":\n  {\n    \"id\": ");
+  writeBuf("{\n"
+           "  \"id\": ");
   std::ostringstream ss;
   ss << buildId;
   writeBuf(ss.str());
-  writeBuf(",\n    \"cmds\":\n      [");
+  writeBuf(",\n"
+           "  \"cmds\": [\n");
   flushWaiting();
 }
 
-void StreamServer::endBuild() {
+void StreamServer::endBuild(BuildResult result) {
   std::lock_guard<std::mutex> lock(mutex_);
 
   /* There should be an ongoing build. */
-  assert(builds_.size() > 0 && !builds_.front().buildCompleted);
+  assert(!builds_.empty() && !builds_.front().buildCompleted);
 
-  writeBuf("      ]\n"
-           "  }\n"
-           "}\n"
-           );
+  writeBuf("\n"
+           "  ],\n"
+           "  \"result\": \"");
+  writeBuf(toString(result));
+  writeBuf("\"\n"
+           "}\n");
   flushWaiting();
 
   builds_.front().buildCompleted = true;
@@ -233,7 +239,7 @@ void StreamServer::createClient(int fd) {
     itFd = fds_.begin();
   }
 
-  if (builds_.size() > 0) {
+  if (!builds_.empty()) {
     builds_.front().refcount++;
   }
 
@@ -308,9 +314,9 @@ void StreamServer::closeClient(int fd) {
 void StreamServer::flushWaiting() {
   /* If we are flushing the waiting list, it means there is some new data
    * and thus we should have an ongoing build. */
-  assert(builds_.size() > 0
+  assert(!builds_.empty()
       && !builds_.front().buildCompleted
-      && builds_.front().buf.size() > 0);
+      && !builds_.front().buf.empty());
 
   for (auto it = waiting_.begin(); it != waiting_.end(); ++it) {
     /* Move the client fd from waiting_ to fds_. */
@@ -346,12 +352,12 @@ void StreamServer::notifyPoll() {
 }
 
 void StreamServer::writeBuf(const std::string& str) {
-  assert(builds_.size() > 0);
+  assert(!builds_.empty());
   builds_.front().buf.append(str);
 }
 
-void StreamServer::writeBufEscapeJson(char* buf, size_t len) {
-  assert(builds_.size() > 0);
+void StreamServer::writeBufEscapeJson(const char* buf, size_t len) {
+  assert(!builds_.empty());
 
   for (size_t i = 0; i < len; i++) {
     char c = buf[i];
@@ -369,14 +375,11 @@ void StreamServer::writeBufEscapeJson(char* buf, size_t len) {
 void StreamServer::writeCmdOutput(unsigned int cmdId, char* buf,
                                   size_t len, bool isStdout) {
   std::lock_guard<std::mutex> lock(mutex_);
-  assert(builds_.size() > 0);
+  assert(!builds_.empty());
+  assert(!builds_.front().firstChunk);
 
-  if (builds_.front().firstChunk) {
-    builds_.front().firstChunk = false;
-  } else {
-    writeBuf(",\n");
-  }
-  writeBuf("        { \"id\": ");
+  writeBuf(",\n");
+  writeBuf("    { \"id\": ");
   std::ostringstream ss;
   ss << cmdId;
   writeBuf(ss.str());
@@ -397,6 +400,45 @@ void StreamServer::writeStdout(unsigned int cmdId, char* buf, size_t len) {
 
 void StreamServer::writeStderr(unsigned int cmdId, char* buf, size_t len) {
   writeCmdOutput(cmdId, buf, len, false);
+}
+
+void StreamServer::newCommand(unsigned int cmdId, const std::string& cmd) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  assert(!builds_.empty());
+
+  if (builds_.front().firstChunk) {
+    builds_.front().firstChunk = false;
+  } else {
+    writeBuf(",\n");
+  }
+
+  writeBuf("    { \"id\": ");
+  std::ostringstream ss;
+  ss << cmdId;
+  writeBuf(ss.str());
+  writeBuf(", \"cmd\": \"");
+  writeBufEscapeJson(&cmd[0], cmd.size());
+  writeBuf("\" }");
+
+  flushWaiting();
+}
+
+void StreamServer::endCommand(unsigned int cmdId, SubProcessExitStatus status) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  assert(!builds_.empty());
+
+  writeBuf(",\n");
+  writeBuf("    { \"id\": ");
+  std::ostringstream ss;
+  ss << cmdId;
+  writeBuf(ss.str());
+  writeBuf(", \"status\": \"");
+  writeBuf(toString(status));
+  writeBuf("\" }");
+
+  flushWaiting();
 }
 
 } // namespace falcon

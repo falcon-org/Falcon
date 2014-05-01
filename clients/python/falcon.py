@@ -41,8 +41,8 @@ def build(client):
   sock.connect(("localhost", stream_port))
   while 1:
     data = sock.recv(1024)
-    print data
     if not data: break
+    sys.stdout.write(data)
 
 
 def main(argv):

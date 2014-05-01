@@ -10,7 +10,7 @@ final class FalconLintEngine extends ArcanistLintEngine {
 
     $text_linter = new ArcanistTextLinter();
     $cpp_linter = new ArcanistCppcheckLinter();
-    $py_linter = new ArcanistCppcheckLinter();
+    $py_linter = new ArcanistPyLintLinter();
     $cpp_license_linter = new FalconCPPLicenseLinter();
 
     foreach ($paths as $key => $path) {

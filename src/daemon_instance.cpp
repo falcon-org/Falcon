@@ -93,7 +93,7 @@ void DaemonInstance::onBuildCompleted(BuildResult res) {
 
   isBuilding_ = false;
 
-  streamServer_.endBuild();
+  streamServer_.endBuild(res);
   ++buildId_;
 
   LOG(info) << "Build completed. Status: " << toString(res);
