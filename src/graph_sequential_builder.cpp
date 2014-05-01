@@ -93,9 +93,6 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
     return BuildResult::SUCCEEDED;
   }
 
-  /* If the target is out of date, the rule should be out of date as well. */
-  assert(rule->getState() == State::OUT_OF_DATE);
-
   /* Build all the necessary inputs. */
   NodeArray& inputs = rule->getInputs();
   for (auto it = inputs.begin(); it != inputs.end(); ++it) {
