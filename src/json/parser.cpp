@@ -183,7 +183,7 @@ JsonVal const* JsonVal::getObject (std::string const& key) const
         if (it->first.compare (key) == 0)
         {
           ret = it->second;
-	}
+        }
       }
     }
     break;
@@ -270,7 +270,6 @@ void JsonParser::parse (unsigned int const line,
     memset (msg, 0, sizeof (msg));
     snprintf (msg, sizeof (msg),
               "Error line (%u) caracter (%u) line (%s)", line, col, s);
-    std::cout << "Error code: " << ret << std::endl;
     THROW_ERROR (EINVAL, msg);
     break;
   }

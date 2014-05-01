@@ -15,20 +15,20 @@
 
 # define THROW_ERROR_CODE(code)                               \
   do {                                                        \
-    throw Exception (__func__, __FILE__, __LINE__, code); \
+    throw falcon::Exception (__func__, __FILE__, __LINE__, code); \
   } while (0)
 
 # define THROW_ERROR(code, message)                                    \
   do {                                                                 \
-    throw Exception (__func__, __FILE__, __LINE__, code, message); \
+    throw falcon::Exception (__func__, __FILE__, __LINE__, code, message); \
   } while (0)
 
 # if defined (DEBUG)
 #  define THROW_FORWARD_ERROR(e)                         \
     do {                                                 \
-      throw Exception (e.getErrorMessage (),         \
-                           __func__, __FILE__, __LINE__, \
-                           e.getCode ());                \
+      throw falcon::Exception (e.getErrorMessage (),         \
+                               __func__, __FILE__, __LINE__, \
+                               e.getCode ());                \
     } while (0)
 # else
 #  define THROW_FORWARD_ERROR(e)                         \

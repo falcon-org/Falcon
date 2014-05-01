@@ -17,6 +17,25 @@ include (cmake/GenClients.cmake)
 buildThriftCpp(thrift/FalconService.thrift)
 genPythonClient()
 
+add_executable(tests/jsonparser
+  src/test.cpp
+  src/json/json.c
+  src/json/parser.cpp
+  src/json/tests/parser.cpp)
+
+add_executable(tests/exceptions
+  src/test.cpp
+  src/tests/exceptions.cpp)
+
+add_executable(tests/posix_subprocess
+  src/test.cpp
+  src/stream_consumer.cpp
+  src/posix_subprocess.cpp
+  src/tests/posix_subprocess.cpp)
+target_link_libraries(tests/posix_subprocess
+  ${Boost_LOG_LIBRARY}
+  pthread)
+
 add_executable(falcon
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService.cpp
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService_types.cpp

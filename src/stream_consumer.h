@@ -7,6 +7,7 @@
 #define FALCON_STREAM_CONSUMER_H_
 
 #include <cstring>
+#include <sstream>
 
 namespace falcon {
 
@@ -25,6 +26,19 @@ class StdoutStreamConsumer : public IStreamConsumer {
   virtual ~StdoutStreamConsumer() {}
   virtual void writeStdout(unsigned int cmdId, char* buf, size_t len);
   virtual void writeStderr(unsigned int cmdId, char* buf, size_t len);
+};
+
+class StringStreamConsumer : public IStreamConsumer {
+public:
+  virtual ~StringStreamConsumer() {}
+  virtual void writeStdout(unsigned int cmdId, char* buf, size_t len);
+  virtual void writeStderr(unsigned int cmdId, char* buf, size_t len);
+
+  std::string getCoutString() const;
+  std::string getCerrString() const;
+private:
+  std::stringstream sscout_;
+  std::stringstream sscerr_;
 };
 
 } // namespace falcon

@@ -12,6 +12,7 @@
 #include <queue>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "stream_consumer.h"
 

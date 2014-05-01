@@ -1,5 +1,9 @@
 {
   "project.name" : "Falcon",
   "phabricator.uri" : "http://91.121.199.76",
-  "lint.engine" : "PhutilLintEngine"
+  "lint.engine" : "FalconLintEngine",
+  "unit.engine" : "FalconUnitTestEngine",
+  "load" : [
+    "arcanist"
+  ]
 }

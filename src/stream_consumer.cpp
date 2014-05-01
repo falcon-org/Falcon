@@ -19,4 +19,22 @@ void StdoutStreamConsumer::writeStderr(unsigned int cmdId,
   std::cout.write(buf, len);
 }
 
+std::string StringStreamConsumer::getCoutString() const {
+  return sscout_.str();
+}
+std::string StringStreamConsumer::getCerrString() const {
+  return sscerr_.str();
+}
+
+void StringStreamConsumer::writeStdout(unsigned int cmdId,
+                                       char* buf, size_t len) {
+  sscout_.write(buf, len);
+}
+
+void StringStreamConsumer::writeStderr(unsigned int cmdId,
+                                       char* buf, size_t len) {
+  sscerr_.write(buf, len);
+}
+
+
 } // namespace falcon
