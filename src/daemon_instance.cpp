@@ -60,7 +60,9 @@ void DaemonInstance::start() {
   server_->start();
 
   /* If we reach here, the server was shut down. */
-  builder_->wait();
+  if (builder_) {
+    builder_->wait();
+  }
   streamServer_.stop();
   streamServerThread.join();
 }
