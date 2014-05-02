@@ -48,6 +48,10 @@ void FalconServiceHandler::shutdown() {
   daemon_->shutdown();
 }
 
+void FalconServiceHandler::getGraphviz(std::string& str) {
+  daemon_->getGraphviz(str);
+}
+
 Server::Server(DaemonInstance* daemon, int port) {
   handler_.reset(new FalconServiceHandler(daemon));
   processor_.reset(new FalconServiceProcessor(handler_));

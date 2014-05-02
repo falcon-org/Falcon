@@ -29,6 +29,7 @@ def help():
   print "  -s                         Shutdown the daemon"
   print "  -g                         Print the list of dirty sources"
   print "  -p                         Print the pid of the daemon"
+  print "  -v                         Print the graph in graphviz format"
   print "  -d <file> | --dirty=<file> Mark <file> to be dirty"
 
 def startDaemon():
@@ -84,7 +85,7 @@ def build(client):
 def main(argv):
 
   try:
-    opts, args = getopt.getopt(argv, "hbisgpd:", ["--dirty="])
+    opts, args = getopt.getopt(argv, "hbisgpvd:", ["--dirty="])
   except getopt.GetoptError:
     help()
     sys.exit(2)
@@ -118,6 +119,9 @@ def main(argv):
       # Retrieve the pid of the daemon.
       pid = client.getPid()
       print pid
+    elif opt == '-v':
+      data = client.getGraphviz()
+      print data
     elif opt in ("-d", "--dirty"):
       if arg == "":
         print "Error: no source file provided"

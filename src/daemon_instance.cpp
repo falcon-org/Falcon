@@ -144,4 +144,14 @@ void DaemonInstance::shutdown() {
   server_->stop();
 }
 
+void DaemonInstance::getGraphviz(std::string& str) {
+  lock_guard g(mutex_);
+
+  assert(graph_);
+  std::ostringstream oss;
+  falcon::GraphGraphizPrinter ggp(oss);
+  graph_->accept(ggp);
+  str = oss.str();
+}
+
 } // namespace falcon

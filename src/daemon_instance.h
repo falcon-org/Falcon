@@ -47,6 +47,7 @@ class DaemonInstance {
   void setDirty(const std::string& target);
   void interruptBuild();
   void shutdown();
+  void getGraphviz(std::string& str);
 
  private:
 

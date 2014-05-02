@@ -34,6 +34,7 @@ class FalconServiceHandler : virtual public FalconServiceIf {
   void setDirty(const std::string& target);
   void interruptBuild();
   void shutdown();
+  void getGraphviz(std::string& str);
 
  private:
   DaemonInstance* daemon_;

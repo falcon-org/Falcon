@@ -264,13 +264,13 @@ private:
   /* Rule design options */
   /* edge color: */
   std::string ruleColorOutOfDate_ = "red";
-  std::string ruleColorUpToDate_ = "green";
+  std::string ruleColorUpToDate_ = "black";
 
   /* ******************* */
   /* Node design options */
   /* Border color: */
   std::string nodeColorOutOfDate_ = "red";
-  std::string nodeColorUpToDate_ = "green";
+  std::string nodeColorUpToDate_ = "black";
   /* Fill color: */
   std::string nodeFillColorOutOfDate_ = "white";
   std::string nodeFillColorUpToDate_ = "white";

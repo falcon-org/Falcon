@@ -31,4 +31,7 @@ service FalconService {
 
   /* Stop the daemon. Will interrupt the current build, if any. */
   void shutdown()
+
+  /* Return a graphviz representation of the graph. */
+  string getGraphviz()
 }

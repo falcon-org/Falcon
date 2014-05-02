@@ -64,8 +64,7 @@ void GraphGraphizPrinter::visit(Graph& g) {
 
   os_ << "digraph Falcon {" << std::endl;
   os_ << "rankdir=\"LR\"" << std::endl;
-  os_ << "node [fontsize=10, shape=box, height=0.25, style=filled]" << std::endl;
-  os_ << "edge [fontsize=10]" << std::endl;
+  os_ << "edge [fontsize=10, arrowhead=vee]" << std::endl;
 
   /* print all the Nodes */
   for (auto it = nodeMap.cbegin(); it != nodeMap.cend(); it++) {
@@ -88,6 +87,7 @@ void GraphGraphizPrinter::visit(Node& n) {
                         ? nodeFillColorOutOfDate_
                         : nodeFillColorUpToDate_;
 
+  os_ << "node [fontsize=10, shape=box, height=0.25, style=filled]" << std::endl;
   os_ << "\"" << &n << "\" [label=\"" << n.getPath()
                     << "\"  color=\"" << color
                     << "\"  fillcolor=\"" << fillColor
@@ -101,13 +101,25 @@ void GraphGraphizPrinter::visit(Rule& r) {
   std::string color = (r.getState() == State::OUT_OF_DATE)
                     ? ruleColorOutOfDate_
                     : ruleColorUpToDate_;
+  std::string fillColor = (r.getState() == State::OUT_OF_DATE)
+                        ? nodeFillColorOutOfDate_
+                        : nodeFillColorUpToDate_;
+
+  os_ << "node [fontsize=10, shape=point, height=0.25, style=filled]"
+    << std::endl;
+  os_ << "\"" << &r << "\" [label=\"" << "rule"
+                    << "\"  color=\"" << color
+                    << "\"  fillcolor=\"" << fillColor
+                    << "\" ]" << std::endl;
 
   for (auto iit = inputs.cbegin(); iit != inputs.cend(); iit++) {
-    for (auto oit = outputs.cbegin(); oit != outputs.cend(); oit++) {
-      os_ << "\"" << (*iit) << "\" ->" << "\"" << (*oit)
+      os_ << "\"" << (*iit) << "\" ->" << "\"" << &r
           << "\" [ color=\"" << color << "\"]" << std::endl;
-    }
+  }
 
+  for (auto oit = outputs.cbegin(); oit != outputs.cend(); oit++) {
+      os_ << "\"" << &r << "\" ->" << "\"" << (*oit)
+          << "\" [ color=\"" << color << "\"]" << std::endl;
   }
 }
 
