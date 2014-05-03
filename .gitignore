@@ -1,0 +1,11 @@
+UnitTests/
+arcanist/.phutil_module_cache
+
+*.pyc
+*.o
+*.a
+*.so
+*.la
+
+*~
+*.swp
