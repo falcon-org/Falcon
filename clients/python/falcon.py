@@ -118,6 +118,24 @@ def setDirty(client, transport, targets):
   transport.close()
   return ret
 
+def getInputsOf(client, target):
+  try:
+    data = client.getInputsOf(target)
+    print json.dumps(list(data))
+  except TargetNotFound:
+    print "target", target, "not found"
+    return False
+  return True
+
+def getOutputsOf(client, target):
+  try:
+    data = client.getOutputsOf(target)
+    print json.dumps(list(data))
+  except TargetNotFound:
+    print "target", target, "not found"
+    return False
+  return True
+
 def main(argv):
   parser = argparse.ArgumentParser(description="Falcon client.")
 
@@ -128,7 +146,7 @@ def main(argv):
   group.add_argument('--stop', action='store_true',
       help="Stop the falcon daemon. "
            "Has no effect if the daemon is not running."
-           "Will interrupt the current build, if any.")
+           " Will interrupt the current build, if any.")
   group.add_argument('--restart', action='store_true',
       help="Restart the falcon daemon. "
            "Will start the daemon if it was not running.")
@@ -146,6 +164,15 @@ def main(argv):
       help="Mark the given targets dirty.")
   group.add_argument('--get-dirty-sources', action='store_true',
       help="Print a json array containing the list of dirty sources.")
+  group.add_argument('--get-dirty-targets', action='store_true',
+      help="Print a json array containing the list of dirty targets,"
+      " including the dirty sources.")
+  group.add_argument('--get-inputs-of', metavar='TARGET', nargs=1,
+      help="Print a json array containing the list of inputs needed to build"
+      " the given target.")
+  group.add_argument('--get-outputs-of', metavar='TARGET', nargs=1,
+      help="Print a json array containing the list of outputs for which the"
+      " the given target is an input.")
   group.add_argument('-p', '--pid', action='store_true',
       help="Print the pid of the daemon")
 
@@ -177,16 +204,28 @@ def main(argv):
   if not client:
     (transport, client) = startAndConnect()
 
+  ret = 0
+
   if args.build != None:
     # TODO: pass the array of targets to build.
     build(client)
   elif args.get_dirty_sources:
     data = client.getDirtySources()
     print json.dumps(list(data))
+  elif args.get_dirty_targets:
+    data = client.getDirtyTargets()
+    print json.dumps(list(data))
+  elif args.get_inputs_of != None:
+    if not getInputsOf(client, args.get_inputs_of[0]):
+      ret = 1
+  elif args.get_outputs_of != None:
+    if not getOutputsOf(client, args.get_outputs_of[0]):
+      ret = 1
   elif args.get_graphviz:
     print client.getGraphviz()
 
   transport.close()
+  sys.exit(ret)
 
 if __name__ == "__main__":
   main(sys.argv[1:])

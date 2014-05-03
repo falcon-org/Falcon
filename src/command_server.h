@@ -31,6 +31,9 @@ class FalconServiceHandler : virtual public FalconServiceIf {
   StartBuildResult::type startBuild();
   FalconStatus::type getStatus();
   void getDirtySources(std::set<std::basic_string<char>>& sources);
+  void getDirtyTargets(std::set<std::basic_string<char>>& targets);
+  void getInputsOf(std::set<std::string>& inputs, const std::string& target);
+  void getOutputsOf(std::set<std::string>& outputs, const std::string& target);
   void setDirty(const std::string& target);
   void interruptBuild();
   void shutdown();

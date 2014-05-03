@@ -40,6 +40,20 @@ void FalconServiceHandler::getDirtySources(std::set<std::string>& sources) {
   daemon_->getDirtySources(sources);
 }
 
+void FalconServiceHandler::getDirtyTargets(std::set<std::string>& targets) {
+  daemon_->getDirtyTargets(targets);
+}
+
+void FalconServiceHandler::getInputsOf(std::set<std::string>& inputs,
+                                       const std::string& target) {
+  daemon_->getInputsOf(inputs, target);
+}
+
+void FalconServiceHandler::getOutputsOf(std::set<std::string>& outputs,
+                                        const std::string& target) {
+  daemon_->getOutputsOf(outputs, target);
+}
+
 void FalconServiceHandler::setDirty(const std::string& target) {
   daemon_->setDirty(target);
 }

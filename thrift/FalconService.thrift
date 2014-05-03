@@ -26,6 +26,15 @@ service FalconService {
   /* Retrieve the list of source files that are dirty. */
   set<string> getDirtySources()
 
+  /* Retrieve the list of targets that are dirty, including source files. */
+  set<string> getDirtyTargets()
+
+  /* Retrieve the list of targets that are inputs of the given target. */
+  set<string> getInputsOf(1:string target) throws(1:TargetNotFound e)
+
+  /* Retrieve the list of targets that are outputs of the given target. */
+  set<string> getOutputsOf(1:string target) throws(1:TargetNotFound e)
+
   /* Mark the given target as dirty. */
   void setDirty(1:string target) throws(1:TargetNotFound e)
 

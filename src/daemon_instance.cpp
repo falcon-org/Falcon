@@ -121,6 +121,53 @@ void DaemonInstance::getDirtySources(std::set<std::string>& sources) {
   }
 }
 
+void DaemonInstance::getDirtyTargets(std::set<std::string>& targets) {
+  lock_guard g(mutex_);
+
+  NodeMap& nodes = graph_->getNodes();
+  for (auto it = nodes.begin(); it != nodes.end(); ++it) {
+    if (it->second->getState() == State::OUT_OF_DATE) {
+      targets.insert(it->second->getPath());
+    }
+  }
+}
+
+void DaemonInstance::getInputsOf(std::set<std::string>& inputs,
+                                 const std::string& target) {
+  lock_guard g(mutex_);
+
+  auto it = graph_->getNodes().find(target);
+  if (it == graph_->getNodes().end()) {
+    throw TargetNotFound();
+  }
+
+  Rule* rule = it->second->getChild();
+  if (rule != nullptr) {
+    auto ins = rule->getInputs();
+    for (auto itInput = ins.begin(); itInput != ins.end(); ++itInput) {
+      inputs.insert((*itInput)->getPath());
+    }
+  }
+}
+
+void DaemonInstance::getOutputsOf(std::set<std::string>& outputs,
+                                  const std::string& target) {
+  lock_guard g(mutex_);
+
+  auto it = graph_->getNodes().find(target);
+  if (it == graph_->getNodes().end()) {
+    throw TargetNotFound();
+  }
+
+  auto rules = it->second->getParents();
+  for (auto itRule = rules.begin(); itRule != rules.end(); ++itRule){
+    auto outs = (*itRule)->getOutputs();
+    for (auto itOutput = outs.begin(); itOutput != outs.end(); ++itOutput) {
+      outputs.insert((*itOutput)->getPath());
+    }
+  }
+}
+
 void DaemonInstance::setDirty(const std::string& target) {
   lock_guard g(mutex_);
 
