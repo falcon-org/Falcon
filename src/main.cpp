@@ -8,6 +8,8 @@
 
 #include "daemon_instance.h"
 #include "exceptions.h"
+#include "graph.h"
+#include "graph_consistency_checker.h"
 #include "logging.h"
 #include "options.h"
 #include "stream_consumer.h"
@@ -99,11 +101,12 @@ static int build(const std::unique_ptr<falcon::GlobalConfig>& config,
   falcon::StdoutStreamConsumer consumer;
   std::mutex mutex;
   falcon::GraphSequentialBuilder builder(*graph, mutex,
-                                         nullptr /* WatchmanClient */,
+                                         nullptr /* watchmanClient */,
                                          config->getWorkingDirectoryPath(),
                                          &consumer);
   builder.startBuild(graph->getRoots(), false /* No callback. */);
   builder.wait();
+  FALCON_CHECK_GRAPH_CONSISTENCY(graph.get(), mutex);
   return builder.getResult() == falcon::BuildResult::SUCCEEDED ? 0 : 1;
 }
 
@@ -141,6 +144,7 @@ int main (int const argc, char const* const* argv) {
     /* update the state of every nodes and rules */
     graphParser.getGraph()->accept(gtsu);
   }
+
   /* if a module has been requested to execute then load it and return */
   if (opt.isOptionSetted("module")) {
     return loadModule(graphParser.getGraph(),

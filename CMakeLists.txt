@@ -58,6 +58,7 @@ add_executable(falcon
   src/watchman.cpp
   src/depfile.cpp
   src/depfile_parser.cpp
+  src/graph_consistency_checker.cpp
   )
 
 include_directories(src

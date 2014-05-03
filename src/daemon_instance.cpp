@@ -8,6 +8,7 @@
 #include "daemon_instance.h"
 
 #include "exceptions.h"
+#include "graph_consistency_checker.h"
 #include "graphparser.h"
 #include "logging.h"
 #include "server.h"
@@ -67,6 +68,8 @@ StartBuildResult::type DaemonInstance::startBuild() {
      return StartBuildResult::BUSY;
   }
 
+  FALCON_CHECK_GRAPH_CONSISTENCY(graph_.get(), mutex_);
+
   isBuilding_.store(true, std::memory_order_release);
 
   streamServer_.newBuild(buildId_);
@@ -87,6 +90,8 @@ StartBuildResult::type DaemonInstance::startBuild() {
 void DaemonInstance::onBuildCompleted(BuildResult res) {
   assert(isBuilding_);
   streamServer_.endBuild(res);
+
+  FALCON_CHECK_GRAPH_CONSISTENCY(graph_.get(), mutex_);
 
   ++buildId_;
   isBuilding_.store(false, std::memory_order_release);
