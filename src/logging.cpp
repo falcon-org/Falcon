@@ -17,9 +17,7 @@ void defaultlogging(std::string const& programName,
     /* Request GLOG to log everything on stderr */
     FLAGS_logtostderr = 1;
   } else {
-    /* If GLOG_log_dir has been specified, at least, we would like to see ERROR
-     * and FATAL logs to stderr: */
-    FLAGS_stderrthreshold = lvl;
+    FLAGS_stderrthreshold = 3;
     FLAGS_log_dir = logDir.c_str();
   }
 

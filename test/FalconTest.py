@@ -10,10 +10,15 @@ class FalconTest:
     self._test_folder = os.path.dirname(os.path.realpath(__file__))
     self._falcon_client = self._test_folder + "/../clients/python/falcon.py"
     self._test_dir = tempfile.mkdtemp()
+    self._falcon_log_dir = self._test_dir + "/logs"
+    self._falcon_log_level = "0"
     self._error_log = self._test_dir + "/error.log"
     os.chdir(self._test_dir)
-    # Make sure the daemon is shut down
-    self.shutdown()
+    os.mkdir(self._falcon_log_dir)
+
+    # Make sure the daemon is shut down. Do not display any error.
+    FNULL = open(os.devnull, 'w')
+    subprocess.call([self._falcon_client, "--stop"], stdout=FNULL, stderr=FNULL)
 
   def get_working_directory(self):
     return self._test_dir
@@ -32,11 +37,13 @@ class FalconTest:
 
   def restart(self):
     """Start the falcon daemon"""
-    subprocess.call([self._falcon_client, "--restart"])
+    subprocess.call([self._falcon_client, "--restart",
+                      self._falcon_log_level, self._falcon_log_dir])
 
   def start(self):
     """Start the falcon daemon"""
-    subprocess.call([self._falcon_client, "--start"])
+    subprocess.call([self._falcon_client, "--start",
+                      self._falcon_log_level, self._falcon_log_dir])
 
   def build(self):
     """Trigger a build"""
