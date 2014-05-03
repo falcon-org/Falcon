@@ -47,7 +47,10 @@ class FalconTest:
 
   def build(self):
     """Trigger a build"""
-    subprocess.call([self._falcon_client, "--build"])
+    # TODO: for now we pipe the output to stdout. We will parse the output
+    # later.
+    FNULL = open(os.devnull, 'w')
+    subprocess.call([self._falcon_client, "--build"], stdout=FNULL)
 
   def write_file(self, name, content):
     """Write to a file"""

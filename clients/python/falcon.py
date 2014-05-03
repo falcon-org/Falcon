@@ -26,7 +26,8 @@ from ttypes import *
 
 def spawnDaemon(log_level, log_dir):
   """Start the falcon daemon in a sub process"""
-  p = ["falcon", "--log-level", log_level, "--log-dir", log_dir]
+  p = ["falcon", "--log-level", log_level, "--log-dir", log_dir,
+      "--working-directory", os.getcwd()]
   FNULL = open(os.devnull, 'w')
   r = subprocess.call(p, stdin=FNULL, stdout=FNULL, stderr=FNULL)
   return r == 0
