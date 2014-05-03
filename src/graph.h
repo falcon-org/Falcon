@@ -34,6 +34,7 @@ typedef std::vector<Node*>                     NodeArray;
 typedef std::set<Node*>                        NodeSet;
 typedef std::unordered_map<std::string, Node*> NodeMap;
 typedef std::vector<Rule*>                     RuleArray;
+typedef std::set<Rule*>                        RuleSet;
 typedef unsigned int                           TimeStamp;
 
 /** Define the state of a node or rule. */
@@ -65,6 +66,7 @@ class Node {
   /* State management */
   State const& getState() const;
   State& getState();
+  bool isDirty() const;
   void setState(State state);
   /* Set the state as Dirty and mark all the dependencies as dirty too */
   void markDirty();
@@ -109,31 +111,29 @@ class Rule {
    * Construct a rule.
    * @param inputs  Inputs of the rule.
    * @param outputs Outputs of the rule.
-   * @param cmd     Command to be executed in order to generate the outputs.
    */
-  explicit Rule(const NodeArray& inputs, const NodeArray& outputs,
-                const std::string& cmd);
+  explicit Rule(const NodeArray& inputs, const NodeArray& outputs);
 
-  /**
-   * Construct a phony rule.
-   * @param inputs  Inputs of the rule.
-   * @param output  Output of the rule. For a phony rule, there is only one
-   *                output.
-   */
-  explicit Rule(const NodeArray& inputs, Node* output);
-
+  void addInput(Node* node);
   const NodeArray& getInputs() const;
   NodeArray& getInputs();
+  bool isInput(const Node* node) const;
 
   const NodeArray& getOutputs() const;
   NodeArray& getOutputs();
 
   bool isPhony() const;
   const std::string& getCommand() const;
+  void setCommand(const std::string& cmd);
+
+  const bool hasDepfile() const;
+  const std::string& getDepfile() const;
+  void setDepfile(const std::string& depfile);
 
   /* State management */
   State const& getState() const;
   State& getState();
+  bool isDirty() const;
   void setState(State state);
   /* Set the state as dirty and mark all the dependencies as dirty too */
   void markDirty();
@@ -145,13 +145,13 @@ class Rule {
   NodeArray inputs_;
   NodeArray outputs_;
 
-  /* Command to execute in order to generate the outputs. All the inputs must be
-   * up-to-date prior to executing the command.
+  /** Command to execute in order to generate the outputs. All the inputs must
+   * be up-to-date prior to executing the command.
    * Empty string is this is a phony rule. */
   std::string command_;
 
-  /* Set to true if this is a phony rule. A phony rule has no command. */
-  bool isPhony_;
+  /** Path to the file that contains the implicit dependenciess. */
+  std::string depfile_;
 
   /* Set to UP_TO_DATE if all outputs are UP_TO_DATE, OUT_OF_DATE otherwise. */
   State state_;
@@ -167,6 +167,8 @@ class Graph {
  public:
   Graph(const NodeSet& roots, const NodeSet& sources, const NodeMap& nodes,
         const RuleArray& rules);
+
+  void addNode(Node* node);
 
   const NodeSet& getRoots() const;
   NodeSet& getRoots();

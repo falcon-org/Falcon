@@ -3,24 +3,26 @@
  * LICENSE : see accompanying LICENSE file for details.
  */
 
+#include <sstream>
+
 #include "daemon_instance.h"
 
-#include "graphparser.h"
-#include "server.h"
-
-#include "watchman.h"
 #include "exceptions.h"
+#include "graphparser.h"
 #include "logging.h"
+#include "server.h"
+#include "watchman.h"
 
 using namespace std::placeholders;
 
 namespace falcon {
 
 DaemonInstance::DaemonInstance(std::unique_ptr<GlobalConfig> gc)
-    : buildId_(0), config_(std::move(gc)), isBuilding_(false),
-      streamServer_() {
-
-}
+    : buildId_(0)
+    , config_(std::move(gc))
+    , watchmanClient_(config_->getWorkingDirectoryPath())
+    , isBuilding_(false)
+    , streamServer_() { }
 
 void DaemonInstance::loadConf(std::unique_ptr<Graph> gp) {
   graph_ = std::move(gp);
@@ -29,14 +31,13 @@ void DaemonInstance::loadConf(std::unique_ptr<Graph> gp) {
 void DaemonInstance::start() {
   assert(!config_->runSequentialBuild());
   assert(!server_);
+  assert(graph_);
 
-  { /* register to watchman every files */
-    try {
-      WatchmanServer watchmanServer(config_->getWorkingDirectoryPath());
-      watchmanServer.startWatching(graph_.get());
-    } catch (falcon::Exception e) {
-      LOG(fatal) << e.getErrorMessage();
-    }
+  /* Register all source files to watchman. */
+  try {
+    watchmanClient_.watchGraph(*graph_);
+  } catch (falcon::Exception& e) {
+    LOG(fatal) << e.getErrorMessage();
   }
 
   /* Open the stream server's socket and accept clients in another thread. */
@@ -60,20 +61,23 @@ void DaemonInstance::start() {
 /* Commands */
 
 StartBuildResult::type DaemonInstance::startBuild() {
-  lock_guard g(mutex_);
+  assert(graph_);
 
-  if (isBuilding_) {
+  if (isBuilding_.load(std::memory_order_acquire)) {
      return StartBuildResult::BUSY;
   }
 
-  isBuilding_ = true;
+  isBuilding_.store(true, std::memory_order_release);
 
   streamServer_.newBuild(buildId_);
 
   builder_.reset(
-      new GraphSequentialBuilder(*graph_.get(),
+      new GraphSequentialBuilder(*graph_, mutex_,
+                                 &watchmanClient_,
                                  config_->getWorkingDirectoryPath(),
                                  &streamServer_));
+
+  /* Build all the roots by default. */
   builder_->startBuild(graph_->getRoots(),
       std::bind(&DaemonInstance::onBuildCompleted, this, _1));
 
@@ -81,27 +85,21 @@ StartBuildResult::type DaemonInstance::startBuild() {
 }
 
 void DaemonInstance::onBuildCompleted(BuildResult res) {
-  lock_guard g(mutex_);
-
-  isBuilding_ = false;
-
+  assert(isBuilding_);
   streamServer_.endBuild(res);
+
   ++buildId_;
+  isBuilding_.store(false, std::memory_order_release);
 
   LOG(info) << "Build completed. Status: " << toString(res);
 }
 
 FalconStatus::type DaemonInstance::getStatus() {
-  lock_guard g(mutex_);
-
   return isBuilding_ ? FalconStatus::BUILDING : FalconStatus::IDLE;
 }
 
 void DaemonInstance::interruptBuild() {
-  lock_guard g(mutex_);
-
   LOG(info) << "Interrupting build.";
-
   if (builder_) {
     builder_->interrupt();
   }
@@ -120,8 +118,6 @@ void DaemonInstance::getDirtySources(std::set<std::string>& sources) {
 
 void DaemonInstance::setDirty(const std::string& target) {
   lock_guard g(mutex_);
-
-  LOG(debug) << target << " is marked dirty.";
 
   /* Find the target. */
   auto& map = graph_->getNodes();

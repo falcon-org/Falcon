@@ -10,7 +10,7 @@
 
 namespace falcon {
 
-/* Watchman Server visitor:
+/* Watchman Client:
  *
  * Start a watchman dedicated to the working directory.
  * (create a UNIX socket in the working directory, so the instance of watchman
@@ -20,27 +20,31 @@ namespace falcon {
  *
  * Works in two times:
  *  -1- Construction: instantiate watchman (if needed) and open the socket
- *  -2- register every source file (Visitor method)
+ *  -2- register source files.
  *
  * The actual implementation required watchman to trigger a command to notify
  * Falcon a file changes (actualy, the Falcon client python script with the
  * set dirty option)
  */
 
-class WatchmanServer : public GraphVisitor {
+class WatchmanClient {
 public:
-  WatchmanServer(std::string const& workingDirectory);
-  ~WatchmanServer();
+  WatchmanClient(std::string const& workingDirectory);
+  ~WatchmanClient();
 
-  /* will to the same as "g->accept(watchmanServerInstance);" */
-  void startWatching(Graph* g);
+  /** Watch all the leaves of the given graph.
+   * @param g Graph to be watched. */
+  void watchGraph(const Graph& g);
 
-  /* Visitor methods (DO NOT USE, prefer use of startWatching function) */
-  virtual void visit(Graph& g);
-  virtual void visit(Node& g);
-  virtual void visit(Rule& g);
+  /** Watch a node.
+   * @param n node to be watched. */
+  void watchNode(const Node& n);
 
 private:
+
+  /* Connect to watchman, start it if needed. */
+  void connectToWatchman();
+
   /* Try to launch watchman with the watchman options (see below) */
   void startWatchmanInstance();
   /* Try to open the UNIX socket to watchman */
@@ -50,6 +54,8 @@ private:
   void readAnswer();
 
   std::string workingDirectory_;
+
+  bool isConnected_;
   int watchmanSocket_; /* UNIX socket */
 
   /* Watchman option: */

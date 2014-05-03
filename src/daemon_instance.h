@@ -6,6 +6,7 @@
 #ifndef FALCON_DAEMON_INSTANCE_H_
 #define FALCON_DAEMON_INSTANCE_H_
 
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -38,6 +39,8 @@ class DaemonInstance {
    */
   void start();
 
+  Graph& getGraph() const { assert(graph_); return *graph_; }
+
   /* Commands.
    * See thrift/FalconService.thrift for a description of these commands. */
 
@@ -64,9 +67,11 @@ class DaemonInstance {
 
   std::unique_ptr<IGraphBuilder> builder_;
 
-  bool isBuilding_;
+  WatchmanClient watchmanClient_;
 
-  /* Mutex to protect concurrent access to graph_ and isBuilding_. */
+  std::atomic_bool isBuilding_;
+
+  /* Mutex to protect concurrent access to graph_. */
   std::mutex mutex_;
   typedef std::lock_guard<std::mutex> lock_guard;
 

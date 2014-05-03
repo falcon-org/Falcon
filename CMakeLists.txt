@@ -56,6 +56,8 @@ add_executable(falcon
   src/stream_consumer.cpp
   src/stream_server.cpp
   src/watchman.cpp
+  src/depfile.cpp
+  src/depfile_parser.cpp
   )
 
 include_directories(src
@@ -71,3 +73,5 @@ target_link_libraries(falcon
 
 # This project uses C++11
 set (CMAKE_CXX_FLAGS "-Wall -std=c++11 -ggdb3")
+
+set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG")

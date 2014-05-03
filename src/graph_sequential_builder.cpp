@@ -5,9 +5,12 @@
 
 #include <cassert>
 #include <iostream>
+#include <stack>
 
-#include "logging.h"
 #include "graph_sequential_builder.h"
+#include "watchman.h"
+#include "depfile.h"
+#include "logging.h"
 
 namespace falcon {
 
@@ -21,10 +24,13 @@ std::string toString(BuildResult v) {
   }
 }
 
-GraphSequentialBuilder::GraphSequentialBuilder(Graph& graph,
-    std::string const& workingDirectory, IStreamConsumer* consumer)
+GraphSequentialBuilder::GraphSequentialBuilder(Graph& graph, std::mutex& mutex,
+    WatchmanClient* watchmanClient, std::string const& workingDirectory,
+    IStreamConsumer* consumer)
     : manager_(consumer)
+    , watchmanClient_(watchmanClient)
     , graph_(graph)
+    , lock_(mutex, std::defer_lock)
     , workingDirectory_(workingDirectory)
     , interrupted_(false)
     , depth_(0)
@@ -48,12 +54,19 @@ void GraphSequentialBuilder::startBuild(NodeSet& targets,
 
 void GraphSequentialBuilder::buildThread(NodeSet& targets) {
   res_ = BuildResult::SUCCEEDED;
+
+  /* TODO: improve locking mechanism so that the whole graph is not locked while
+   * building. */
+  lock_.lock();
+
   for (auto it = targets.begin(); it != targets.end(); ++it) {
     res_ = buildTarget(*it);
     if (res_ != BuildResult::SUCCEEDED) {
       break;
     }
   }
+
+  lock_.unlock();
 
   if (callback_) {
     callback_(res_);
@@ -112,6 +125,7 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
   if (!rule->isPhony()) {
     assert(!rule->getCommand().empty());
     manager_.addProcess(rule->getCommand(), workingDirectory_);
+
     PosixSubProcessPtr proc = manager_.waitForNext();
 
     auto status = proc->status();
@@ -123,6 +137,15 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
     NodeArray& outputs = rule->getOutputs();
     for (auto it = outputs.begin(); it != outputs.end(); it++) {
       (*it)->setState(State::UP_TO_DATE);
+    }
+
+    /* TODO: Update the implicit dependencies by parsing the depfile, if any. */
+    if (rule->hasDepfile()) {
+      auto res = Depfile::loadFromfile(rule->getDepfile(), rule,
+                                       watchmanClient_, graph_);
+      if (res != Depfile::Res::SUCCESS) {
+        return BuildResult::FAILED;
+      }
     }
   }
 

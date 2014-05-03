@@ -97,7 +97,9 @@ static void daemonize(std::unique_ptr<falcon::GlobalConfig> config,
 static int build(const std::unique_ptr<falcon::GlobalConfig>& config,
                       const std::unique_ptr<falcon::Graph>& graph) {
   falcon::StdoutStreamConsumer consumer;
-  falcon::GraphSequentialBuilder builder(*graph,
+  std::mutex mutex;
+  falcon::GraphSequentialBuilder builder(*graph, mutex,
+                                         nullptr /* WatchmanClient */,
                                          config->getWorkingDirectoryPath(),
                                          &consumer);
   builder.startBuild(graph->getRoots(), false /* No callback. */);

@@ -8,14 +8,16 @@
 
 #include <atomic>
 #include <functional>
-#include <thread>
+#include <mutex>
 #include <queue>
+#include <thread>
 
 #include "graph.h"
 #include "posix_subprocess.h"
 
 namespace falcon {
 
+class WatchmanClient;
 class StreamConsumer;
 
 enum class BuildResult { UNKNOWN, SUCCEEDED, INTERRUPTED, FAILED };
@@ -50,7 +52,9 @@ class IGraphBuilder {
 
 class GraphSequentialBuilder : public IGraphBuilder {
  public:
-  GraphSequentialBuilder(Graph& graph, std::string const& workingDirectory,
+  GraphSequentialBuilder(Graph& graph, std::mutex& mutex,
+                         WatchmanClient* watchmanClient,
+                         std::string const& workingDirectory,
                          IStreamConsumer* consumer);
   ~GraphSequentialBuilder();
 
@@ -76,8 +80,9 @@ class GraphSequentialBuilder : public IGraphBuilder {
   BuildResult buildTarget(Node* target);
 
   PosixSubProcessManager manager_;
-
+  WatchmanClient* watchmanClient_;
   Graph& graph_;
+  std::unique_lock<std::mutex> lock_;
   std::string workingDirectory_;
   std::atomic_bool interrupted_;
   /* use to keep the depth when building */

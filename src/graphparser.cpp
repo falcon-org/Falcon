@@ -99,6 +99,7 @@ void GraphParser::processJson(JsonVal const* rules)
     JsonVal const* ruleInputs  = jsonRule->getObject("inputs");
     JsonVal const* ruleOutputs = jsonRule->getObject("outputs");
     JsonVal const* ruleCmd     = jsonRule->getObject("cmd");
+    JsonVal const* ruleDepfile = jsonRule->getObject("depfile");
 
     /* TODO: MANAGE ERROR ?
      * should I have to expect to have at least one input and one outputs ? */
@@ -113,15 +114,20 @@ void GraphParser::processJson(JsonVal const* rules)
       THROW_FORWARD_ERROR(e);
     }
 
-    Rule* rule;
+    Rule* rule = new Rule(inputs, outputs);
+
     if (ruleCmd) {
       if (ruleCmd->_type != JSON_STRING) {
-        THROW_ERROR(EINVAL, "invalid entry: expect a STRING");
+        THROW_ERROR(EINVAL, "Expecting STRING value for cmd field");
       }
+      rule->setCommand(ruleCmd->_data);
+    }
 
-      rule = new Rule(inputs, outputs, ruleCmd->_data);
-    } else {
-      rule = new Rule(inputs, outputs.front());
+    if (ruleDepfile) {
+      if (ruleDepfile->_type != JSON_STRING) {
+        THROW_ERROR(EINVAL, "Expecting STRING value for depfile field");
+      }
+      rule->setDepfile(ruleDepfile->_data);
     }
 
     /* keep the rule in memory */

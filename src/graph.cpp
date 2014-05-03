@@ -3,6 +3,7 @@
  * LICENSE : see accompanying LICENSE file for details.
  */
 
+#include <algorithm>
 #include <cassert>
 
 #include "graph.h"
@@ -38,12 +39,16 @@ void Node::addParentRule(Rule* rule) { parentRules_.push_back(rule); }
 
 State const& Node::getState() const { return state_; }
 State&       Node::getState()       { return state_; }
+bool Node::isDirty() const { return state_ == State::OUT_OF_DATE; }
 
 void Node::setState(State state) { state_ = state; }
 
 void Node::markDirty() {
+  LOG(trace) << "marking " << path_ << " dirty";
+
   if (state_ == State::OUT_OF_DATE) {
     /* This node is already dirty. */
+    LOG(trace) << path_ << " is already dirty";
     return;
   }
   state_ = State::OUT_OF_DATE;
@@ -83,32 +88,32 @@ void Node::accept(GraphVisitor& v) { v.visit(*this); }
 /*                                Rule                                       */
 /* ************************************************************************* */
 
-Rule::Rule(const NodeArray& inputs, const NodeArray& outputs,
-           const std::string& cmd)
+Rule::Rule(const NodeArray& inputs, const NodeArray& outputs)
   : inputs_(inputs)
   , outputs_(outputs)
-  , command_(cmd)
-  , isPhony_(false)
   , state_(State::OUT_OF_DATE) { }
-
-Rule::Rule(const NodeArray& inputs, Node* output)
-    : inputs_(inputs)
-    , outputs_(1, output)
-    , isPhony_(true)
-    , state_(State::OUT_OF_DATE) { }
 
 const NodeArray& Rule::getInputs() const { return inputs_; }
 NodeArray&       Rule::getInputs()       { return inputs_; }
+void Rule::addInput(Node* node) { inputs_.push_back(node); }
+bool Rule::isInput(const Node* node) const {
+  return std::find(inputs_.begin(), inputs_.end(), node) != inputs_.end();
+}
 
 const NodeArray& Rule::getOutputs() const { return outputs_; }
 NodeArray&       Rule::getOutputs()       { return outputs_; }
 
-bool Rule::isPhony() const { return isPhony_; }
-
+bool Rule::isPhony() const { return command_.empty(); }
 const std::string& Rule::getCommand() const { return command_; }
+void Rule::setCommand(const std::string& cmd) { command_ = cmd; }
+
+const bool Rule::hasDepfile() const { return !depfile_.empty(); }
+const std::string& Rule::getDepfile() const { return depfile_; }
+void Rule::setDepfile(const std::string& depfile) { depfile_ = depfile; }
 
 State const& Rule::getState() const { return state_; }
 State&       Rule::getState()       { return state_; }
+bool Rule::isDirty() const { return state_ == State::OUT_OF_DATE; }
 void Rule::setState(State state) { state_ = state; }
 
 void Rule::markDirty() {
@@ -151,6 +156,19 @@ Graph::Graph(const NodeSet& roots, const NodeSet& sources,
     , sources_(sources)
     , nodes_(nodes)
     , rules_(rules) {}
+
+void Graph::addNode(Node* node) {
+  if (node->getParents().empty()) {
+    roots_.insert(node);
+  }
+
+  if (node->getChild() == nullptr) {
+    sources_.insert(node);
+  }
+
+  assert(nodes_.find(node->getPath()) == nodes_.end());
+  nodes_[node->getPath()] = node;
+}
 
 const NodeSet& Graph::getRoots() const { return roots_; }
 NodeSet& Graph::getRoots() { return roots_; }

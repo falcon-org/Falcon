@@ -28,32 +28,40 @@ namespace falcon {
 /*                           Watchman Server                                 */
 /* ************************************************************************* */
 
-WatchmanServer::WatchmanServer(std::string const& workingDirectory)
+WatchmanClient::WatchmanClient(std::string const& workingDirectory)
   : workingDirectory_(workingDirectory)
+  , isConnected_(false)
   , watchmanSocket_(-1)
 {
   socketPath_ = workingDirectory + "/.watchman.socket";
   logPath_ = workingDirectory + "/.watchman.log";
   statePath_ = workingDirectory + "/.watchman.state";
-
-  /* Try to open the watchman socket */
-  try {
-    openWatchmanSocket();
-  } catch (Exception e) {
-    /* If can't connect to watchman, it's probably not running, so try to spawn
-     * it. */
-    startWatchmanInstance();
-    openWatchmanSocket();
-  }
 }
-WatchmanServer::~WatchmanServer() {
+
+WatchmanClient::~WatchmanClient() {
   if (watchmanSocket_ >= 0) {
     close(watchmanSocket_);
   }
 }
 
+void WatchmanClient::connectToWatchman() {
+  assert(!isConnected_);
 
-void WatchmanServer::startWatchmanInstance() {
+  /* Try to open the watchman socket */
+  try {
+    openWatchmanSocket();
+  } catch (Exception& e) {
+    /* If can't connect to watchman, it's probably not running, so try to spawn
+     * it and retry. */
+    startWatchmanInstance();
+    openWatchmanSocket();
+  }
+
+  /* If we end up here, we should have been able to connect. */
+  assert(isConnected_);
+}
+
+void WatchmanClient::startWatchmanInstance() {
   std::stringstream ss;
 
   ss << "watchman"
@@ -70,7 +78,9 @@ void WatchmanServer::startWatchmanInstance() {
     LOG(error) << "can't start watchman";
   }
 }
-void WatchmanServer::openWatchmanSocket() {
+
+void WatchmanClient::openWatchmanSocket() {
+  assert(!isConnected_);
   struct sockaddr_un addr;
 
   watchmanSocket_ = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -86,28 +96,30 @@ void WatchmanServer::openWatchmanSocket() {
               sizeof (struct sockaddr_un)) != 0) {
     THROW_ERROR(errno, "unable to connect to the watchman's socket");
   }
+
+  isConnected_ = true;
 }
 
-/* ************************************************************************* */
-/*                                 Visitor                                   */
-/* ************************************************************************* */
+void WatchmanClient::watchGraph(const Graph& g) {
+  if (!isConnected_) {
+    connectToWatchman();
+  }
 
-void WatchmanServer::startWatching(Graph* g) {
-  g->accept(*this);
-}
-
-void WatchmanServer::visit(Graph& g) {
   auto nodeMap = g.getNodes();
-
   for (auto it = nodeMap.cbegin(); it != nodeMap.cend(); it++) {
-    it->second->accept(*this);
+    assert(it->second);
+    watchNode(*it->second);
   }
 }
 
-void WatchmanServer::visit(Rule& r) { }
+void WatchmanClient::watchNode(const Node& n) {
+  if (!isConnected_) {
+    connectToWatchman();
+  }
 
-void WatchmanServer::visit(Node& n) {
-  /* If the Node is not a leaf (a source file), then nothing to register */
+  /* TODO: * For now, we only watch source files, ie files that are not
+   * generated. If we were to watch the generated targets, we'd be notified
+   * each time a target is built. */
   if (n.getChild() != nullptr) {
     return;
   }
@@ -157,13 +169,19 @@ void WatchmanServer::visit(Node& n) {
 
   /* Send the command to watchman */
   std::string cmd = ss.str();
-  writeCommand(cmd);
+  try {
+    writeCommand(cmd);
+  } catch (Exception& e) {
+    /* We may have lost the connection, reconnect and try again. */
+    connectToWatchman();
+    writeCommand(cmd);
+  }
 
   /* Get watchman return value */
   readAnswer();
 }
 
-void WatchmanServer::writeCommand(std::string const& cmd) {
+void WatchmanClient::writeCommand(std::string const& cmd) {
   int r = 0;
   for (unsigned int i = 0; i != cmd.size(); i += r) {
     r = write(watchmanSocket_, &cmd[i], cmd.size() - i);
@@ -173,6 +191,8 @@ void WatchmanServer::writeCommand(std::string const& cmd) {
       if (errno == EAGAIN) {
         r = 0;
       } else {
+        close(watchmanSocket_);
+        isConnected_ = false;
         THROW_ERROR(errno, "unable to write command to watchman");
       }
     }
@@ -180,7 +200,7 @@ void WatchmanServer::writeCommand(std::string const& cmd) {
   LOG(trace) << "[WATCHMAN] <--- " << cmd;
 }
 
-void WatchmanServer::readAnswer() {
+void WatchmanClient::readAnswer() {
   JsonParser parser;
   JsonVal* dom;
 #define MAX_JSON_STRING_SIZE 1024
@@ -194,6 +214,9 @@ void WatchmanServer::readAnswer() {
       if (errno == EAGAIN) { loop++; continue; }
       LOG(error) << "werror while reading on watchman socket: "
                  << "errno(" << errno << ") " << strerror(errno);
+      close(watchmanSocket_);
+      isConnected_ = false;
+      THROW_ERROR(errno, "unable to read watchman command response");
       return;
     }
     parser.parse(0, buf, r);
@@ -210,4 +233,5 @@ void WatchmanServer::readAnswer() {
     LOG(error) << error->_data;
   }
 }
-}
+
+} // namespace falcon
