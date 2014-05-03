@@ -38,7 +38,7 @@ void DaemonInstance::start() {
   try {
     watchmanClient_.watchGraph(*graph_);
   } catch (falcon::Exception& e) {
-    LOG(fatal) << e.getErrorMessage();
+    LOG(ERROR) << e.getErrorMessage();
   }
 
   /* Open the stream server's socket and accept clients in another thread. */
@@ -47,7 +47,7 @@ void DaemonInstance::start() {
                                                &streamServer_);
 
   /* Start the server. This will block until the server shuts down. */
-  LOG(info) << "Starting server...";
+  LOG(INFO) << "Starting server...";
   commandServer_.reset(new CommandServer(this, config_->getNetworkAPIPort()));
   commandServer_->start();
 
@@ -96,7 +96,7 @@ void DaemonInstance::onBuildCompleted(BuildResult res) {
   ++buildId_;
   isBuilding_.store(false, std::memory_order_release);
 
-  LOG(info) << "Build completed. Status: " << toString(res);
+  LOG(INFO) << "Build completed. Status: " << toString(res);
 }
 
 FalconStatus::type DaemonInstance::getStatus() {
@@ -104,7 +104,7 @@ FalconStatus::type DaemonInstance::getStatus() {
 }
 
 void DaemonInstance::interruptBuild() {
-  LOG(info) << "Interrupting build.";
+  LOG(INFO) << "Interrupting build.";
   if (builder_) {
     builder_->interrupt();
   }
@@ -181,7 +181,7 @@ void DaemonInstance::setDirty(const std::string& target) {
 }
 
 void DaemonInstance::shutdown() {
-  LOG(info) << "Shutting down.";
+  LOG(INFO) << "Shutting down.";
 
   /* Interrupt the current build. */
   interruptBuild();

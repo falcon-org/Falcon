@@ -44,11 +44,11 @@ bool Node::isDirty() const { return state_ == State::OUT_OF_DATE; }
 void Node::setState(State state) { state_ = state; }
 
 void Node::markDirty() {
-  LOG(trace) << "marking " << path_ << " dirty";
+  DLOG(INFO) << "marking " << path_ << " dirty";
 
   if (state_ == State::OUT_OF_DATE) {
     /* This node is already dirty. */
-    LOG(trace) << path_ << " is already dirty";
+    DLOG(INFO) << path_ << " is already dirty";
     return;
   }
   state_ = State::OUT_OF_DATE;
@@ -75,7 +75,7 @@ TimeStamp Node::getPreviousTimeStamp() const { return oldTimeStamp_; }
 void Node::updateTimeStamp(TimeStamp const t) {
   oldTimeStamp_ = newTimeStamp_;
   newTimeStamp_ = t;
-  LOG(trace) << "node(" << path_ << ") update timestamp: ("
+  DLOG(INFO) << "node(" << path_ << ") update timestamp: ("
              << oldTimeStamp_ << ") -> (" << newTimeStamp_ << ")";
 }
 

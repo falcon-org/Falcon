@@ -5,8 +5,9 @@
 
 #include "options.h"
 #include "exceptions.h"
-#include "logging.h"
 #include <iostream>
+
+#include "logging.h"
 
 namespace falcon {
 
@@ -62,9 +63,9 @@ void Options::parseOptions(int const argc, char const* const* argv)
   if (vm_.count("config")) {
     try {
       std::string configFileName = vm_["config"].as<std::string>();
-      po::store(po::parse_config_file<char>(vm_["config"].as<std::string>().c_str(),
+      po::store(po::parse_config_file<char>(configFileName.c_str(),
                                             cFileDesc_),
-                vmFile_);
+                vm_);
 
       // To ensure the CLI options get the most priority from the
       po::store(po::parse_command_line(argc, argv, desc_), vm_);
@@ -78,7 +79,20 @@ void Options::parseOptions(int const argc, char const* const* argv)
     std::cout << desc_ << std::endl;
     THROW_ERROR_CODE(0);
   }
+
+  programName_ = argv[0];
+
+  if (vm_.count("log-dir")) {
+    logDirectory_ = vm_["log-dir"].as<std::string>();
+  }
+
+  falcon::defaultlogging(programName_,
+                         vm_["log-level"].as<google::LogSeverity>(),
+                         getLogDirectory());
 }
+
+std::string const& Options::getProgramName() const { return programName_; }
+std::string const& Options::getLogDirectory() const { return logDirectory_; }
 
 bool Options::isOptionSetted(std::string const& opt) const {
   return vm_.count(opt);
@@ -90,38 +104,44 @@ GlobalConfig::GlobalConfig(Options const& opt) {
   setNetworkStreamPort(opt.vm_["stream-port"].as<int>());
   setWorkingDirectoryPath(opt.vm_["working-directory"].as<std::string>());
 
-  /* Set the log system level */
-  initlogging(opt.vm_["log-level"].as<falcon::Log::Level>());
-
   runSequentialBuild_ = opt.isOptionSetted("build");
   runDaemonBuilder_ = opt.isOptionSetted("daemon");
+  programName_ = opt.getProgramName();
+  logDirectory_ = opt.getLogDirectory();
 }
 
 std::string const& GlobalConfig::getJsonGraphFile() const {
   return jsonGraphFile_;
 }
 void GlobalConfig::setJsonGraphFile(std::string const& f) {
-  LOG(info) << "set json graph file: '" << f << "'";
+  LOG(INFO) << "set json graph file: '" << f << "'";
   jsonGraphFile_ = f;
 }
+
 int GlobalConfig::getNetworkAPIPort() const { return networkAPIPort_; }
 void GlobalConfig::setNetworkAPIPort(int const& p) {
-  LOG(info) << "set network API port: '" << p << "'";
+  LOG(INFO) << "set network API port: '" << p << "'";
   networkAPIPort_ = p;
 }
+
 int GlobalConfig::getNetworkStreamPort() const { return networkStreamPort_; }
 void GlobalConfig::setNetworkStreamPort(int const& p) {
-  LOG(info) << "set network Stream port: '" << p << "'";
+  LOG(INFO) << "set network Stream port: '" << p << "'";
   networkStreamPort_ = p;
 }
+
 void GlobalConfig::setWorkingDirectoryPath(std::string const& s) {
-  LOG(info) << "set working directory: '" << s << "'";
+  LOG(INFO) << "set working directory: '" << s << "'";
   workingDirectoryPath_ = s;
 }
 std::string const& GlobalConfig::getWorkingDirectoryPath() const {
   return workingDirectoryPath_;
 }
 
+std::string const& GlobalConfig::getProgramName() const { return programName_; }
 bool GlobalConfig::runSequentialBuild() const { return runSequentialBuild_; }
 bool GlobalConfig::runDaemonBuilder() const { return runDaemonBuilder_; }
+std::string const& GlobalConfig::getLogDirectory() const {
+  return logDirectory_;
+}
 }

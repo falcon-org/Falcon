@@ -91,10 +91,10 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
 
   depth_++;
 
-  LOG(debug) << "(" << depth_ << ") building " << target->getPath();
+  DLOG(INFO) << "(" << depth_ << ") building " << target->getPath();
 
   if (target->getState() == State::UP_TO_DATE) {
-    LOG(trace) << "(" << depth_-- << ")" << "target is up to date";
+    DLOG(INFO) << "(" << depth_-- << ")" << "target is up to date";
     return BuildResult::SUCCEEDED;
   }
 

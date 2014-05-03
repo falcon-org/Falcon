@@ -19,7 +19,6 @@ public:
   {}
 
   void prepareTest() {
-    falcon::initlogging(falcon::Log::Level::error);
     psp_ = new falcon::PosixSubProcess(cmd_, ".", 0, &ssc_);
   }
   void runTest() {
@@ -79,6 +78,7 @@ private:
 
 
 int main(int const argc, char const* const argv[]) {
+  falcon::testlogging(argv[0]);
   if (argc != 1 && argc != 2) {
     std::cerr << "usage: " << argv[0] << " [--json]" << std::endl;
     return 1;

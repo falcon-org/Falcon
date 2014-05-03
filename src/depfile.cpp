@@ -5,6 +5,7 @@
 
 #include <fstream>
 #include <string>
+#include <cassert>
 
 #include "depfile.h"
 
@@ -37,7 +38,7 @@ void Depfile::setRuleDependency(const std::string& dep, Rule* rule,
     }
   }
 
-  LOG(debug) << target->getPath() << " is a new implicit dependency of "
+  DLOG(INFO) << target->getPath() << " is a new implicit dependency of "
     << rule->getOutputs()[0]->getPath();
 
   /* Set the target as a new input of the rule. */
@@ -50,7 +51,7 @@ void Depfile::setRuleDependency(const std::string& dep, Rule* rule,
     try {
       watchmanClient->watchNode(*target);
     } catch (Exception& e) {
-      LOG(fatal) << e.getErrorMessage();
+      LOG(FATAL) << e.getErrorMessage();
     }
   }
 }
@@ -60,7 +61,7 @@ bool Depfile::load(std::string& buf, Rule *rule,
   DepfileParser depfile;
   string depfileErr;
   if (!depfile.Parse(&buf, &depfileErr)) {
-    LOG(error) << "Error parsing depfile: " << depfileErr;
+    LOG(ERROR) << "Error parsing depfile: " << depfileErr;
     return false;
   }
 
@@ -69,7 +70,7 @@ bool Depfile::load(std::string& buf, Rule *rule,
   std::string output = std::string(depfile.out_.str_, depfile.out_.len_);
   assert(!rule->getOutputs().empty());
   if (output != rule->getOutputs()[0]->getPath()) {
-    LOG(error) << "Invalid depfile. The output target does not match the first"
+    LOG(ERROR) << "Invalid depfile. The output target does not match the first"
                   " output of the rule";
     return false;
   }
@@ -88,14 +89,14 @@ Depfile::Res Depfile::loadFromfile(const std::string& depfile, Rule *rule,
                                    Graph& graph) {
   std::ifstream ifs(depfile);
   if (!ifs.is_open()) {
-    LOG(error) << "Error, cannot open depfile " << depfile;
+    LOG(ERROR) << "Error, cannot open depfile " << depfile;
     return Res::ERROR_CANNOT_OPEN;
   }
 
   std::string content((std::istreambuf_iterator<char>(ifs)),
                       (std::istreambuf_iterator<char>()));
   if (content.empty()) {
-    LOG(error) << "Error, depfile " << depfile << " is empty";
+    LOG(ERROR) << "Error, depfile " << depfile << " is empty";
     return Res::ERROR_INVALID_FILE;
   }
 

@@ -7,6 +7,7 @@
 # define FALCON_OPTIONS_H_
 
 # include <boost/program_options.hpp>
+# include "logging.h"
 
 /*!
  * @namespace po
@@ -64,6 +65,16 @@ public:
 
   bool isOptionSetted(std::string const& opt) const;
 private:
+  std::string programName_;
+public:
+  std::string const& getProgramName() const;
+
+private:
+  std::string logDirectory_;
+public:
+  std::string const& getLogDirectory() const;
+
+private:
   /* Command line options description */
   po::options_description cliDesc_;
   /* Option that will be available from file and from CLI */
@@ -80,28 +91,50 @@ public:
 
   /* *********************************************************************** */
   /* Option that can be changed at run-time */
-private: /* variables */
+private:
   std::string jsonGraphFile_;
-  int networkAPIPort_;
-  int networkStreamPort_;
-  std::string workingDirectoryPath_;
-public: /* Accessors */
+public:
   std::string const& getJsonGraphFile() const;
   void setJsonGraphFile(std::string const& f);
+
+private:
+  int networkAPIPort_;
+public:
   int getNetworkAPIPort() const;
   void setNetworkAPIPort(int const& p);
+
+private:
+  int networkStreamPort_;
+public:
   int getNetworkStreamPort() const;
   void setNetworkStreamPort(int const& p);
+
+private:
+  std::string workingDirectoryPath_;
+public:
   std::string const& getWorkingDirectoryPath() const;
   void setWorkingDirectoryPath(std::string const&);
 
   /* *********************************************************************** */
   /* Option that will need to restart the falcon process */
-private: /* variables */
+private:
+  std::string programName_;
+public:
+  std::string const& getProgramName() const;
+
+private:
+  std::string logDirectory_;
+public:
+  std::string const& getLogDirectory() const;
+
+private:
   bool runSequentialBuild_;
-  bool runDaemonBuilder_;
-public: /* Accessors */
+public:
   bool runSequentialBuild() const;
+
+private:
+  bool runDaemonBuilder_;
+public:
   bool runDaemonBuilder() const;
 };
 

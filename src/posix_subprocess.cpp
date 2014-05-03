@@ -17,6 +17,7 @@
 
 #include "exceptions.h"
 #include "posix_subprocess.h"
+
 #include "logging.h"
 
 namespace falcon {
@@ -42,7 +43,7 @@ PosixSubProcess::PosixSubProcess(const std::string& command,
 
 void PosixSubProcess::start() {
 
-  LOG(debug) << "New command: ID = " << id_ << ", CMD = " << command_;
+  DLOG(INFO) << "New command: ID = " << id_ << ", CMD = " << command_;
 
   consumer_->newCommand(id_, command_);
 
@@ -81,7 +82,7 @@ void PosixSubProcess::start() {
 void PosixSubProcess::interrupt() {
   assert(pid_ >= 0);
   if (kill(pid_, SIGINT) < 0) {
-    LOG(error) << "Error, kill: " << strerror(errno);
+    LOG(ERROR) << "Error, kill: " << strerror(errno);
   }
 }
 
@@ -105,8 +106,8 @@ void PosixSubProcess::childProcess(int stdout, int stderr) {
      * command line */
     if (chdir (workingDirectory_.c_str()) != 0) {
 
-      LOG(fatal) << "unable to set the working directory before executing "
-                    "the command";
+      DLOG(FATAL) << "unable to set the working directory before executing "
+                      "the command";
       THROW_ERROR_CODE(errno);
     }
 
@@ -115,7 +116,7 @@ void PosixSubProcess::childProcess(int stdout, int stderr) {
   } while(false);
 
   /* If we get here, something failed. */
-  LOG(fatal) << "Error, failed to execute command in child process";
+  LOG(FATAL) << "Error, failed to execute command in child process";
   _exit(1);
 }
 
@@ -162,7 +163,7 @@ void PosixSubProcess::waitFinished() {
     }
   }
 
-  LOG(debug) << "Completed command: ID = " << id_ << ", STATUS = "
+  DLOG(INFO) << "Completed command: ID = " << id_ << ", STATUS = "
     << toString(status_);
 
   consumer_->endCommand(id_, status_);

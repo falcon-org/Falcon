@@ -43,7 +43,7 @@ private:
     }
     ~Checker() {
       /* On destruction, log everything if the condition was not met. */
-      if (!cond_) { LOG(error) << std::ostringstream::str(); }
+      if (!cond_) { LOG(ERROR) << std::ostringstream::str(); }
     }
   };
 
@@ -66,10 +66,10 @@ private:
 
 #if defined (DEBUG)
 # define FALCON_CHECK_GRAPH_CONSISTENCY(__graph__, __mutex__) \
-{                                                            \
-  std::lock_guard<std::mutex> lock(__mutex__);               \
-  falcon::GraphConsistencyChecker checker(__graph__);                \
-  checker.check();                                           \
+{                                                             \
+  std::lock_guard<std::mutex> lock(__mutex__);                \
+  falcon::GraphConsistencyChecker checker(__graph__);         \
+  checker.check();                                            \
 }
 #else
 # define FALCON_CHECK_GRAPH_CONSISTENCY(__graph__, __mutex__)

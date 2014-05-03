@@ -161,7 +161,7 @@ void StreamServer::processEvents() {
       return;
     } else if (errno == EINVAL) {
       /* Too many file descriptors. */
-      LOG(error) << "Too many fds for poll";
+      LOG(ERROR) << "Too many fds for poll";
     }
     THROW_ERROR(errno, "poll failed");
   } else if (r == 0) {
@@ -178,13 +178,13 @@ void StreamServer::processEvents() {
       if (it->revents & POLLIN) {
         acceptClients();
       } else {
-        LOG(error) << "Unexpected poll event " << it->revents;
+        LOG(ERROR) << "Unexpected poll event " << it->revents;
       }
     } else if (it->fd != eventFd_) {
       if (it->revents & POLLOUT) {
         processClient(it->fd);
       } else {
-        LOG(error) << "Unexpected poll event " << it->revents;
+        LOG(ERROR) << "Unexpected poll event " << it->revents;
       }
     } else {
       /* Notified by eventfd. */

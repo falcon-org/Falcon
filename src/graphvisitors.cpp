@@ -158,7 +158,7 @@ void GraphTimeStampUpdater::visit(Node& n) {
 
   if (stat(n.getPath().c_str(), &st) < 0) {
     if (errno != ENOENT && errno != ENOTDIR) {
-      LOG(fatal) << "stat(" << n.getPath()
+      LOG(FATAL) << "stat(" << n.getPath()
                  << "): [" << errno << "] " << strerror(errno);
     }
   } else {

@@ -20,11 +20,11 @@ namespace falcon {
 /* Useful macros for checking a condition, logging an error if it is unmet.
  * Must only be called from within a method of GraphConsistencyChecker. */
 
-#define CHECK(__cond__) \
+#define FCHECK(__cond__) \
   Checker(__cond__, this) << "Graph is inconsistent: " << #__cond__ << ". "
 
-#define CHECK_EQ(__got__, __expect__)                            \
-  CHECK((__expect__) == (__got__)) <<                            \
+#define FCHECK_EQ(__got__, __expect__)                            \
+  FCHECK((__expect__) == (__got__)) <<                            \
   "Expected " << #__expect__ << " which is " << (__expect__) <<  \
   " but got " << #__got__ << " which is " << (__got__) << ". "
 
@@ -45,13 +45,13 @@ void GraphConsistencyChecker::check() {
     checkNode(*it);
   }
 
-  CHECK_EQ(nodesSeen_.size(), graph_->getNodes().size())
+  FCHECK_EQ(nodesSeen_.size(), graph_->getNodes().size())
     << "Invalid number of nodes.";
-  CHECK_EQ(nbRootsSeen_, graph_->getRoots().size())
+  FCHECK_EQ(nbRootsSeen_, graph_->getRoots().size())
     << "Invalid number of roots.";
-  CHECK_EQ(nbSourcesSeen_, graph_->getSources().size())
+  FCHECK_EQ(nbSourcesSeen_, graph_->getSources().size())
     << "Invalid number of sources.";
-  CHECK_EQ(rulesSeen_.size(), graph_->getRules().size())
+  FCHECK_EQ(rulesSeen_.size(), graph_->getRules().size())
     << "Invalid number of rules.";
 }
 
@@ -62,26 +62,26 @@ void GraphConsistencyChecker::checkNode(Node* node) {
   nodesSeen_.insert(node);
 
   /* Check that the node is in the map. */
-  CHECK(graph_->getNodes().find(node->getPath()) != graph_->getNodes().end())
+  FCHECK(graph_->getNodes().find(node->getPath()) != graph_->getNodes().end())
     << node->getPath() << " not found in the map.";
 
   if (node->getParents().empty()) {
     /* This node has no parent, this must be a root. */
-    CHECK(graph_->getRoots().find(node) != graph_->getRoots().end())
+    FCHECK(graph_->getRoots().find(node) != graph_->getRoots().end())
       << node->getPath() << " has no parent but is not in list of root nodes.";
     nbRootsSeen_++;
   }
 
   if (node->getChild() == nullptr) {
     /* This node has no child rule, this must be a source file. */
-    CHECK(graph_->getSources().find(node) != graph_->getSources().end())
+    FCHECK(graph_->getSources().find(node) != graph_->getSources().end())
       << node->getPath() << " has no child rule, but is not in list of source"
       << " files.";
     nbSourcesSeen_++;
   } else {
     /* If a node is out of date, it's child rule must be as well. */
     if (node->isDirty()) {
-      CHECK(node->getChild()->isDirty())
+      FCHECK(node->getChild()->isDirty())
         << node->getPath() << " is out of date, but it's child rule is not.";
     }
     checkRule(node->getChild());
@@ -98,21 +98,21 @@ void GraphConsistencyChecker::checkRule(Rule* rule) {
   auto inputs = rule->getInputs();
 
   /* A rule must have at least one output. */
-  CHECK(!outputs.empty()) << "Rule " << rule << " has no output.";
+  FCHECK(!outputs.empty()) << "Rule " << rule << " has no output.";
 
-  CHECK_EQ(rule->isPhony(), rule->getCommand().empty())
+  FCHECK_EQ(rule->isPhony(), rule->getCommand().empty())
     << "A phony rule should have an empty command.";
 
   if (rule->isPhony()) {
     /* A phony rule should have only one output. */
-    CHECK_EQ(outputs.size(), 1) << "Rule " << rule << " is phony but has more "
+    FCHECK_EQ(outputs.size(), 1) << "Rule " << rule << " is phony but has more "
       << "than one output.";
   }
 
   /* If a rule is out of date, its outputs must be as well. */
   if (rule->isDirty()) {
     for (auto it = outputs.begin(); it != outputs.end(); ++it) {
-      CHECK((*it)->isDirty()) << "Rule " << rule << " is dirty but it's output "
+      FCHECK((*it)->isDirty()) << "Rule " << rule << " is dirty but it's output "
         << (*it)->getPath() << " is not.";
     }
   }
@@ -120,7 +120,7 @@ void GraphConsistencyChecker::checkRule(Rule* rule) {
   /* Traverse inputs. */
   for (auto it = inputs.begin(); it != inputs.end(); ++it) {
     if ((*it)->isDirty()) {
-      CHECK(rule->isDirty()) << "Input " << (*it)->getPath() << " of rule " <<
+      FCHECK(rule->isDirty()) << "Input " << (*it)->getPath() << " of rule " <<
         rule << " is dirty but the rule is not.";
     }
     checkNode(*it);

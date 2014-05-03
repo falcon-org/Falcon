@@ -19,7 +19,7 @@ static void setOptions(falcon::Options& opt) {
   char const* pwd = NULL;
   pwd = getenv("PWD"); /* No need to free this string */
   if (!pwd) {
-    LOG(fatal) << "enable to get the PWD";
+    LOG(ERROR) << "enable to get the PWD";
     return;
   }
   std::string pwdString(pwd);
@@ -27,13 +27,14 @@ static void setOptions(falcon::Options& opt) {
   /* *********************************************************************** */
   /* add command line options */
   opt.addCLIOption("daemon,d", "daemonize the build system");
-  opt.addCLIOption("build,b", "launch a sequential build (default)");
+  opt.addCLIOption("build,b", "launch a sequential build");
   opt.addCLIOption("module,M",
                    po::value<std::string>(),
                    "use -M help for more info");
-  opt.addCLIOption("config,f",
+  opt.addCLIOption("config,f", /* TODO */
                    po::value<std::string>(),
                    "falcon configuration file");
+
   /* *********************************************************************** */
   /* add command line option and configuration file option (this options can be
    * setted on both configuration file or from the CLI) */
@@ -50,14 +51,16 @@ static void setOptions(falcon::Options& opt) {
                      po::value<int>()->default_value(4343),
                      "stream port");
   opt.addCFileOption("log-level",
-                     po::value<falcon::Log::Level>()->default_value(
-                       falcon::Log::Level::error),
+                     po::value<google::LogSeverity>()->default_value(google::GLOG_WARNING),
                      "define the log level");
+  opt.addCFileOption("log-dir",
+                     po::value<std::string>(),
+                     "write log files in the given directory");
 }
 
 static int loadModule(std::unique_ptr<falcon::Graph> g, std::string const& s) {
 
-  LOG(info) << "load module '" << s << "'";
+  LOG(INFO) << "load module '" << s << "'";
 
   if (0 == s.compare("dot")) {
     falcon::GraphGraphizPrinter ggp(std::cout);
@@ -70,7 +73,7 @@ static int loadModule(std::unique_ptr<falcon::Graph> g, std::string const& s) {
       << "  dot    show the graph in DOT format" << std::endl
       << "  make   show the graph in Makefile format" << std::endl;
   } else {
-    LOG(error) << "module '" << s << "' not supported";
+    LOG(ERROR) << "module '" << s << "' not supported";
     return 1;
   }
 
@@ -112,16 +115,15 @@ static int build(const std::unique_ptr<falcon::GlobalConfig>& config,
 
 int main (int const argc, char const* const* argv) {
   falcon::Options opt;
-  falcon::initlogging(falcon::Log::Level::error);
 
   setOptions(opt);
 
   /* parse the command line options */
   try {
     opt.parseOptions(argc, argv);
-  } catch (falcon::Exception e) {
+  } catch (falcon::Exception& e) {
     if (e.getCode () != 0) { // the help throw a SUCCESS code, no error to show
-      LOG(error) << e.getErrorMessage();
+      std::cerr << e.getErrorMessage() << std::endl;
     }
     return e.getCode();
   }
@@ -132,8 +134,8 @@ int main (int const argc, char const* const* argv) {
   falcon::GraphParser graphParser;
   try {
     graphParser.processFile(config->getJsonGraphFile());
-  } catch (falcon::Exception e) {
-    LOG(error) << e.getErrorMessage ();
+  } catch (falcon::Exception& e) {
+    LOG(ERROR) << e.getErrorMessage ();
     return e.getCode();
   }
 

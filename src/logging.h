@@ -6,24 +6,32 @@
 #ifndef FALCON_LOGGING_H_
 # define FALCON_LOGGING_H_
 
-# define BOOST_LOG_DYN_LINK
+# include <glog/logging.h>
 
-# include <boost/log/core.hpp>
-# include <boost/log/trivial.hpp>
-# include <boost/log/expressions.hpp>
+/* We don't want to use Verbose log message */
+# undef VLOG
 
-# define LOG BOOST_LOG_TRIVIAL
-
-/* Use logging to shortcut the boost::log namespace */
-namespace logging = boost::log;
+/*
+ * GLOG: Google Logging system:
+ * see: http://google-glog.googlecode.com/svn/trunk/doc/glog.html
+ */
 
 namespace falcon {
 
-class Log {
-public:
-  typedef logging::trivial::severity_level Level;
-};
-void initlogging(Log::Level const& l);
+/*!
+ * @function defaultlogging:
+ * @brief configure the Google logging system
+ *
+ * @param programName: the name to show (you may want the program name)
+ * @param lvl: the minimum bound of log level to show
+ * @param logDir: a directory where Google GLOG will write log files. If the
+ *                given string then the logs will be only print the stderr */
+void defaultlogging(std::string const& programName,
+                    google::LogSeverity lvl,
+                    std::string const& logDir);
+
+/*! Configure the log system */
+void testlogging(std::string const& programName);
 
 }
 

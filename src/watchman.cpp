@@ -8,6 +8,7 @@
 #include "logging.h"
 #include "json/parser.h"
 
+#include <cassert>
 #include <cstdio>
 #include <cstring>
 #include <unistd.h>
@@ -75,7 +76,7 @@ void WatchmanClient::startWatchmanInstance() {
 
   auto status = p->status();
   if (status != SubProcessExitStatus::SUCCEEDED) {
-    LOG(error) << "can't start watchman";
+    LOG(ERROR) << "can't start watchman";
   }
 }
 
@@ -186,7 +187,7 @@ void WatchmanClient::writeCommand(std::string const& cmd) {
   for (unsigned int i = 0; i != cmd.size(); i += r) {
     r = write(watchmanSocket_, &cmd[i], cmd.size() - i);
     if (r == -1) {
-      LOG(error) << "werror while writing command to watchman socket: "
+      LOG(ERROR) << "werror while writing command to watchman socket: "
                  << "errno(" << errno << ") " << strerror(errno);
       if (errno == EAGAIN) {
         r = 0;
@@ -197,7 +198,7 @@ void WatchmanClient::writeCommand(std::string const& cmd) {
       }
     }
   }
-  LOG(trace) << "[WATCHMAN] <--- " << cmd;
+  DLOG(INFO) << "[WATCHMAN] <--- " << cmd;
 }
 
 void WatchmanClient::readAnswer() {
@@ -212,8 +213,8 @@ void WatchmanClient::readAnswer() {
     int r = read(watchmanSocket_, buf, sizeof(buf) - 1);
     if (r == -1) {
       if (errno == EAGAIN) { loop++; continue; }
-      LOG(error) << "werror while reading on watchman socket: "
-                 << "errno(" << errno << ") " << strerror(errno);
+      LOG(ERROR) << "werror while reading on watchman socket: "
+                  << "errno(" << errno << ") " << strerror(errno);
       close(watchmanSocket_);
       isConnected_ = false;
       THROW_ERROR(errno, "unable to read watchman command response");
@@ -221,7 +222,7 @@ void WatchmanClient::readAnswer() {
     }
     parser.parse(0, buf, r);
     dom = parser.getDom();
-    LOG(trace) << "[WATCHMAN] ---> " << buf;
+    DLOG(INFO) << "[WATCHMAN] ---> " << buf;
   } while (!dom && ((++loop) < (MAX_JSON_STRING_SIZE / MAX_BUF_SIZE)));
 
   if (!dom) {
@@ -230,7 +231,7 @@ void WatchmanClient::readAnswer() {
   /* In case of an error: */
   JsonVal const* error = dom->getObject("error");
   if (error) {
-    LOG(error) << error->_data;
+    LOG(ERROR) << error->_data;
   }
 }
 
