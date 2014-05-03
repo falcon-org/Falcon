@@ -22,7 +22,7 @@ from ttypes import *
 
 def startDaemon():
   """Start the falcon daemon in a sub process"""
-  r = subprocess.call(["falcon", "--log-level", "debug"])
+  r = subprocess.call(["falcon", "--log-level", "0"])
   return r == 0
 
 def connect():
