@@ -5,14 +5,12 @@ cmd_port = 4242
 stream_port = 4343
 
 import sys
-import getopt
+import argparse
 import socket
 import subprocess
 import time
 
-from optparse import OptionParser
-
-# Thrift files 
+# Thrift files
 from thrift import Thrift
 from thrift.transport import TSocket
 from thrift.transport import TTransport
@@ -21,22 +19,14 @@ from thrift.protocol import TBinaryProtocol
 from FalconService import *
 from ttypes import *
 
-def help():
-  print "falcon.py [OPTION]"
-  print "options:"
-  print "  -b                         Start a build"
-  print "  -i                         Interrupt the current build"
-  print "  -s                         Shutdown the daemon"
-  print "  -g                         Print the list of dirty sources"
-  print "  -p                         Print the pid of the daemon"
-  print "  -v                         Print the graph in graphviz format"
-  print "  -d <file> | --dirty=<file> Mark <file> to be dirty"
-
 def startDaemon():
+  """Start the falcon daemon in a sub process"""
   r = subprocess.call(["falcon", "--log-level", "debug"])
   return r == 0
 
 def connect():
+  """Connect to the falcon daemon. Throws an exception if the daemon is not
+  running"""
   transport = TSocket.TSocket(host, cmd_port)
   transport = TTransport.TBufferedTransport(transport)
   protocol = TBinaryProtocol.TBinaryProtocol(transport)
@@ -45,6 +35,7 @@ def connect():
   return (transport, client)
 
 def startAndConnect():
+  """Connect to the falcon daemon. Start the daemon if needed"""
   # Try to connect first, if we can't, spawn the daemin.
   try:
     return connect()
@@ -54,7 +45,7 @@ def startAndConnect():
       print "Could not start falcon daemon."
       sys.exit(1)
 
-  # We started the daemon, try to connect at regulat intervals.
+  # We started the daemon, try to connect at regular intervals.
   tries = 0
   while (tries < 40):
     try:
@@ -66,7 +57,7 @@ def startAndConnect():
   sys.exit(1)
 
 def build(client):
-  # Start a build
+  """Start a build"""
   r = client.startBuild()
   if r == 1:
     print "Already building..."
@@ -81,67 +72,119 @@ def build(client):
     sys.stdout.write(data)
     sys.stdout.flush()
 
+def stopDaemon():
+  """Stop the running daemon. Does nothing if the daemon is not running"""
+  try:
+    (transport, client) = connect()
+    client.shutdown()
+    transport.close()
+    return True
+  except Thrift.TException:
+    print "Daemon was not running."
+    return False
+
+def getPid(client, transport):
+  """Connects to the daemon, retrieves its pid and prints it
+  on the standard output. If client is not None, use it for the connection
+  instead of creating a new connection"""
+  if not client:
+    try:
+      (transport, client) = connect()
+    except Thrift.TException:
+      print "Daemon is not running."
+      return False
+  print client.getPid()
+  transport.close()
+  return True
+
+def setDirty(client, transport, targets):
+  """Connects to the daemon. Set the given list of targets as dirty. If client
+  is not None, use it for the connection instead of creating a new connection"""
+  if not client:
+    try:
+      (transport, client) = connect()
+    except Thrift.TException:
+      print "Daemon is not running."
+      return False
+  ret = True
+  for target in targets:
+    try:
+      client.setDirty(target)
+      print "target", target, "is marked dirty"
+    except TargetNotFound:
+      print "target", target, "not found"
+      ret = False
+  transport.close()
+  return ret
 
 def main(argv):
+  parser = argparse.ArgumentParser(description="Falcon client.")
 
-  try:
-    opts, args = getopt.getopt(argv, "hbisgpvd:", ["--dirty="])
-  except getopt.GetoptError:
-    help()
-    sys.exit(2)
+  group = parser.add_mutually_exclusive_group()
+  group.add_argument('--start', action='store_true',
+      help="Start the falcon daemon. "
+           "Has no effect if the daemon is already started.")
+  group.add_argument('--stop', action='store_true',
+      help="Stop the falcon daemon. "
+           "Has no effect if the daemon is not running."
+           "Will interrupt the current build, if any.")
+  group.add_argument('--restart', action='store_true',
+      help="Restart the falcon daemon. "
+           "Will start the daemon if it was not running.")
 
-  if len(opts) != 1:
-    print "Error: Please provide one option:"
-    help()
-    sys.exit(2)
+  group = parser.add_mutually_exclusive_group()
+  group.add_argument('-b', '--build', metavar='TARGET', nargs='*',
+      help="Start building the given targets. "
+           "Build everything if no target is given. "
+           "Will start the daemon if it is not running.")
+  group.add_argument('--get-graphviz', action='store_true',
+      help="Print the graphviz representation of the graph.")
+  group.add_argument('--interrupt', action='store_true',
+      help="Interrupt the current build.")
+  group.add_argument('--set-dirty', metavar='TARGET', nargs='+',
+      help="Mark the given targets dirty.")
+  group.add_argument('--get-dirty-sources', action='store_true',
+      help="Print a json array containing the list of dirty sources.")
+  group.add_argument('-p', '--pid', action='store_true',
+      help="Print the pid of the daemon")
 
-  opt, arg = opts[0]
-  if opt == '-h':
-    help()
-    return
+  args = parser.parse_args(argv)
 
-  ret = 0
+  transport = None
+  client = None
 
-  try:
+  # Handle start/stop/restart commands.
+  if args.start:
+    (transport, client) = startAndConnect()
+  elif args.restart:
+    stopDaemon()
+    (transport, client) = startAndConnect()
+  elif args.stop:
+    stopDaemon()
+    sys.exit(0)
+
+  # Commands that do not cause the daemon to be started.
+  if args.pid:
+    r = getPid(client, transport)
+    sys.exit(0 if r else 1)
+  elif args.set_dirty != None:
+    r = setDirty(client, transport, args.set_dirty)
+    sys.exit(0 if r else 1)
+
+  # The rest of the commands require the client to be connected and will spawn
+  # the daemon if needed.
+  if not client:
     (transport, client) = startAndConnect()
 
-    if opt == '-b':
-      build(client)
-    elif opt == '-i':
-      client.interruptBuild()
-    elif opt == '-s':
-      client.shutdown()
-    elif opt == '-g':
-      # Retrieve the dirty sources
-      src = client.getDirtySources()
-      print src
-    elif opt == '-p':
-      # Retrieve the pid of the daemon.
-      pid = client.getPid()
-      print pid
-    elif opt == '-v':
-      data = client.getGraphviz()
-      print data
-    elif opt in ("-d", "--dirty"):
-      if arg == "":
-        print "Error: no source file provided"
-        help()
-        ret = 1
-      else:
-        # Mark a source as dirty
-        try:
-          client.setDirty(arg)
-        except TargetNotFound:
-          ret = 1
-          print arg, "is not a source file"
+  if args.build != None:
+    # TODO: pass the array of targets to build.
+    build(client)
+  elif args.get_dirty_sources:
+    print client.getDirtySources()
+  elif args.get_graphviz:
+    print client.getGraphviz()
 
-    transport.close()
-  except Thrift.TException, tx:
-    ret = 1
-    print 'Exception : %s' % (tx.message)
-
-  sys.exit(ret)
+  transport.close()
 
 if __name__ == "__main__":
   main(sys.argv[1:])
-
