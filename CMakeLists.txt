@@ -52,7 +52,7 @@ add_executable(falcon
   src/main.cpp
   src/options.cpp
   src/posix_subprocess.cpp
-  src/server.cpp
+  src/command_server.cpp
   src/stream_consumer.cpp
   src/stream_server.cpp
   src/watchman.cpp

@@ -7,11 +7,11 @@
 
 #include "daemon_instance.h"
 
+#include "command_server.h"
 #include "exceptions.h"
 #include "graph_consistency_checker.h"
 #include "graphparser.h"
 #include "logging.h"
-#include "server.h"
 #include "watchman.h"
 
 using namespace std::placeholders;
@@ -31,7 +31,7 @@ void DaemonInstance::loadConf(std::unique_ptr<Graph> gp) {
 
 void DaemonInstance::start() {
   assert(!config_->runSequentialBuild());
-  assert(!server_);
+  assert(!commandServer_);
   assert(graph_);
 
   /* Register all source files to watchman. */
@@ -48,8 +48,8 @@ void DaemonInstance::start() {
 
   /* Start the server. This will block until the server shuts down. */
   LOG(info) << "Starting server...";
-  server_.reset(new Server(this, config_->getNetworkAPIPort()));
-  server_->start();
+  commandServer_.reset(new CommandServer(this, config_->getNetworkAPIPort()));
+  commandServer_->start();
 
   /* If we reach here, the server was shut down. */
   if (builder_) {
@@ -140,9 +140,9 @@ void DaemonInstance::shutdown() {
   interruptBuild();
 
   /* Stop the thrift server. */
-  assert(server_);
+  assert(commandServer_);
   /* TODO: is this a problem to call stop from a thrift handler? */
-  server_->stop();
+  commandServer_->stop();
 }
 
 void DaemonInstance::getGraphviz(std::string& str) {

@@ -40,9 +40,9 @@ class FalconServiceHandler : virtual public FalconServiceIf {
   DaemonInstance* daemon_;
 };
 
-class Server {
+class CommandServer {
  public:
-  explicit Server(DaemonInstance* daemon, int port);
+  explicit CommandServer(DaemonInstance* daemon, int port);
   void start();
   void stop();
 
@@ -56,8 +56,8 @@ class Server {
 
   DaemonInstance* daemon_;
 
-  Server(const Server& other) = delete;
-  Server& operator=(const Server&) = delete;
+  CommandServer(const CommandServer& other) = delete;
+  CommandServer& operator=(const CommandServer&) = delete;
 };
 
 } // namespace falcon

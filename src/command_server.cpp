@@ -9,7 +9,7 @@
 
 #include <iostream>
 
-#include "server.h"
+#include "command_server.h"
 
 #include "daemon_instance.h"
 
@@ -52,7 +52,7 @@ void FalconServiceHandler::getGraphviz(std::string& str) {
   daemon_->getGraphviz(str);
 }
 
-Server::Server(DaemonInstance* daemon, int port) {
+CommandServer::CommandServer(DaemonInstance* daemon, int port) {
   handler_.reset(new FalconServiceHandler(daemon));
   processor_.reset(new FalconServiceProcessor(handler_));
   serverTransport_.reset(new TServerSocket(port));
@@ -63,11 +63,11 @@ Server::Server(DaemonInstance* daemon, int port) {
                                     transportFactory_, protocolFactory_));
 }
 
-void Server::start() {
+void CommandServer::start() {
   server_->serve();
 }
 
-void Server::stop() {
+void CommandServer::stop() {
   server_->stop();
 }
 

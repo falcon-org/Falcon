@@ -12,13 +12,13 @@
 #include <thread>
 
 #include "FalconService.h"
+#include "command_server.h"
 #include "graph.h"
-#include "watchman.h"
 #include "graph_sequential_builder.h"
 #include "graphparser.h"
 #include "options.h"
-#include "server.h"
 #include "stream_server.h"
+#include "watchman.h"
 
 namespace falcon {
 
@@ -78,7 +78,7 @@ class DaemonInstance {
   StreamServer streamServer_;
 
   /* The thrift server. */
-  std::unique_ptr<Server> server_;
+  std::unique_ptr<CommandServer> commandServer_;
 };
 
 } // namespace falcon
