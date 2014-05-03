@@ -61,6 +61,10 @@ class FalconTest:
     f.write(content)
     f.close()
 
+  def get_file_content(self, file):
+    """Get the content of a file """
+    return ''.join(open(file, 'r').readlines())
+
   def gen_graphviz(self, name):
     """Generate a graphviz image"""
     data = subprocess.check_output([self._falcon_client, "--get-graphviz"])

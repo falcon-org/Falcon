@@ -37,7 +37,8 @@ def run(test):
   test.write_file("source4", "4")
   test.start()
 
-  test.gen_graphviz("graph1.png")
+  # You can debug the current state of the graph by creating a png image:
+  # test.gen_graphviz("graph1.png")
 
   # Before we build, every source file should be dirty
   dirty = test.get_dirty_sources()
@@ -48,12 +49,13 @@ def run(test):
 
   test.build()
 
-  test.gen_graphviz("graph2.png")
-
   # After we build, nothing should be dirty
   dirty = test.get_dirty_sources()
   assert(not dirty)
 
-  # TODO: check the content of all files
+  # check the content of all generated files
+  assert(test.get_file_content('node1') == '12')
+  assert(test.get_file_content('node2') == '34')
+  assert(test.get_file_content('output') == '1234')
 
   test.shutdown()
