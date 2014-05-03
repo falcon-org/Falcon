@@ -6,6 +6,7 @@ stream_port = 4343
 
 import sys
 import argparse
+import json
 import socket
 import subprocess
 import time
@@ -180,7 +181,8 @@ def main(argv):
     # TODO: pass the array of targets to build.
     build(client)
   elif args.get_dirty_sources:
-    print client.getDirtySources()
+    data = client.getDirtySources()
+    print json.dumps(list(data))
   elif args.get_graphviz:
     print client.getGraphviz()
 
