@@ -33,17 +33,20 @@ class FalconTest:
 
   def shutdown(self):
     """Shutdown the falcon daemon"""
-    subprocess.call([self._falcon_client, "--stop"])
+    r = subprocess.call([self._falcon_client, "--stop"])
+    assert(r == 0)
 
   def restart(self):
     """Start the falcon daemon"""
-    subprocess.call([self._falcon_client, "--restart",
-                      self._falcon_log_level, self._falcon_log_dir])
+    r = subprocess.call([self._falcon_client, "--restart",
+                         self._falcon_log_level, self._falcon_log_dir])
+    assert(r == 0)
 
   def start(self):
     """Start the falcon daemon"""
-    subprocess.call([self._falcon_client, "--start",
-                      self._falcon_log_level, self._falcon_log_dir])
+    r = subprocess.call([self._falcon_client, "--start",
+                        self._falcon_log_level, self._falcon_log_dir])
+    assert(r == 0)
 
   def build(self):
     """Trigger a build"""
