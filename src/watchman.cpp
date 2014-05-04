@@ -42,6 +42,18 @@ WatchmanClient::WatchmanClient(std::string const& workingDirectory)
 
 WatchmanClient::~WatchmanClient() {
   if (watchmanSocket_ >= 0) {
+    char const shutdown[] = "[ \"shutdown-server\" ]\n";
+
+    /* write the shutdown request to watchman */
+    int r = write(watchmanSocket_, shutdown, sizeof(shutdown));
+    if (r != sizeof(shutdown)) {
+      LOG(WARNING) << "Watchman might not be properly shutdown";
+    }
+
+    /* flush the socket before closing */
+    char buff[128];
+    while(0 < read(watchmanSocket_, buff, sizeof(buff)));
+
     close(watchmanSocket_);
   }
 }
