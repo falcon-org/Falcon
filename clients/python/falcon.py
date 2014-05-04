@@ -14,13 +14,11 @@ import json
 import socket
 import subprocess
 import time
-
-# Thrift files
+from BuildOutputParser import BuildOutputParser
 from thrift import Thrift
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
-
 from FalconService import *
 from ttypes import *
 
@@ -97,16 +95,14 @@ def build(client):
   r = client.startBuild()
   if r == 1:
     print "Already building..."
-    return
+    return False
 
   # Connect to the streaming server and read indefinitely.
   sock = socket.socket()
   sock.connect(("localhost", stream_port))
-  while 1:
-    data = sock.recv(1024)
-    if not data: break
-    sys.stdout.write(data)
-    sys.stdout.flush()
+
+  parser = BuildOutputParser(sock)
+  return parser.parse()
 
 def setDirty(transport, client, targets):
   """Set the given list of targets as dirty."""
@@ -238,7 +234,7 @@ def main(argv):
 
   if args.build != None:
     # TODO: pass the array of targets to build.
-    build(client)
+    ret = 0 if build(client) else 1
   elif args.get_dirty_sources:
     data = client.getDirtySources()
     print json.dumps(list(data))
