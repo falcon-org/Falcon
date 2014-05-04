@@ -160,7 +160,7 @@ void WatchmanClient::watchNode(const Node& n) {
   /* Passing the current time to watchman as a parameter to the "since"
    * expression prevents watchman from triggering our trigger immediately when
    * we create it. */
-  time_t t = time(NULL);
+  time_t t = time(NULL) - 1;
 
   std::stringstream ss;
   ss << "[ ";
