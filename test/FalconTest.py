@@ -1,6 +1,7 @@
 import time
 import json
 import os
+import os.path
 import subprocess
 import tempfile
 
@@ -47,6 +48,8 @@ class FalconTest:
   def finish(self):
     subprocess.call("pkill watchman", shell=True)
     self.ensure_shutdown()
+    # check that there were no errors
+    assert(not os.path.isfile(self._falcon_log_dir + "/falcon.ERROR"))
 
   def get_working_directory(self):
     return self._test_dir
