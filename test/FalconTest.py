@@ -45,6 +45,7 @@ class FalconTest:
     self.ensure_shutdown()
 
   def finish(self):
+    subprocess.call("pkill watchman", shell=True)
     self.ensure_shutdown()
 
   def get_working_directory(self):
@@ -130,3 +131,16 @@ class FalconTest:
     data = subprocess.check_output([self._falcon_client, "--no-start",
                                     "--get-outputs-of", target])
     return json.loads(data)
+
+  def expect_watchman_trigger(self, target):
+    """Wait for the given target to be dirty because of a watchman trigger.
+    This will call get_dirty_targets several times until the target is dirty.
+    This asserts in case a timeout expires."""
+    tries = 0
+    while tries < 50:
+      if target in self.get_dirty_targets():
+        return
+      time.sleep(0.1)
+      tries += 1
+    # timeout
+    assert(false)

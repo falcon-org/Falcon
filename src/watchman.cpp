@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <time.h>
 #include <fcntl.h>
 
 #if !defined(UNIX_PATH_MAX)
@@ -66,6 +67,7 @@ void WatchmanClient::startWatchmanInstance() {
   std::stringstream ss;
 
   ss << "watchman"
+     << " --no-save-state"
      << " --sockname=\"" << socketPath_ << "\""
      << " --logfile=\"" << logPath_ << "\"";
 
@@ -155,18 +157,21 @@ void WatchmanClient::watchNode(const Node& n) {
     }
   }
 
+  /* Passing the current time to watchman as a parameter to the "since"
+   * expression prevents watchman from triggering our trigger immediately when
+   * we create it. */
+  time_t t = time(NULL);
+
   std::stringstream ss;
   ss << "[ ";
-  /* Set the command request: subscribe */
-  ss << "\"trigger\"";
-  /* Set the directory to watch in */
-  ss << ", \"" << targetDirectory << "\"";
-  /* the trigger Name */
-  ss << ", \"" << n.getPath() << "\"";
-  /* Set the file name (the exact file name) to watch (should be in the working
-   * directory tree) */
-  ss << ", \"" << targetPattern << "\""
-     << ", \"--\", \"falcon.py\", \"-d\", \"" << n.getPath() << "\" ]\n";
+  ss << "\"trigger\", \"" << targetDirectory << "\", { ";
+  ss << "\"name\": \"" << n.getPath() << "\", ";
+  ss << "\"expression\": [\"allof\", ";
+  ss << "[\"name\", \"" << n.getPath() << "\", \"wholename\"], ";
+  ss << "[\"since\", " << t << ", \"mtime\"]], ";
+  ss << "\"command\": ["
+    << "\"falcon.py\", \"--set-dirty\", \"" << n.getPath() << "\""
+    << "]}]\n";
 
   /* Send the command to watchman */
   std::string cmd = ss.str();
