@@ -146,4 +146,4 @@ class FalconTest:
       time.sleep(0.1)
       tries += 1
     # timeout
-    assert(false)
+    assert(False)
