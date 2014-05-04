@@ -75,12 +75,19 @@ class Node {
   Timestamp getTimestamp() const;
   void setTimestamp(Timestamp);
 
+  void setHash(std::string const&);
+  std::string const& getHash() const;
+  std::string& getHash();
+
   /* Operators */
   bool operator==(Node const& n) const;
   bool operator!=(Node const& n) const;
 
  private:
   std::string path_;
+
+  /* A hash to represent the current state of a Node */
+  std::string hash_;
 
   /* The rule used to construct this Node.
    * If nullptr, this node is a source file (a leaf node). */
@@ -135,6 +142,10 @@ class Rule {
   /* Set the state as Up to date and mark all the dependencies */
   void markUpToDate();
 
+  void setHash(std::string const&);
+  std::string const& getHash() const;
+  std::string& getHash();
+
  private:
   NodeArray inputs_;
   NodeArray outputs_;
@@ -149,6 +160,9 @@ class Rule {
 
   /* Set to UP_TO_DATE if all outputs are UP_TO_DATE, OUT_OF_DATE otherwise. */
   State state_;
+
+  /* A hash to represent the current state of a Node */
+  std::string hash_;
 
   Rule(const Rule& other) = delete;
   Rule& operator=(const Rule&) = delete;
@@ -203,10 +217,32 @@ class Graph {
 
 namespace falcon{
 
-/* Update the timestamp of every Node and then update their State */
+/********************
+ * Timestamp Method *
+ ********************
+ * Update the timestamp of every Node and then update their State */
 void updateGraphTimestamp(Graph&);
 
+/****************
+ * Hash methods *
+ ****************/
+/* This is the initialization Hash method:
+ * this function will explore recursively all the graph from top to bottom to
+ * update the timestamp. This function should be use only at one point:
+ * after creating a Graph */
+void setGraphHash(Graph& g);
+/* Update the Node hash:
+ * if it is a leaf, then compute the new hash. Else get the Child's hash */
+void updateNodeHash(Node& n);
+/* Update the Rule hash: whish the hash of it's inputs' hash */
+void updateRuleHash(Rule& n);
+
+/*******************
+ * Printer methods *
+ *******************/
+/* Makefile compatible ouput */
 void printGraphMakefile(Graph const&, std::ostream&);
+/* Graphiz compatible ouput */
 void printGraphGraphiz(Graph const&, std::ostream&);
 
 }

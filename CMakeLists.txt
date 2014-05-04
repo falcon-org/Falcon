@@ -47,6 +47,7 @@ add_executable(falcon
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService_constants.cpp
   src/daemon_instance.cpp
   src/graph.cpp
+  src/graph_hash.cpp
   src/graph_timestamp.cpp
   src/graph_printers.cpp
   src/graph_sequential_builder.cpp
@@ -77,6 +78,7 @@ target_link_libraries(falcon
   ${glog_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
   pthread
+  crypto
   )
 
 # This project uses C++11

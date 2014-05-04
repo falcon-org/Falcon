@@ -16,10 +16,11 @@ namespace falcon {
 /* ************************************************************************* */
 
 Node::Node(const std::string& path)
- : path_(path)
- , childRule_(nullptr)
- , state_(State::UP_TO_DATE)
- , timestamp_(0) { }
+  : path_(path)
+  , hash_()
+  , childRule_(nullptr)
+  , state_(State::UP_TO_DATE)
+  , timestamp_(0) { }
 
 const std::string& Node::getPath() const { return path_; }
 
@@ -45,12 +46,8 @@ void Node::setState(State state) { state_ = state; }
 void Node::markDirty() {
   DLOG(INFO) << "marking " << path_ << " dirty";
 
-  if (isDirty()) {
-    /* This node is already dirty. */
-    DLOG(INFO) << path_ << " is already dirty";
-    return;
-  }
   setState(State::OUT_OF_DATE);
+  updateNodeHash(*this);
 
   /* Mark all the parent rules dirty. */
   for (auto it = parentRules_.begin(); it != parentRules_.end(); ++it) {
@@ -65,6 +62,14 @@ void Node::setTimestamp(Timestamp t) {
   timestamp_ = t;
 }
 
+void Node::setHash(std::string const& hash) {
+  DLOG(INFO) << "hash(" << getPath() << ") = [" << hash << "]";
+  hash_ = hash;
+}
+std::string const& Node::getHash() const { return hash_; }
+std::string& Node::getHash() { return hash_; }
+
+
 bool Node::operator==(Node const& n) const { return getPath() == n.getPath(); }
 bool Node::operator!=(Node const& n) const { return getPath() != n.getPath(); }
 
@@ -75,7 +80,9 @@ bool Node::operator!=(Node const& n) const { return getPath() != n.getPath(); }
 Rule::Rule(const NodeArray& inputs, const NodeArray& outputs)
   : inputs_(inputs)
   , outputs_(outputs)
-  , state_(State::UP_TO_DATE) { }
+  , state_(State::UP_TO_DATE)
+  , hash_()
+{ }
 
 const NodeArray& Rule::getInputs() const { return inputs_; }
 NodeArray&       Rule::getInputs()       { return inputs_; }
@@ -101,12 +108,8 @@ bool Rule::isDirty() const { return state_ == State::OUT_OF_DATE; }
 void Rule::setState(State state) { state_ = state; }
 
 void Rule::markDirty() {
-  if (isDirty()) {
-    /* This rule is already dirty. */
-    return;
-  }
-
   setState(State::OUT_OF_DATE);
+  updateRuleHash(*this);
 
   /* Mark all the outputs dirty. */
   for (auto it = outputs_.begin(); it != outputs_.end(); ++it) {
@@ -114,16 +117,22 @@ void Rule::markDirty() {
   }
 }
 
+void Rule::setHash(std::string const& hash) { hash_ = hash; }
+std::string const& Rule::getHash() const { return hash_; }
+std::string& Rule::getHash() { return hash_; }
+
 /* ************************************************************************* */
 /*                                Graph                                      */
 /* ************************************************************************* */
 
 Graph::Graph(const NodeSet& roots, const NodeSet& sources,
              const NodeMap& nodes, const RuleArray& rules)
-    : roots_(roots)
-    , sources_(sources)
-    , nodes_(nodes)
-    , rules_(rules) {}
+  : roots_(roots)
+  , sources_(sources)
+  , nodes_(nodes)
+  , rules_(rules) {
+  setGraphHash(*this);
+}
 
 void Graph::addNode(Node* node) {
   if (node->getParents().empty()) {

@@ -51,7 +51,7 @@ static void printNodeGraphiz(Node const& n, std::ostream& os) {
   std::string fillColor = "white";
 
   os << "node [fontsize=10, shape=box, height=0.25, style=filled]" << std::endl;
-  os << "\"" << &n << "\" [label=\"" << n.getPath()
+  os << "\"" << n.getHash() << "\" [label=\"" << n.getPath()
                    << "\"  color=\"" << color
                    << "\"  fillcolor=\"" << fillColor
                    << "\" ]" << std::endl;
@@ -68,18 +68,18 @@ static void printRuleGraphiz(Rule const& r, std::ostream& os) {
 
   os << "node [fontsize=10, shape=point, height=0.25, style=filled]"
      << std::endl;
-  os << "\"" << &r << "\" [label=\"" << "rule"
+  os << "\"" << r.getHash() << "\" [label=\"" << "rule"
                    << "\"  color=\"" << color
                    << "\"  fillcolor=\"" << fillColor
                    << "\" ]" << std::endl;
 
   for (auto iit = inputs.cbegin(); iit != inputs.cend(); iit++) {
-      os << "\"" << (*iit) << "\" ->" << "\"" << &r
+      os << "\"" << (*iit)->getHash() << "\" ->" << "\"" << r.getHash()
          << "\" [ color=\"" << color << "\"]" << std::endl;
   }
 
   for (auto oit = outputs.cbegin(); oit != outputs.cend(); oit++) {
-      os << "\"" << &r << "\" ->" << "\"" << (*oit)
+      os << "\"" << r.getHash() << "\" ->" << "\"" << (*oit)->getHash()
          << "\" [ color=\"" << color << "\"]" << std::endl;
   }
 }

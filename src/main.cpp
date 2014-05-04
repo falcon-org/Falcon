@@ -58,14 +58,14 @@ static void setOptions(falcon::Options& opt) {
                      "write log files in the given directory");
 }
 
-static int loadModule(std::unique_ptr<falcon::Graph> g, std::string const& s) {
+static int loadModule(falcon::Graph& g, std::string const& s) {
 
   LOG(INFO) << "load module '" << s << "'";
 
   if (0 == s.compare("dot")) {
-    printGraphGraphiz(*g, std::cout);
+    printGraphGraphiz(g, std::cout);
   } else if (0 == s.compare("make")) {
-    printGraphMakefile(*g, std::cout);
+    printGraphMakefile(g, std::cout);
   } else if (0 == s.compare("help")) {
     std::cout << "list of available modules: " << std::endl
       << "  dot    show the graph in DOT format" << std::endl
@@ -144,7 +144,7 @@ int main (int const argc, char const* const* argv) {
 
   /* if a module has been requested to execute then load it and return */
   if (opt.isOptionSetted("module")) {
-    return loadModule(graphParser.getGraph(),
+    return loadModule(*graphPtr,
                       opt.vm_["module"].as<std::string>());
   }
 
@@ -154,6 +154,6 @@ int main (int const argc, char const* const* argv) {
   }
 
   /* Start the daemon. */
-  daemonize(std::move(config), std::move(graphParser.getGraph()));
+  daemonize(std::move(config), std::move(graphPtr));
   return 0;
 }
