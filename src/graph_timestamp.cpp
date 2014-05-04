@@ -21,7 +21,8 @@ static void updateNodeTimestamp(Node& n) {
     if (errno != ENOENT && errno != ENOTDIR) {
       LOG(WARNING) << "Updating timestamp for Node '" << n.getPath()
                    << "' failed, this might affect the build system";
-      DLOG(WARNING) << "stat(" << n.getPath() < ") [" << errno << "] " << strerror(errno);
+      DLOG(WARNING) << "stat(" << n.getPath()
+                    << ") [" << errno << "] " << strerror(errno);
     }
   } else {
     t = st.st_mtime;
