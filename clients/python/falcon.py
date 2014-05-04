@@ -49,7 +49,7 @@ def connectLoop():
   Return (transport, client) or None on failure."""
   # We started the daemon, try to connect at regular intervals.
   tries = 0
-  while (tries < 10):
+  while (tries < 100):
     try:
       return connect()
     except Thrift.TException:
@@ -73,13 +73,13 @@ def startDaemon(log_level, log_dir):
 
 def stopDaemon():
   """Stop the running daemon. Returns False if the daemon was not running."""
-  try:
-    (transport, client) = connect()
-    client.shutdown()
-    transport.close()
-    return True
-  except Thrift.TException:
+  r = connectLoop()
+  if not r:
     return False
+  (transport, client) = r
+  client.shutdown()
+  transport.close()
+  return True
 
 def connectSpawnIfNeeded():
   """Connect to the falcon daemon. Start the daemon if needed.
@@ -156,6 +156,8 @@ def main(argv):
       help="Stop the falcon daemon. "
            "Has no effect if the daemon is not running."
            " Will interrupt the current build, if any.")
+  group.add_argument('--no-start', action='store_true',
+      help="Do no start the daemon if not started")
 
   group = parser.add_mutually_exclusive_group()
   group.add_argument('-b', '--build', metavar='TARGET', nargs='*',
@@ -184,7 +186,7 @@ def main(argv):
 
   args = parser.parse_args(argv)
 
-  # Handle start/stop/restart commands.
+  # Handle start/stop/restart/no-start commands.
   if args.start:
     (log_level, log_dir) = args.start
     if not startDaemon(log_level, log_dir):
@@ -199,6 +201,7 @@ def main(argv):
     if not r:
       print "Could not stop the daemon"
     sys.exit(0 if r else 1)
+
 
   # Commands that do not cause the daemon to be started.
   if args.pid or args.set_dirty or args.interrupt:
@@ -217,7 +220,15 @@ def main(argv):
 
   # The rest of the commands require the client to be connected and will spawn
   # the daemon if needed.
-  connectInfo = connectSpawnIfNeeded()
+
+  if args.no_start or args.start or args.restart:
+    # Either the user specifield "--no-start" or already started the daemon with
+    # "--start" or "--restart". In either case, we only want to try to connect
+    # to the daemon but won't spawn it here.
+    connectInfo = connectLoop()
+  else:
+    # Otherwise, take care of spawning the daemon if needed.
+    connectInfo = connectSpawnIfNeeded()
   if not connectInfo:
     print "Could not connect to the falcon daemon."
     sys.exit(1)

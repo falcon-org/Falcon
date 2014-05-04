@@ -18,4 +18,3 @@ makefile = '''
 def run(test):
   test.create_makefile(makefile)
   test.start()
-  test.shutdown()

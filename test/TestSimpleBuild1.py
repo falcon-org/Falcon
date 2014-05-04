@@ -35,6 +35,7 @@ def run(test):
   test.write_file("source2", "2")
   test.write_file("source3", "3")
   test.write_file("source4", "4")
+
   test.start()
 
   # You can debug the current state of the graph by creating a png image:
@@ -57,5 +58,3 @@ def run(test):
   assert(test.get_file_content('node1') == '12')
   assert(test.get_file_content('node2') == '34')
   assert(test.get_file_content('output') == '1234')
-
-  test.shutdown()

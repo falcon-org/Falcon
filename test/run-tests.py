@@ -20,11 +20,13 @@ if __name__ == "__main__":
     mod_file = os.path.split(mod_path)[1]
     mod_name = os.path.splitext(mod_file)[0]
     mod = __import__(mod_name)
-    test = FalconTest()
 
     success = True
+    test = FalconTest()
     try:
+      test.prepare()
       mod.run(test)
+      test.finish()
     except:
       f = open(test.get_error_log_file(), 'a')
       traceback.print_exc(file=f)

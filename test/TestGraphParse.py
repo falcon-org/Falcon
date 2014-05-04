@@ -44,5 +44,3 @@ def run(test):
   assert(set(test.get_outputs_of("node1")) == set(["output"]))
   assert(set(test.get_outputs_of("node2")) == set(["output"]))
   assert(test.get_outputs_of("output") == [])
-
-  test.shutdown()

@@ -76,7 +76,7 @@ void WatchmanClient::startWatchmanInstance() {
 
   auto status = p->status();
   if (status != SubProcessExitStatus::SUCCEEDED) {
-    LOG(ERROR) << "can't start watchman";
+    THROW_ERROR(EINVAL, "can't start watchman");
   }
 }
 
@@ -231,7 +231,7 @@ void WatchmanClient::readAnswer() {
   /* In case of an error: */
   JsonVal const* error = dom->getObject("error");
   if (error) {
-    LOG(ERROR) << error->_data;
+    THROW_ERROR(EINVAL, error->_data.c_str());
   }
 }
 

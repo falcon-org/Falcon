@@ -1,3 +1,4 @@
+import time
 import json
 import os
 import subprocess
@@ -16,9 +17,30 @@ class FalconTest:
     os.chdir(self._test_dir)
     os.mkdir(self._falcon_log_dir)
 
-    # Make sure the daemon is shut down. Do not display any error.
-    FNULL = open(os.devnull, 'w')
-    subprocess.call([self._falcon_client, "--stop"], stdout=FNULL, stderr=FNULL)
+  def ensure_shutdown(self):
+    # Try to shut down any existing daemon nicely.
+    try:
+      pid = subprocess.check_output(["pgrep", "falcon"])
+      subprocess.call([self._falcon_client, "--stop"])
+    except subprocess.CalledProcessError:
+      return
+    # Now that we sent the stop command, wait for it to stop
+    tries = 0
+    while tries < 50:
+      try:
+        pid = subprocess.check_output(["pgrep", "falcon"])
+      except subprocess.CalledProcessError:
+        return
+      tries += 1
+      time.sleep(0.1)
+    # If we reach here, we could not stop the daemon, kill it...
+    subprocess.call("pkill " + pid, shell=True)
+
+  def prepare(self):
+    self.ensure_shutdown()
+
+  def finish(self):
+    self.ensure_shutdown()
 
   def get_working_directory(self):
     return self._test_dir
@@ -37,7 +59,7 @@ class FalconTest:
     assert(r == 0)
 
   def restart(self):
-    """Start the falcon daemon"""
+    """Restart the falcon daemon"""
     r = subprocess.call([self._falcon_client, "--restart",
                          self._falcon_log_level, self._falcon_log_dir])
     assert(r == 0)
@@ -49,11 +71,12 @@ class FalconTest:
     assert(r == 0)
 
   def build(self):
-    """Trigger a build"""
+    """Trigger a build.."""
     # TODO: for now we pipe the output to stdout. We will parse the output
     # later.
     FNULL = open(os.devnull, 'w')
-    subprocess.call([self._falcon_client, "--build"], stdout=FNULL)
+    return subprocess.call([self._falcon_client, "--no-start", "--build"],
+                           stdout=FNULL)
 
   def write_file(self, name, content):
     """Write to a file"""
@@ -67,7 +90,8 @@ class FalconTest:
 
   def gen_graphviz(self, name):
     """Generate a graphviz image"""
-    data = subprocess.check_output([self._falcon_client, "--get-graphviz"])
+    data = subprocess.check_output([self._falcon_client, "--no-start",
+                                   "--get-graphviz"])
     proc = subprocess.Popen(['dot', '-Tpng'],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     png = proc.communicate(data)[0]
@@ -77,24 +101,24 @@ class FalconTest:
 
   def get_dirty_sources(self):
     """Get the list of currently dirty sources"""
-    data = subprocess.check_output([self._falcon_client, "--get-dirty-sources"])
+    data = subprocess.check_output([self._falcon_client, "--no-start",
+                                   "--get-dirty-sources"])
     return json.loads(data)
 
   def get_dirty_targets(self):
     """Get the list of currently dirty targets"""
-    data = subprocess.check_output([self._falcon_client, "--get-dirty-targets"])
+    data = subprocess.check_output([self._falcon_client, "--no-start",
+                                   "--get-dirty-targets"])
     return json.loads(data)
 
   def get_inputs_of(self, target):
     """Get the list of inputs of a given targets"""
-    data = subprocess.check_output([self._falcon_client,
-                                    "--get-inputs-of",
-                                    target])
+    data = subprocess.check_output([self._falcon_client, "--no-start",
+                                    "--get-inputs-of", target])
     return json.loads(data)
 
   def get_outputs_of(self, target):
     """Get the list of outputs of a given targets"""
-    data = subprocess.check_output([self._falcon_client,
-                                    "--get-outputs-of",
-                                    target])
+    data = subprocess.check_output([self._falcon_client, "--no-start",
+                                    "--get-outputs-of", target])
     return json.loads(data)
