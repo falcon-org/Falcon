@@ -17,23 +17,26 @@ class FalconTest:
     os.chdir(self._test_dir)
     os.mkdir(self._falcon_log_dir)
 
-  def ensure_shutdown(self):
+  def ensure_shutdown(self, expect_running=False):
     # Try to shut down any existing daemon nicely.
     try:
       pid = subprocess.check_output(["pgrep", "falcon"])
-      subprocess.call([self._falcon_client, "--stop"])
     except subprocess.CalledProcessError:
       return
-    # Now that we sent the stop command, wait for it to stop
-    tries = 0
-    while tries < 50:
-      try:
-        pid = subprocess.check_output(["pgrep", "falcon"])
-      except subprocess.CalledProcessError:
-        return
-      tries += 1
-      time.sleep(0.1)
-    # If we reach here, we could not stop the daemon, kill it...
+    r = subprocess.call([self._falcon_client, "--stop"])
+    if expect_running:
+      assert(r == 0)
+    if r == 0:
+      # Now that we sent the stop command, wait for it to stop
+      tries = 0
+      while tries < 50:
+        try:
+          pid = subprocess.check_output(["pgrep", "falcon"])
+        except subprocess.CalledProcessError:
+          return
+        tries += 1
+        time.sleep(0.1)
+      # If we reach here, we could not stop the daemon, kill it...
     subprocess.call("pkill " + pid, shell=True)
 
   def prepare(self):
@@ -55,8 +58,7 @@ class FalconTest:
 
   def shutdown(self):
     """Shutdown the falcon daemon"""
-    r = subprocess.call([self._falcon_client, "--stop"])
-    assert(r == 0)
+    self.ensure_shutdown(True)
 
   def restart(self):
     """Restart the falcon daemon"""
@@ -87,6 +89,10 @@ class FalconTest:
   def get_file_content(self, file):
     """Get the content of a file """
     return ''.join(open(file, 'r').readlines())
+
+  def get_pid(self):
+    pid = subprocess.check_output([self._falcon_client, "--pid"])
+    return pid
 
   def gen_graphviz(self, name):
     """Generate a graphviz image"""
