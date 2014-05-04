@@ -35,7 +35,8 @@ typedef std::set<Node*>                        NodeSet;
 typedef std::unordered_map<std::string, Node*> NodeMap;
 typedef std::vector<Rule*>                     RuleArray;
 typedef std::set<Rule*>                        RuleSet;
-typedef unsigned int                           TimeStamp;
+
+typedef unsigned int                           Timestamp;
 
 /** Define the state of a node or rule. */
 enum class State { UP_TO_DATE, OUT_OF_DATE };
@@ -70,18 +71,13 @@ class Node {
   void setState(State state);
   /* Set the state as Dirty and mark all the dependencies as dirty too */
   void markDirty();
-  /* Set the state as Up to date and mark all the dependencies */
-  void markUpToDate();
 
-  TimeStamp getTimeStamp() const;
-  TimeStamp getPreviousTimeStamp () const;
-  void updateTimeStamp(TimeStamp const);
+  Timestamp getTimestamp() const;
+  void setTimestamp(Timestamp);
 
   /* Operators */
   bool operator==(Node const& n) const;
   bool operator!=(Node const& n) const;
-
-  void accept(GraphVisitor& v);
 
  private:
   std::string path_;
@@ -96,8 +92,7 @@ class Node {
   RuleArray parentRules_;
 
   State state_;
-  TimeStamp newTimeStamp_;
-  TimeStamp oldTimeStamp_;
+  Timestamp timestamp_;
 
   Node(const Node& other) = delete;
   Node& operator=(const Node&) = delete;
@@ -140,7 +135,6 @@ class Rule {
   /* Set the state as Up to date and mark all the dependencies */
   void markUpToDate();
 
-  void accept(GraphVisitor& v);
  private:
   NodeArray inputs_;
   NodeArray outputs_;
@@ -182,8 +176,6 @@ class Graph {
   const RuleArray& getRules() const;
   RuleArray& getRules();
 
-  void accept(GraphVisitor& v);
-
  private:
 
   /* Contains all the root nodes, ie the nodes that are not an input to any
@@ -207,76 +199,15 @@ class Graph {
 
 
 /* ************************************************************************* */
-/* Graph visitors */
+/* Tools */
+
 namespace falcon{
 
-class GraphVisitor {
-  public:
-    virtual void visit(Graph&) = 0;
-    virtual void visit(Node&) = 0;
-    virtual void visit(Rule&) = 0;
-};
+/* Update the timestamp of every Node and then update their State */
+void updateGraphTimestamp(Graph&);
 
-/* A visitor to update the states depending on the node's timestamp */
-class GraphTimeStampUpdater : public GraphVisitor {
-public:
-  virtual void visit(Graph& g);
-  virtual void visit(Node& g);
-  virtual void visit(Rule& g);
-};
-
-/* Graph Printer visitor */
-
-/* A kind of class dedicated to print something or mark something in a stream */
-class GraphVisitorPrinter : public GraphVisitor {
-public:
-  GraphVisitorPrinter(std::ostream& os) : os_(os) {}
-protected:
-  /* Allow all childs to access this field */
-  std::ostream& os_;
-private:
-  GraphVisitorPrinter() = delete;
-};
-
-/* Print a Makefile compatible output */
-class GraphMakefilePrinter : public GraphVisitorPrinter {
-public:
-  /* Use std::cout by default */
-  GraphMakefilePrinter();
-  GraphMakefilePrinter(std::ostream& os);
-  virtual void visit(Graph& g);
-  virtual void visit(Node& g);
-  virtual void visit(Rule& g);
-};
-
-/* Print a graphiz output:
- * the output could be used with dot or graphviz to generate a picture of the
- * graph. */
-class GraphGraphizPrinter : public GraphVisitorPrinter {
-public:
-  /* Use std::cout by default */
-  GraphGraphizPrinter();
-  GraphGraphizPrinter(std::ostream& os);
-  virtual void visit(Graph& g);
-  virtual void visit(Node& g);
-  virtual void visit(Rule& g);
-
-private:
-  /* ******************* */
-  /* Rule design options */
-  /* edge color: */
-  std::string ruleColorOutOfDate_ = "red";
-  std::string ruleColorUpToDate_ = "black";
-
-  /* ******************* */
-  /* Node design options */
-  /* Border color: */
-  std::string nodeColorOutOfDate_ = "red";
-  std::string nodeColorUpToDate_ = "black";
-  /* Fill color: */
-  std::string nodeFillColorOutOfDate_ = "white";
-  std::string nodeFillColorUpToDate_ = "white";
-};
+void printGraphMakefile(Graph const&, std::ostream&);
+void printGraphGraphiz(Graph const&, std::ostream&);
 
 }
 

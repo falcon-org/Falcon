@@ -47,9 +47,10 @@ add_executable(falcon
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService_constants.cpp
   src/daemon_instance.cpp
   src/graph.cpp
+  src/graph_timestamp.cpp
+  src/graph_printers.cpp
   src/graph_sequential_builder.cpp
   src/graphparser.cpp
-  src/graphvisitors.cpp
   src/json/json.c
   src/json/parser.cpp
   src/logging.cpp

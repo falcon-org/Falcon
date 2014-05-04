@@ -197,8 +197,7 @@ void DaemonInstance::getGraphviz(std::string& str) {
 
   assert(graph_);
   std::ostringstream oss;
-  falcon::GraphGraphizPrinter ggp(oss);
-  graph_->accept(ggp);
+  printGraphGraphiz(*graph_, oss);
   str = oss.str();
 }
 

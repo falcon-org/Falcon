@@ -63,11 +63,9 @@ static int loadModule(std::unique_ptr<falcon::Graph> g, std::string const& s) {
   LOG(INFO) << "load module '" << s << "'";
 
   if (0 == s.compare("dot")) {
-    falcon::GraphGraphizPrinter ggp(std::cout);
-    g->accept(ggp);
+    printGraphGraphiz(*g, std::cout);
   } else if (0 == s.compare("make")) {
-    falcon::GraphMakefilePrinter gmp(std::cout);
-    g->accept(gmp);
+    printGraphMakefile(*g, std::cout);
   } else if (0 == s.compare("help")) {
     std::cout << "list of available modules: " << std::endl
       << "  dot    show the graph in DOT format" << std::endl
@@ -139,13 +137,10 @@ int main (int const argc, char const* const* argv) {
     return e.getCode();
   }
 
-  { /* Update the graph timestamp (initialize the new timestamp) */
-    falcon::GraphTimeStampUpdater gtsu;
-    /* initialize the first timestamp (by default all the timestamp are 0) */
-    graphParser.getGraph()->accept(gtsu);
-    /* update the state of every nodes and rules */
-    graphParser.getGraph()->accept(gtsu);
-  }
+  std::unique_ptr<falcon::Graph> graphPtr = graphParser.getGraph();
+
+  /* Update the graph timestamp (initialize the new timestamp) */
+  updateGraphTimestamp(*graphPtr);
 
   /* if a module has been requested to execute then load it and return */
   if (opt.isOptionSetted("module")) {
@@ -155,7 +150,7 @@ int main (int const argc, char const* const* argv) {
 
   /* User explicitly requires a build. Do not daemonize.*/
   if (config->runSequentialBuild()) {
-    return build(config, graphParser.getGraph());
+    return build(config, graphPtr);
   }
 
   /* Start the daemon. */
