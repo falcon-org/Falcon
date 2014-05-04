@@ -179,7 +179,7 @@ void WatchmanClient::watchNode(const Node& n) {
   ss << "\"trigger\", \"" << targetDirectory << "\", { ";
   ss << "\"name\": \"" << n.getPath() << "\", ";
   ss << "\"expression\": [\"allof\", ";
-  ss << "[\"name\", \"" << n.getPath() << "\", \"wholename\"], ";
+  ss << "[\"name\", \"" << targetPattern << "\", \"wholename\"], ";
   ss << "[\"since\", " << t << ", \"mtime\"]], ";
   ss << "\"command\": ["
     << "\"falcon.py\", \"--set-dirty\", \"" << n.getPath() << "\""
