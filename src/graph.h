@@ -223,6 +223,10 @@ namespace falcon{
  * Update the timestamp of every Node and then update their State */
 void updateGraphTimestamp(Graph&);
 
+/* Check Graph:
+ * check if there is a loop in the graph */
+void checkGraphLoop(Graph const& g);
+
 /****************
  * Hash methods *
  ****************/

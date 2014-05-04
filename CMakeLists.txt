@@ -48,6 +48,7 @@ add_executable(falcon
   src/daemon_instance.cpp
   src/graph.cpp
   src/graph_hash.cpp
+  src/graph_cycle.cpp
   src/graph_timestamp.cpp
   src/graph_printers.cpp
   src/graph_sequential_builder.cpp

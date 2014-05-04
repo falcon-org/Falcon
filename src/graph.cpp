@@ -4,7 +4,7 @@
  */
 
 #include <algorithm>
-#include <cassert>
+#include "exceptions.h"
 
 #include "graph.h"
 #include "logging.h"
@@ -28,7 +28,11 @@ const Rule* Node::getChild() const { return childRule_; }
 Rule*       Node::getChild()       { return childRule_; }
 
 void Node::setChild(Rule* rule) {
-  assert(childRule_ == nullptr);
+  if (childRule_ != nullptr) {
+    std::string message = "Invalide Graph -> Node '" + getPath()
+                        + "' has already a child";
+    THROW_ERROR(EINVAL, message.c_str());
+  }
   childRule_ = rule;
 }
 
@@ -131,6 +135,7 @@ Graph::Graph(const NodeSet& roots, const NodeSet& sources,
   , sources_(sources)
   , nodes_(nodes)
   , rules_(rules) {
+  checkGraphLoop(*this);
   setGraphHash(*this);
 }
 
@@ -143,7 +148,11 @@ void Graph::addNode(Node* node) {
     sources_.insert(node);
   }
 
-  assert(nodes_.find(node->getPath()) == nodes_.end());
+  if (nodes_.find(node->getPath()) != nodes_.end()) {
+    std::string message = "Invalid Graph -> Node '" + node->getPath()
+                        + "' is already present";
+    THROW_ERROR(EINVAL, message.c_str());
+  }
   nodes_[node->getPath()] = node;
 }
 

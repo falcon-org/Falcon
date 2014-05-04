@@ -49,9 +49,13 @@ class FalconTest:
   def finish(self):
     subprocess.call("pkill watchman", shell=True)
     self.ensure_shutdown()
-    if not self._expect_error_log:
-      # check that there were no errors
-      assert(not os.path.isfile(self._falcon_log_dir + "/falcon.ERROR"))
+
+    # check that there were no errors
+    has_error_log = os.path.isfile(self._falcon_log_dir + "/falcon.ERROR")
+    if self._expect_error_log:
+      assert(has_error_log)
+    else:
+      assert(not has_error_log)
 
   def expect_error_log(self):
     self._expect_error_log = True

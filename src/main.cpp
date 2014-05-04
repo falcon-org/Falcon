@@ -69,6 +69,7 @@ static int loadModule(falcon::Graph& g, std::string const& s) {
   } else if (0 == s.compare("help")) {
     std::cout << "list of available modules: " << std::endl
       << "  dot    show the graph in DOT format" << std::endl
+      << "  loop   check is there is a loop in the graph" << std::endl
       << "  make   show the graph in Makefile format" << std::endl;
   } else {
     LOG(ERROR) << "module '" << s << "' not supported";
@@ -137,7 +138,13 @@ int main (int const argc, char const* const* argv) {
     return e.getCode();
   }
 
-  std::unique_ptr<falcon::Graph> graphPtr = graphParser.getGraph();
+  std::unique_ptr<falcon::Graph> graphPtr;
+  try {
+    graphPtr = std::move(graphParser.getGraph());
+  } catch (falcon::Exception& e) {
+    LOG(ERROR) << e.getErrorMessage();
+    return e.getCode();
+  }
 
   /* Update the graph timestamp (initialize the new timestamp) */
   updateGraphTimestamp(*graphPtr);
