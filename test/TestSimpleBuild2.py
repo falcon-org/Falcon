@@ -38,6 +38,12 @@ def run(test):
   time.sleep(1)
   test.write_file("source2", "3")
 
+  # We need to wait because when we require watchman to trigger a file, the
+  # since option is set to 'currentTime - 1' : if the file has just been
+  # created, watchman will set the file dirty after we finish to start and
+  # build.
+  time.sleep(1)
+
   # Restart the daemon, source2 and output should be dirty
   test.start()
 
