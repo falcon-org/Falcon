@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import time
+
 makefile = '''
 {
   "rules":
@@ -19,8 +21,6 @@ def run(test):
   test.write_file("source2", "2")
   test.start()
 
-  # test.gen_graphviz("graph0.png")
-
   # At the beginning, all the targets are dirty.
   assert(set(["source1", "source2", "output"]) == set(test.get_dirty_targets()))
 
@@ -33,14 +33,14 @@ def run(test):
 
   # Stop the daemon, and write to source
   test.shutdown()
+  # We need to wait because stat() is not very precise... We can remove that
+  # once falcon uses hashes to compare files.
+  time.sleep(1)
   test.write_file("source2", "3")
 
   # Restart the daemon, source2 and output should be dirty
   test.start()
 
-  # test.gen_graphviz("graph2.png")
-
-  # TODO: this test is failing. get_dirty_targets() returns an empty list...
   assert(set(["source2", "output"]) == set(test.get_dirty_targets()))
 
   # Build. Everything should be up to date and output should have the new
