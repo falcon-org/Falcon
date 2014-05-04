@@ -23,9 +23,9 @@ void Depfile::setRuleDependency(const std::string& dep, Rule* rule,
   /* Find any existing node that matches the path. Create it if it does not
    * exist. */
   auto itFind = graph.getNodes().find(dep);
-  if (itFind == graph.getNodes().end()) {
+  bool isNewNode = itFind == graph.getNodes().end();
+  if (isNewNode) {
     target = new Node(dep);
-    graph.addNode(target);
   } else {
     target = itFind->second;
     assert(target);
@@ -45,6 +45,11 @@ void Depfile::setRuleDependency(const std::string& dep, Rule* rule,
   rule->addInput(target);
   /* Set the rule to be a parent of the target. */
   target->addParentRule(rule);
+
+  if (isNewNode) {
+    /* Notify the graph of the new node. */
+    graph.addNode(target);
+  }
 
   /* Watch the target with watchman. */
   if (watchmanClient) {

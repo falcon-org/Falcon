@@ -89,6 +89,9 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
     return BuildResult::INTERRUPTED;
   }
 
+  /* This should not be called on a source file. */
+  assert(target->getChild() != nullptr);
+
   depth_++;
 
   DLOG(INFO) << "(" << depth_ << ") building " << target->getPath();
@@ -98,19 +101,13 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
     return BuildResult::SUCCEEDED;
   }
 
+  /* Build all the necessary inputs that are not source files. */
   Rule *rule = target->getChild();
-  if (rule == nullptr) {
-    /* This is a source file. */
-    target->setState(State::UP_TO_DATE);
-    depth_--;
-    return BuildResult::SUCCEEDED;
-  }
-
-  /* Build all the necessary inputs. */
   NodeArray& inputs = rule->getInputs();
   for (auto it = inputs.begin(); it != inputs.end(); ++it) {
     Node* input = *it;
-    if (input->getState() == State::OUT_OF_DATE) {
+    if (input->getState() == State::OUT_OF_DATE
+          && input->getChild() != nullptr) {
       auto res = buildTarget(input);
       if (res != BuildResult::SUCCEEDED) {
         depth_--;
@@ -134,12 +131,22 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
         BuildResult::INTERRUPTED : BuildResult::FAILED;
     }
 
+    /* Mark all the outputs up to date. */
     NodeArray& outputs = rule->getOutputs();
     for (auto it = outputs.begin(); it != outputs.end(); it++) {
       (*it)->setState(State::UP_TO_DATE);
     }
 
-    /* TODO: Update the implicit dependencies by parsing the depfile, if any. */
+    /* Mark all the inputs that are source files up to date.
+     * Contrary to the inputs that are generated, this is done only after the
+     * command succeeds, because the source files must remain dirty if the
+     * command fails. */
+    for (auto it = inputs.begin(); it != inputs.end(); it++) {
+      if ((*it)->getChild() == nullptr) {
+        (*it)->setState(State::UP_TO_DATE);
+      }
+    }
+
     if (rule->hasDepfile()) {
       auto res = Depfile::loadFromfile(rule->getDepfile(), rule,
                                        watchmanClient_, graph_);
