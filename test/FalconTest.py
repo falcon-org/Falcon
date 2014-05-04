@@ -15,6 +15,7 @@ class FalconTest:
     self._falcon_log_dir = self._test_dir + "/logs"
     self._falcon_log_level = "0"
     self._error_log = self._test_dir + "/error.log"
+    self._expect_error_log = False
     os.chdir(self._test_dir)
     os.mkdir(self._falcon_log_dir)
 
@@ -38,7 +39,7 @@ class FalconTest:
         tries += 1
         time.sleep(0.1)
       # If we reach here, we could not stop the daemon, kill it...
-    subprocess.call("kill -9 " + pid, shell=True)
+      subprocess.call("kill -9 " + pid, shell=True)
 
   def prepare(self):
     # Kill watchman
@@ -48,8 +49,12 @@ class FalconTest:
   def finish(self):
     subprocess.call("pkill watchman", shell=True)
     self.ensure_shutdown()
-    # check that there were no errors
-    assert(not os.path.isfile(self._falcon_log_dir + "/falcon.ERROR"))
+    if not self._expect_error_log:
+      # check that there were no errors
+      assert(not os.path.isfile(self._falcon_log_dir + "/falcon.ERROR"))
+
+  def expect_error_log(self):
+    self._expect_error_log = True
 
   def get_working_directory(self):
     return self._test_dir
