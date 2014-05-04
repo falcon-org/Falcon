@@ -37,9 +37,11 @@ class FalconTest:
         tries += 1
         time.sleep(0.1)
       # If we reach here, we could not stop the daemon, kill it...
-    subprocess.call("pkill " + pid, shell=True)
+    subprocess.call("kill -9 " + pid, shell=True)
 
   def prepare(self):
+    # Kill watchman
+    subprocess.call("pkill watchman", shell=True)
     self.ensure_shutdown()
 
   def finish(self):
