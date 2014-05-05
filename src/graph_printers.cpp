@@ -66,16 +66,29 @@ static void printRuleGraphiz(Rule const& r, std::ostream& os) {
                     : "black";
   std::string fillColor = "white";
 
+#if 0
   os << "node [fontsize=10, shape=point, height=0.25, style=filled]"
      << std::endl;
-  os << "\"" << r.getHash() << "\" [label=\"" << "rule"
+#endif
+
+  if (r.isPhony()) {
+    os << "node [fontsize=10, shape=circle, height=0.25, style=\"filled, dashed\""
+      "]" << std::endl;
+  } else {
+    os << "node [fontsize=10, shape=circle, height=0.25, style=filled]"
+      << std::endl;
+  }
+
+  os << "\"" << r.getHash() << "\" [label=\"" << r.getHash().substr(0, 5)
                    << "\"  color=\"" << color
                    << "\"  fillcolor=\"" << fillColor
                    << "\" ]" << std::endl;
 
   for (auto iit = inputs.cbegin(); iit != inputs.cend(); iit++) {
+      std::string c = ((*iit)->getState() == State::OUT_OF_DATE)
+                        ? "red" : "black";
       os << "\"" << (*iit)->getHash() << "\" ->" << "\"" << r.getHash()
-         << "\" [ color=\"" << color << "\"]" << std::endl;
+         << "\" [ color=\"" << c << "\"]" << std::endl;
   }
 
   for (auto oit = outputs.cbegin(); oit != outputs.cend(); oit++) {
