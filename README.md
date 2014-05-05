@@ -3,11 +3,11 @@ Falcon
 
 A Fast, Reliable, Distributed Build System.
 
-## Purpose ==
+## Purpose
 
 Falcon is a build system with a focus on speed and scalability.
 
-## Concepts ==
+## Concepts
 
 * The configuration file - the "makefile" - is designed to be human-readable but
   not convenient to write by hand. There are no variables, the file only
@@ -30,7 +30,7 @@ Falcon is a build system with a focus on speed and scalability.
   querying the cache of another Falcon daemon running in a continuous build
   server. Why build something that someone already built for you?
 
-## Current state ==
+## Current state
 
 Right now falcon is in a working state, ie it is able to use watchman to be
 notified of file changes and build your project. However, it is currently not
