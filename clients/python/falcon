@@ -92,9 +92,13 @@ def connectSpawnIfNeeded():
 
 def build(client):
   """Start a build"""
-  r = client.startBuild()
-  if r == 1:
-    print "Already building..."
+  try:
+    r = client.startBuild()
+    if r == 1:
+      print "Already building..."
+      return False
+  except InvalidGraphError as e:
+    print e.desc
     return False
 
   # Connect to the streaming server and read indefinitely.

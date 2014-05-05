@@ -5,7 +5,12 @@ enum FalconStatus {
 
 enum StartBuildResult {
   OK,         /* The build was properly started. */
+  ERROR,      /* Cannot start the build because of an error. */
   BUSY        /* A build is already ongoing. */
+}
+
+exception InvalidGraphError {
+  1:string desc;
 }
 
 exception TargetNotFound {}
@@ -15,7 +20,7 @@ service FalconService {
   i64 getPid()
 
   /* Start a build. */
-  StartBuildResult startBuild()
+  StartBuildResult startBuild() throws(1:InvalidGraphError e)
 
   /* Get the current status of the daemon. */
   FalconStatus getStatus()

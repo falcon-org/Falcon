@@ -171,12 +171,15 @@ void WatchmanClient::watchNode(const Node& n) {
   ss << "[ ";
   ss << "\"trigger\", \"" << targetDirectory << "\", { ";
   ss << "\"name\": \"" << n.getPath() << "\", ";
-  ss << "\"expression\": [\"allof\", ";
-  ss << "[\"name\", \"" << targetPattern << "\", \"wholename\"], ";
-  ss << "[\"since\", " << t << ", \"mtime\"]], ";
-  ss << "\"command\": ["
-    << "\"falcon\", \"--set-dirty\", \"" << n.getPath() << "\""
-    << "]}]\n";
+  ss << "\"expression\": ";
+  ss << "   [\"allof\", ";
+  ss << "       [\"name\", \"" << targetPattern << "\", \"wholename\"], ";
+  ss << "       [\"anyof\", ";
+  ss << "           [\"not\", \"exists\"],";
+  ss << "           [\"since\", " << t << ", \"mtime\"]]], ";
+  ss << "\"command\": [";
+  ss << "    \"falcon\", \"--set-dirty\", \"" << n.getPath() << "\"";
+  ss << "]}]\n";
 
   /* Send the command to watchman */
   std::string cmd = ss.str();

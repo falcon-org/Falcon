@@ -60,6 +60,25 @@ void DaemonInstance::start() {
   streamServerThread.join();
 }
 
+void DaemonInstance::checkSourcesMissing() {
+  if (!sourcesMissing_.empty()) {
+    std::ostringstream oss;
+    oss << "Error, cannot build without: ";
+    bool first = true;
+    for (auto it = sourcesMissing_.begin(); it != sourcesMissing_.end(); ++it) {
+      if (first) {
+        first = false;
+      } else {
+        oss << ", ";
+      }
+      oss << (*it)->getPath();
+    }
+    InvalidGraphError e;
+    e.desc = oss.str();
+    throw e;
+  }
+}
+
 /* Commands */
 
 StartBuildResult::type DaemonInstance::startBuild() {
@@ -68,6 +87,8 @@ StartBuildResult::type DaemonInstance::startBuild() {
   if (isBuilding_.load(std::memory_order_acquire)) {
      return StartBuildResult::BUSY;
   }
+
+  checkSourcesMissing();
 
   FALCON_CHECK_GRAPH_CONSISTENCY(graph_.get(), mutex_);
 
@@ -191,8 +212,9 @@ void DaemonInstance::setDirty(const std::string& target) {
   }
 
   Node* node = it->second;
+  bool isSource = node->getChild() == nullptr;
 
-  if (node->getChild() != nullptr && node->getChild()->isPhony()) {
+  if (!isSource && node->getChild()->isPhony()) {
     /* This is a phony target. */
     node->markDirty();
     return;
@@ -206,13 +228,17 @@ void DaemonInstance::setDirty(const std::string& target) {
       DLOG(WARNING) << "stat(" << node->getPath()
                     << ") [" << errno << "] " << strerror(errno);
     }
-    if (node->getChild() == nullptr) {
+    if (isSource) {
       /* It is a source file, and we cannot stat it. This is an error and the
        * next build will fail. */
       LOG(ERROR) << "Error: input file " << node->getPath() << " is missing.";
+      sourcesMissing_.insert(node);
     }
   } else {
-    if (node->getChild() != nullptr) {
+    if (isSource) {
+      /* This is a source file and it is not missing. */
+      sourcesMissing_.erase(node);
+    } else {
       /* This node is an output. Compare its timestamp with the timestamp of the
        * rule that generated it. If it is younger, it means we are notified
        * because the file was built by it, so don't mark it dirty. */

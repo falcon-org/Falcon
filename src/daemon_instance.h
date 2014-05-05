@@ -63,6 +63,10 @@ class DaemonInstance {
   /** Wait for the current build to complete. */
   void waitForBuild();
 
+  /** Check if any source file is missing. Throw an exception of type
+   * InvalidGraphError if it is the case. */
+  void checkSourcesMissing();
+
   unsigned int buildId_;
 
   std::unique_ptr<Graph> graph_;
@@ -83,6 +87,14 @@ class DaemonInstance {
 
   /* The thrift server. */
   std::unique_ptr<CommandServer> commandServer_;
+
+  /**
+   * When watchman notifies us of a file change, we stat it. If the file does
+   * not exist and is a source file, we add it here. Each time we build, we
+   * check if there is a missing source file and return an error instead of
+   * building.
+   */
+  NodeSet sourcesMissing_;
 };
 
 } // namespace falcon
