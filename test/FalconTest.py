@@ -10,7 +10,7 @@ class FalconTest:
 
   def __init__(self):
     self._test_folder = os.path.dirname(os.path.realpath(__file__))
-    self._falcon_client = self._test_folder + "/../clients/python/falcon.py"
+    self._falcon_client = self._test_folder + "/../clients/python/falcon"
     self._test_dir = tempfile.mkdtemp()
     self._falcon_log_dir = self._test_dir + "/logs"
     self._falcon_log_level = "0"
@@ -54,7 +54,7 @@ class FalconTest:
     # Kill watchman (should have been stopped by the daemon).
     subprocess.call("pkill watchman", shell=True)
     # check that there were no errors
-    has_error_log = os.path.isfile(self._falcon_log_dir + "/falcon.ERROR")
+    has_error_log = os.path.isfile(self._falcon_log_dir + "/falcond.ERROR")
     if self._expect_error_log:
       assert(has_error_log)
     else:

@@ -41,7 +41,7 @@ target_link_libraries(tests/posix_subprocess
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
   pthread)
 
-add_executable(falcon
+add_executable(falcond
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService.cpp
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService_types.cpp
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService_constants.cpp
@@ -74,7 +74,7 @@ include_directories(src
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/
   ${Boost_INCLIDE_DIRS})
 
-target_link_libraries(falcon
+target_link_libraries(falcond
   ${thrift_LIBRARIES}
   ${glog_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}

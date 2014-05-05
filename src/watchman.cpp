@@ -182,7 +182,7 @@ void WatchmanClient::watchNode(const Node& n) {
   ss << "[\"name\", \"" << targetPattern << "\", \"wholename\"], ";
   ss << "[\"since\", " << t << ", \"mtime\"]], ";
   ss << "\"command\": ["
-    << "\"falcon.py\", \"--set-dirty\", \"" << n.getPath() << "\""
+    << "\"falcon\", \"--set-dirty\", \"" << n.getPath() << "\""
     << "]}]\n";
 
   /* Send the command to watchman */
