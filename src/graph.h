@@ -154,6 +154,9 @@ class Rule {
   std::string const& getHash() const;
   std::string& getHash();
 
+  Timestamp getTimestamp() const;
+  void setTimestamp(Timestamp);
+
  private:
   NodeArray inputs_;
   NodeArray outputs_;
@@ -175,6 +178,9 @@ class Rule {
 
   /* A hash to represent the current state of a Node */
   std::string hash_;
+
+  /* The timestamp of a rule is the last time it was built. */
+  Timestamp timestamp_;
 
   Rule(const Rule& other) = delete;
   Rule& operator=(const Rule&) = delete;

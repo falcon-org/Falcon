@@ -6,6 +6,7 @@
 #include <cassert>
 #include <iostream>
 #include <stack>
+#include <sys/stat.h>
 
 #include "graph_sequential_builder.h"
 #include "watchman.h"
@@ -122,8 +123,10 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
   if (!rule->isPhony()) {
     assert(!rule->getCommand().empty());
     manager_.addProcess(rule->getCommand(), workingDirectory_);
-
     PosixSubProcessPtr proc = manager_.waitForNext();
+
+    /* Update the timestamp of the rule. */
+    rule->setTimestamp(time(NULL));
 
     auto status = proc->status();
     if (status != SubProcessExitStatus::SUCCEEDED) {

@@ -132,13 +132,6 @@ void WatchmanClient::watchNode(const Node& n) {
     connectToWatchman();
   }
 
-  /* TODO: * For now, we only watch source files, ie files that are not
-   * generated. If we were to watch the generated targets, we'd be notified
-   * each time a target is built. */
-  if (n.getChild() != nullptr) {
-    return;
-  }
-
   std::string targetPattern(n.getPath());
   std::string targetDirectory = workingDirectory_;
 

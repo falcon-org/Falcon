@@ -86,7 +86,7 @@ Rule::Rule(const NodeArray& inputs, const NodeArray& outputs)
   , outputs_(outputs)
   , missingDepfile_(false)
   , state_(State::UP_TO_DATE)
-  , hash_()
+  , timestamp_(0)
 { }
 
 const NodeArray& Rule::getInputs() const { return inputs_; }
@@ -127,6 +127,9 @@ void Rule::markDirty() {
 void Rule::setHash(std::string const& hash) { hash_ = hash; }
 std::string const& Rule::getHash() const { return hash_; }
 std::string& Rule::getHash() { return hash_; }
+
+Timestamp Rule::getTimestamp() const { return timestamp_; }
+void Rule::setTimestamp(Timestamp t) { timestamp_ = t; }
 
 /* ************************************************************************* */
 /*                                Graph                                      */
