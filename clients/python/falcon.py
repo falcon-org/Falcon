@@ -134,6 +134,14 @@ def getOutputsOf(client, target):
     return False
   return True
 
+def getHashOf(client, target):
+  try:
+    print client.getHashOf(target)
+  except TargetNotFound:
+    print "target", target, "not found"
+    return False
+  return True
+
 ###############################################################################
 #                             Main function                                   #
 ###############################################################################
@@ -177,6 +185,8 @@ def main(argv):
   group.add_argument('--get-outputs-of', metavar='TARGET', nargs=1,
       help="Print a json array containing the list of outputs for which the"
       " the given target is an input.")
+  group.add_argument('--get-hash-of', metavar='TARGET', nargs=1,
+      help="Print the hash of the given target")
   group.add_argument('-p', '--pid', action='store_true',
       help="Print the pid of the daemon")
 
@@ -246,6 +256,9 @@ def main(argv):
       ret = 1
   elif args.get_outputs_of != None:
     if not getOutputsOf(client, args.get_outputs_of[0]):
+      ret = 1
+  elif args.get_hash_of != None:
+    if not getHashOf(client, args.get_hash_of[0]):
       ret = 1
   elif args.get_graphviz:
     print client.getGraphviz()

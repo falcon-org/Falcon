@@ -49,7 +49,7 @@ add_executable(falcon
   src/graph.cpp
   src/graph_hash.cpp
   src/graph_cycle.cpp
-  src/graph_timestamp.cpp
+  src/graph_dependency_scan.cpp
   src/graph_printers.cpp
   src/graph_sequential_builder.cpp
   src/graphparser.cpp

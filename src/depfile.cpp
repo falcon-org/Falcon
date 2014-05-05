@@ -62,11 +62,14 @@ void Depfile::setRuleDependency(const std::string& dep, Rule* rule,
 }
 
 bool Depfile::load(std::string& buf, Rule *rule,
-                   WatchmanClient* watchmanClient, Graph& graph) {
+                   WatchmanClient* watchmanClient, Graph& graph,
+                   bool logError) {
   DepfileParser depfile;
   string depfileErr;
   if (!depfile.Parse(&buf, &depfileErr)) {
-    LOG(ERROR) << "Error parsing depfile: " << depfileErr;
+    if (logError) {
+      LOG(ERROR) << "Error parsing depfile: " << depfileErr;
+    }
     return false;
   }
 
@@ -75,8 +78,10 @@ bool Depfile::load(std::string& buf, Rule *rule,
   std::string output = std::string(depfile.out_.str_, depfile.out_.len_);
   assert(!rule->getOutputs().empty());
   if (output != rule->getOutputs()[0]->getPath()) {
-    LOG(ERROR) << "Invalid depfile. The output target does not match the first"
-                  " output of the rule";
+    if (logError) {
+      LOG(ERROR) << "Invalid depfile. The output target does not match the first"
+                    " output of the rule";
+    }
     return false;
   }
 
@@ -91,21 +96,25 @@ bool Depfile::load(std::string& buf, Rule *rule,
 
 Depfile::Res Depfile::loadFromfile(const std::string& depfile, Rule *rule,
                                    WatchmanClient* watchmanClient,
-                                   Graph& graph) {
+                                   Graph& graph, bool logError) {
   std::ifstream ifs(depfile);
   if (!ifs.is_open()) {
-    LOG(ERROR) << "Error, cannot open depfile " << depfile;
+    if (logError) {
+      LOG(ERROR) << "Error, cannot open depfile " << depfile;
+    }
     return Res::ERROR_CANNOT_OPEN;
   }
 
   std::string content((std::istreambuf_iterator<char>(ifs)),
                       (std::istreambuf_iterator<char>()));
   if (content.empty()) {
-    LOG(ERROR) << "Error, depfile " << depfile << " is empty";
+    if (logError) {
+      LOG(ERROR) << "Error, depfile " << depfile << " is empty";
+    }
     return Res::ERROR_INVALID_FILE;
   }
 
-  return load(content, rule, watchmanClient, graph)
+  return load(content, rule, watchmanClient, graph, logError)
     ? Res::SUCCESS : Res::ERROR_INVALID_FILE;
 }
 

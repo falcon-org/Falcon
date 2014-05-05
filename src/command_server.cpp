@@ -54,6 +54,11 @@ void FalconServiceHandler::getOutputsOf(std::set<std::string>& outputs,
   daemon_->getOutputsOf(outputs, target);
 }
 
+void FalconServiceHandler::getHashOf(std::string& hash,
+                                     const std::string& target) {
+  daemon_->getHashOf(hash, target);
+}
+
 void FalconServiceHandler::setDirty(const std::string& target) {
   daemon_->setDirty(target);
 }

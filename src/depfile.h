@@ -32,11 +32,13 @@ class Depfile {
    *                       dependencies.
    * @param watchmanClient Watchman client.
    * @param graph          Graph that contains the rule.
+   * @param logError       Log an error if the content is invalid.
    *
    * @return        True on success, or false on error (invalid format).
    */
   static bool load(std::string& buf, Rule* rule,
-                   WatchmanClient* watchmanClient, Graph& graph);
+                   WatchmanClient* watchmanClient, Graph& graph,
+                   bool logError);
 
   /**
    * Update the implicit dependencies of a rule with the dependencies defined by
@@ -48,11 +50,13 @@ class Depfile {
    *                       dependencies.
    * @param watchmanClient Watchman client.
    * @param graph          Graph that contains the rule.
+   * @param logError       Log an error if cannot load the depfile.
    *
    * @return        error code indicating a possible error.
    */
   static Res loadFromfile(const std::string& depfile, Rule *rule,
-                          WatchmanClient* watchmanClient, Graph& graph);
+                          WatchmanClient* watchmanClient, Graph& graph,
+                          bool logError);
 
  private:
 

@@ -4,25 +4,26 @@
  */
 
 #include <fstream>
+#include <cassert>
 #include <cstring>
 
-#include <iostream>
-
 #include "exceptions.h"
+#include "depfile.h"
 #include "graphparser.h"
 #include "json/json.h"
 
 namespace falcon {
 
-GraphParser::GraphParser() {}
+GraphParser::GraphParser()
+    : graph_(new Graph()) {}
 
-std::unique_ptr<Graph> GraphParser::getGraph() const {
-  Graph* g = new Graph(rootSet_, sourceSet_, nodeMap_, ruleArray_);
-  return std::unique_ptr<Graph>(g);
+std::unique_ptr<Graph> GraphParser::getGraph() {
+  return std::move(graph_);
 }
 
 void GraphParser::processFile(std::string const& filepath)
 {
+  assert(graph_);
   JsonParser parser;
 
   {
@@ -70,12 +71,12 @@ void GraphParser::checkNode(JsonVal const* json, NodeArray& nodeArray) {
       THROW_ERROR(EINVAL, "invalid JSON entry: expect a STRING");
     }
 
-    Node* node = nodeMap_[json_string->_data];
+    Node* node = graph_->nodes_[json_string->_data];
     if (!node) {
       node = new Node(json_string->_data);
-      nodeMap_[json_string->_data] = node;
-      rootSet_.insert(node);
-      sourceSet_.insert(node);
+      graph_->nodes_[json_string->_data] = node;
+      graph_->roots_.insert(node);
+      graph_->sources_.insert(node);
     }
 
     nodeArray.push_back(node);
@@ -84,6 +85,8 @@ void GraphParser::checkNode(JsonVal const* json, NodeArray& nodeArray) {
 
 void GraphParser::processJson(JsonVal const* rules)
 {
+  assert(graph_);
+
   for (std::deque<JsonVal*>::const_iterator it = rules->_array.cbegin();
        it != rules->_array.cend();
        it++) {
@@ -131,18 +134,34 @@ void GraphParser::processJson(JsonVal const* rules)
     }
 
     /* keep the rule in memory */
-    ruleArray_.push_back(rule);
+    graph_->rules_.push_back(rule);
 
     for (auto it = inputs.begin(); it != inputs.end(); it++) {
       (*it)->addParentRule(rule);
-      rootSet_.erase(*it);
+      graph_->roots_.erase(*it);
     }
     for (auto it = outputs.begin(); it != outputs.end(); it++) {
       /* TODO: check that the rule does not already have a child...
        * Warn: the assert will raise */
       (*it)->setChild(rule);
-      sourceSet_.erase(*it);
+      graph_->sources_.erase(*it);
+    }
+
+    /* Load the rule's implicit dependencies. */
+    if (rule->hasDepfile()) {
+      ruleLoadDepfile(rule);
     }
   }
 }
+
+void GraphParser::ruleLoadDepfile(Rule* rule) {
+  auto res = Depfile::loadFromfile(rule->getDepfile(), rule, nullptr, *graph_,
+                                   false);
+  if (res != Depfile::Res::SUCCESS) {
+    /* Mark the rule as "missing depfile". Which means that it can't be marked
+     * up to date until we resolve this. */
+    rule->setMissingDepfile(true);
+  }
+}
+
 }

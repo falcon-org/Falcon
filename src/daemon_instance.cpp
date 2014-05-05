@@ -168,6 +168,17 @@ void DaemonInstance::getOutputsOf(std::set<std::string>& outputs,
   }
 }
 
+void DaemonInstance::getHashOf(std::string& hash, const std::string& target) {
+  lock_guard g(mutex_);
+
+  auto it = graph_->getNodes().find(target);
+  if (it == graph_->getNodes().end()) {
+    throw TargetNotFound();
+  }
+
+  hash = it->second->getHash();
+}
+
 void DaemonInstance::setDirty(const std::string& target) {
   lock_guard g(mutex_);
 
@@ -177,6 +188,8 @@ void DaemonInstance::setDirty(const std::string& target) {
   if (it == map.end()) {
     throw TargetNotFound();
   }
+
+  /* Mark the node and all its outputs dirty, recompute the hashes. */
   it->second->markDirty();
 }
 

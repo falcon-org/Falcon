@@ -7,6 +7,7 @@
 #include "exceptions.h"
 
 #include "graph.h"
+#include "graph_hash.h"
 #include "logging.h"
 
 namespace falcon {
@@ -49,7 +50,6 @@ void Node::setState(State state) { state_ = state; }
 
 void Node::markDirty() {
   DLOG(INFO) << "marking " << path_ << " dirty";
-
   setState(State::OUT_OF_DATE);
   updateNodeHash(*this);
 
@@ -84,6 +84,7 @@ bool Node::operator!=(Node const& n) const { return getPath() != n.getPath(); }
 Rule::Rule(const NodeArray& inputs, const NodeArray& outputs)
   : inputs_(inputs)
   , outputs_(outputs)
+  , missingDepfile_(false)
   , state_(State::UP_TO_DATE)
   , hash_()
 { }
@@ -105,6 +106,8 @@ void Rule::setCommand(const std::string& cmd) { command_ = cmd; }
 const bool Rule::hasDepfile() const { return !depfile_.empty(); }
 const std::string& Rule::getDepfile() const { return depfile_; }
 void Rule::setDepfile(const std::string& depfile) { depfile_ = depfile; }
+bool Rule::missingDepfile() const { return missingDepfile_; }
+void Rule::setMissingDepfile(bool missing) { missingDepfile_ = missing; }
 
 State const& Rule::getState() const { return state_; }
 State&       Rule::getState()       { return state_; }
@@ -129,15 +132,7 @@ std::string& Rule::getHash() { return hash_; }
 /*                                Graph                                      */
 /* ************************************************************************* */
 
-Graph::Graph(const NodeSet& roots, const NodeSet& sources,
-             const NodeMap& nodes, const RuleArray& rules)
-  : roots_(roots)
-  , sources_(sources)
-  , nodes_(nodes)
-  , rules_(rules) {
-  checkGraphLoop(*this);
-  setGraphHash(*this);
-}
+Graph::Graph() {}
 
 void Graph::addNode(Node* node) {
   if (node->getParents().empty()) {

@@ -50,6 +50,7 @@ class DaemonInstance {
   void getDirtyTargets(std::set<std::basic_string<char>>& targets);
   void getInputsOf(std::set<std::string>& inputs, const std::string& target);
   void getOutputsOf(std::set<std::string>& outputs, const std::string& target);
+  void getHashOf(std::string& hash, const std::string& target);
   void setDirty(const std::string& target);
   void interruptBuild();
   void shutdown();

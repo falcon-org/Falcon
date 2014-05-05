@@ -189,14 +189,13 @@ void WatchmanClient::watchNode(const Node& n) {
   std::string cmd = ss.str();
   try {
     writeCommand(cmd);
+    readAnswer();
   } catch (Exception& e) {
     /* We may have lost the connection, reconnect and try again. */
     connectToWatchman();
     writeCommand(cmd);
+    readAnswer();
   }
-
-  /* Get watchman return value */
-  readAnswer();
 }
 
 void WatchmanClient::writeCommand(std::string const& cmd) {
@@ -204,8 +203,6 @@ void WatchmanClient::writeCommand(std::string const& cmd) {
   for (unsigned int i = 0; i != cmd.size(); i += r) {
     r = write(watchmanSocket_, &cmd[i], cmd.size() - i);
     if (r == -1) {
-      LOG(ERROR) << "werror while writing command to watchman socket: "
-                 << "errno(" << errno << ") " << strerror(errno);
       if (errno == EAGAIN) {
         r = 0;
       } else {
@@ -230,8 +227,6 @@ void WatchmanClient::readAnswer() {
     int r = read(watchmanSocket_, buf, sizeof(buf) - 1);
     if (r == -1) {
       if (errno == EAGAIN) { loop++; continue; }
-      LOG(ERROR) << "werror while reading on watchman socket: "
-                  << "errno(" << errno << ") " << strerror(errno);
       close(watchmanSocket_);
       isConnected_ = false;
       THROW_ERROR(errno, "unable to read watchman command response");

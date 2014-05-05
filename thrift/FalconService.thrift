@@ -35,6 +35,9 @@ service FalconService {
   /* Retrieve the list of targets that are outputs of the given target. */
   set<string> getOutputsOf(1:string target) throws(1:TargetNotFound e)
 
+  /* Get the hash of a target. */
+  string getHashOf(1:string target) throws(1:TargetNotFound e)
+
   /* Mark the given target as dirty. */
   void setDirty(1:string target) throws(1:TargetNotFound e)
 

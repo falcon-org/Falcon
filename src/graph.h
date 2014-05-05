@@ -69,7 +69,11 @@ class Node {
   State& getState();
   bool isDirty() const;
   void setState(State state);
-  /* Set the state as Dirty and mark all the dependencies as dirty too */
+
+  /**
+   * Set the state as Dirty and mark all the parents as dirty too.
+   * This will recompute the hash of the node and all its outputs.
+   */
   void markDirty();
 
   Timestamp getTimestamp() const;
@@ -131,16 +135,20 @@ class Rule {
   const bool hasDepfile() const;
   const std::string& getDepfile() const;
   void setDepfile(const std::string& depfile);
+  bool missingDepfile() const;
+  void setMissingDepfile(bool missing);
 
   /* State management */
   State const& getState() const;
   State& getState();
   bool isDirty() const;
   void setState(State state);
-  /* Set the state as dirty and mark all the dependencies as dirty too */
+
+  /**
+   * Set the state as Dirty and mark all the parents as dirty too.
+   * This will recompute the hash of the rule and all its outputs.
+   */
   void markDirty();
-  /* Set the state as Up to date and mark all the dependencies */
-  void markUpToDate();
 
   void setHash(std::string const&);
   std::string const& getHash() const;
@@ -157,6 +165,10 @@ class Rule {
 
   /** Path to the file that contains the implicit dependenciess. */
   std::string depfile_;
+  /* If set to true, this means that we know there should be a depfile but
+   * weren't able to parse it. The node should not be set up to date until this
+   * is resolved. */
+  bool missingDepfile_;
 
   /* Set to UP_TO_DATE if all outputs are UP_TO_DATE, OUT_OF_DATE otherwise. */
   State state_;
@@ -168,13 +180,14 @@ class Rule {
   Rule& operator=(const Rule&) = delete;
 };
 
+class GraphParser;
+
 /**
  * Class that stores a graph of nodes and commands.
  */
 class Graph {
  public:
-  Graph(const NodeSet& roots, const NodeSet& sources, const NodeMap& nodes,
-        const RuleArray& rules);
+  Graph();
 
   void addNode(Node* node);
 
@@ -207,6 +220,8 @@ class Graph {
 
   Graph(const Graph& other) = delete;
   Graph& operator=(const Graph&) = delete;
+
+  friend class GraphParser;
 };
 
 } // namespace falcon
@@ -217,29 +232,9 @@ class Graph {
 
 namespace falcon{
 
-/********************
- * Timestamp Method *
- ********************
- * Update the timestamp of every Node and then update their State */
-void updateGraphTimestamp(Graph&);
-
 /* Check Graph:
  * check if there is a loop in the graph */
 void checkGraphLoop(Graph const& g);
-
-/****************
- * Hash methods *
- ****************/
-/* This is the initialization Hash method:
- * this function will explore recursively all the graph from top to bottom to
- * update the timestamp. This function should be use only at one point:
- * after creating a Graph */
-void setGraphHash(Graph& g);
-/* Update the Node hash:
- * if it is a leaf, then compute the new hash. Else get the Child's hash */
-void updateNodeHash(Node& n);
-/* Update the Rule hash: whish the hash of it's inputs' hash */
-void updateRuleHash(Rule& n);
 
 /*******************
  * Printer methods *

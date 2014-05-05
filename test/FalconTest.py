@@ -39,17 +39,20 @@ class FalconTest:
         tries += 1
         time.sleep(0.1)
       # If we reach here, we could not stop the daemon, kill it...
+      # If we expected the daemon to be running, not being able to stop it
+      # cleanly is an error.
+      assert(not expect_running)
       subprocess.call("kill -9 " + pid, shell=True)
 
   def prepare(self):
-    # Kill watchman
-    subprocess.call("pkill watchman", shell=True)
     self.ensure_shutdown()
+    # Kill watchman (should have been stopped by the daemon).
+    subprocess.call("pkill watchman", shell=True)
 
   def finish(self):
-    subprocess.call("pkill watchman", shell=True)
     self.ensure_shutdown()
-
+    # Kill watchman (should have been stopped by the daemon).
+    subprocess.call("pkill watchman", shell=True)
     # check that there were no errors
     has_error_log = os.path.isfile(self._falcon_log_dir + "/falcon.ERROR")
     if self._expect_error_log:
@@ -77,14 +80,18 @@ class FalconTest:
 
   def restart(self):
     """Restart the falcon daemon"""
+    FNULL = open(os.devnull, 'w')
     r = subprocess.call([self._falcon_client, "--restart",
-                         self._falcon_log_level, self._falcon_log_dir])
+                         self._falcon_log_level, self._falcon_log_dir],
+                         stdout=FNULL)
     assert(r == 0)
 
   def start(self):
     """Start the falcon daemon"""
+    FNULL = open(os.devnull, 'w')
     r = subprocess.call([self._falcon_client, "--start",
-                        self._falcon_log_level, self._falcon_log_dir])
+                         self._falcon_log_level, self._falcon_log_dir],
+                         stdout=FNULL)
     assert(r == 0)
 
   def build(self):
@@ -143,6 +150,12 @@ class FalconTest:
     data = subprocess.check_output([self._falcon_client, "--no-start",
                                     "--get-outputs-of", target])
     return json.loads(data)
+
+  def get_hash_of(self, target):
+    """Get the hash of a given target"""
+    data = subprocess.check_output([self._falcon_client, "--no-start",
+                                    "--get-hash-of", target])
+    return data
 
   def expect_watchman_trigger(self, target):
     """Wait for the given target to be dirty because of a watchman trigger.

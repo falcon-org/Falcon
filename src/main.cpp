@@ -10,6 +10,7 @@
 #include "exceptions.h"
 #include "graph.h"
 #include "graph_consistency_checker.h"
+#include "graph_dependency_scan.h"
 #include "logging.h"
 #include "options.h"
 #include "stream_consumer.h"
@@ -138,16 +139,20 @@ int main (int const argc, char const* const* argv) {
     return e.getCode();
   }
 
-  std::unique_ptr<falcon::Graph> graphPtr;
+  std::unique_ptr<falcon::Graph> graphPtr = std::move(graphParser.getGraph());
+
+  /* Check the graph for cycles. */
   try {
-    graphPtr = std::move(graphParser.getGraph());
+    checkGraphLoop(*graphPtr);
   } catch (falcon::Exception& e) {
     LOG(ERROR) << e.getErrorMessage();
     return e.getCode();
   }
 
-  /* Update the graph timestamp (initialize the new timestamp) */
-  updateGraphTimestamp(*graphPtr);
+  /* Scan the graph to discover what needs to be rebuilt, and compute the
+   * hashes of all nodes. */
+  falcon::GraphDependencyScan scanner(*graphPtr);
+  scanner.scan();
 
   /* if a module has been requested to execute then load it and return */
   if (opt.isOptionSetted("module")) {

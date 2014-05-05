@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-import time
-
 # In this test, source2 is an implicit dependency of output.
 # We do a first build, check that it is a new dependency, and is not dirty. Then
 # we modify it, check that it becomes dirty, build again, and check it is up to

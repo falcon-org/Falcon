@@ -15,6 +15,7 @@ typedef std::set<std::string> VisitedNodes;
 
 void isCycle(Node const& n, VisitedNodes& stack) {
   if (stack.find(n.getPath()) != stack.cend()) {
+    LOG(INFO) << "loop";
     Exception e(__func__, __FILE__, __LINE__, EINVAL, "LOOP DETECTED IN GRAPH");
     std::string message = " +-> " + n.getPath();
     throw Exception(e.getErrorMessage(),

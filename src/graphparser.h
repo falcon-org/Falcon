@@ -31,7 +31,7 @@ class GraphParser {
   public:
     GraphParser();
 
-    std::unique_ptr<Graph> getGraph() const;
+    std::unique_ptr<Graph> getGraph();
 
     /* If the input is a file */
     void processFile(std::string const& filepath);
@@ -40,6 +40,13 @@ class GraphParser {
 
   private:
     void checkNode(JsonVal const* json, NodeArray& nodeArray);
+
+    /**
+     * Load the depfile of a rule.
+     */
+    void ruleLoadDepfile(Rule* rule);
+
+    std::unique_ptr<Graph> graph_;
 
     /* Map to store all the nodes in the graph. */
     NodeMap nodeMap_;

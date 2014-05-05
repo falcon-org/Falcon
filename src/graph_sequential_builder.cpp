@@ -149,7 +149,7 @@ BuildResult GraphSequentialBuilder::buildTarget(Node* target) {
 
     if (rule->hasDepfile()) {
       auto res = Depfile::loadFromfile(rule->getDepfile(), rule,
-                                       watchmanClient_, graph_);
+                                       watchmanClient_, graph_, true);
       if (res != Depfile::Res::SUCCESS) {
         return BuildResult::FAILED;
       }
