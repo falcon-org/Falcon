@@ -48,16 +48,6 @@ class GraphParser {
 
     std::unique_ptr<Graph> graph_;
 
-    /* Map to store all the nodes in the graph. */
-    NodeMap nodeMap_;
-    /* Set that contains the root nodes of the graph. */
-    NodeSet rootSet_;
-    /* Set that contains the leaf nodes of the graph. */
-    NodeSet sourceSet_;
-
-    /* Array of all the built rules */
-    RuleArray ruleArray_;
-
     GraphParser(const GraphParser& other) = delete;
     GraphParser& operator=(const GraphParser&) = delete;
 };
