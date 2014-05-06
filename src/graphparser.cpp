@@ -32,13 +32,11 @@ void GraphParser::processFile(std::string const& filepath)
 
     ifs.open(filepath.c_str (), std::ifstream::in);
     do {
-      /* TODO: change the way to read it from the json file */
-      char lineBuffer[4096];
-      memset(lineBuffer, 0, sizeof(lineBuffer));
-      ifs.getline(lineBuffer, sizeof(lineBuffer) - 1);
+      char buffer[4096];
+      memset(buffer, 0, sizeof(buffer));
+      ifs.read(buffer, sizeof(buffer) - 1);
       try {
-        std::string theLine(lineBuffer);
-        parser.parse(lineCounter++, theLine);
+        parser.parse(lineCounter++, buffer, ifs.gcount());
       } catch (Exception& e) {
         ifs.close();
         THROW_FORWARD_ERROR(e);
