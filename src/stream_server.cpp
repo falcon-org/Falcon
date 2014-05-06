@@ -230,7 +230,7 @@ void StreamServer::acceptClients() {
 void StreamServer::createClient(int fd) {
   std::lock_guard<std::mutex> lock(mutex_);
 
-  bool isWaiting = builds_.size() == 0
+  bool isWaiting = builds_.empty()
     || builds_.front().buf.size() == 0;
 
   std::list<int>::iterator itFd;
