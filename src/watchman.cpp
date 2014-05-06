@@ -230,7 +230,6 @@ void WatchmanClient::readAnswer() {
     }
     parser.parse(0, buf, r);
     dom = parser.getDom();
-    DLOG(INFO) << "[WATCHMAN] ---> " << buf;
   } while (!dom && ((++loop) < (MAX_JSON_STRING_SIZE / MAX_BUF_SIZE)));
 
   if (!dom) {
