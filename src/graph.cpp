@@ -154,6 +154,17 @@ void Graph::addNode(Node* node) {
   nodes_[node->getPath()] = node;
 }
 
+Graph::~Graph() {
+  for ( ; !rules_.empty(); rules_.pop_back()) {
+    Rule* it = rules_.back();
+    delete it;
+  }
+
+  for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
+    delete it->second;
+  }
+}
+
 const NodeSet& Graph::getRoots() const { return roots_; }
 NodeSet& Graph::getRoots() { return roots_; }
 

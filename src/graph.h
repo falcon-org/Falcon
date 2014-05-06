@@ -194,6 +194,7 @@ class GraphParser;
 class Graph {
  public:
   Graph();
+  ~Graph();
 
   void addNode(Node* node);
 
