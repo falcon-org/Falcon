@@ -198,4 +198,3 @@ class PosixSubProcessManager {
 } // namespace falcon
 
 #endif // FALCON_POSIX_SUBPROCESS_H_
-

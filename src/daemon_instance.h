@@ -100,4 +100,3 @@ class DaemonInstance {
 } // namespace falcon
 
 #endif // falcon_daemon_instance_h_
-

@@ -96,4 +96,3 @@ class GraphSequentialBuilder : public IGraphBuilder {
 } // namespace falcon
 
 #endif // FALCON_GRAPH_SEQUENTIAL_BUILDER_H_
-

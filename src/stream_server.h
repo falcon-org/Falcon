@@ -259,4 +259,3 @@ class StreamServer : public IStreamConsumer {
 } // namespace falcon
 
 #endif // FALCON_STREAM_SERVER_H_
-
