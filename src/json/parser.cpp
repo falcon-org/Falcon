@@ -34,7 +34,7 @@ JsonVal::~JsonVal ()
       std::map<std::string, JsonVal*>::iterator it;
       std::map<std::string, JsonVal*>::iterator end;
       end = this->_object.end ();
-      for (it = this->_object.begin (); it != end; it++)
+      for (it = this->_object.begin (); it != end; ++it)
       {
         delete it->second;
       }
@@ -45,7 +45,7 @@ JsonVal::~JsonVal ()
       std::deque<JsonVal*>::iterator it;
       std::deque<JsonVal*>::iterator end;
       end = this->_array.end ();
-      for (it = this->_array.begin (); it != end; it++)
+      for (it = this->_array.begin (); it != end; ++it)
       {
         delete (*it);
       }
@@ -124,7 +124,7 @@ void JsonVal::print (unsigned const int indent, std::ostream& os) const
       std::map<std::string, JsonVal*>::const_iterator end;
       end = this->_object.cend ();
       os << prefix << "Object Begin (" << this->_object.size () << ")" << std::endl;
-      for (it = this->_object.begin (); it != end; it++)
+      for (it = this->_object.begin (); it != end; ++it)
       {
         os << prefix << base << "Key (" << it->first << ")" << std::endl;
         it->second->print (indent + 1, os);
@@ -138,7 +138,7 @@ void JsonVal::print (unsigned const int indent, std::ostream& os) const
       std::deque<JsonVal*>::const_iterator end;
       end = this->_array.cend ();
       os << prefix << "Array Begin (" << this->_array.size () << ")" << std::endl;
-      for (it = this->_array.cbegin (); it != end; it++)
+      for (it = this->_array.cbegin (); it != end; ++it)
       {
         (*it)->print (indent + 1, os);
       }
@@ -178,7 +178,7 @@ JsonVal const* JsonVal::getObject (std::string const& key) const
       std::map<std::string, JsonVal*>::const_iterator it;
       std::map<std::string, JsonVal*>::const_iterator end;
       end = this->_object.cend ();
-      for (it = this->_object.begin (); it != end && !ret; it++)
+      for (it = this->_object.begin (); it != end && !ret; ++it)
       {
         if (it->first.compare (key) == 0)
         {
@@ -192,7 +192,7 @@ JsonVal const* JsonVal::getObject (std::string const& key) const
       std::deque<JsonVal*>::const_iterator it;
       std::deque<JsonVal*>::const_iterator end;
       end = this->_array.cend ();
-      for (it = this->_array.cbegin (); it != end && !ret; it++)
+      for (it = this->_array.cbegin (); it != end && !ret; ++it)
       {
         ret = (*it)->getObject (key);
       }

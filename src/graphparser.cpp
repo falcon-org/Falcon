@@ -64,7 +64,7 @@ void GraphParser::processFile(std::string const& filepath)
 void GraphParser::checkNode(JsonVal const* json, NodeArray& nodeArray) {
   for (std::deque<JsonVal*>::const_iterator it = json->_array.cbegin();
        it != json->_array.cend();
-       it++) {
+       ++it) {
     JsonVal const* json_string = *it;
 
     if (json_string->_type != JSON_STRING) {
@@ -89,7 +89,7 @@ void GraphParser::processJson(JsonVal const* rules)
 
   for (std::deque<JsonVal*>::const_iterator it = rules->_array.cbegin();
        it != rules->_array.cend();
-       it++) {
+       ++it) {
     NodeArray inputs;
     NodeArray outputs;
 
