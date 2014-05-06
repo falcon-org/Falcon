@@ -70,7 +70,6 @@ static int loadModule(falcon::Graph& g, std::string const& s) {
   } else if (0 == s.compare("help")) {
     std::cout << "list of available modules: " << std::endl
       << "  dot    show the graph in DOT format" << std::endl
-      << "  loop   check is there is a loop in the graph" << std::endl
       << "  make   show the graph in Makefile format" << std::endl;
   } else {
     LOG(ERROR) << "module '" << s << "' not supported";
