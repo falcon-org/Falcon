@@ -58,8 +58,6 @@ class CommandServer {
   boost::shared_ptr<TProtocolFactory> protocolFactory_;
   std::unique_ptr<TThreadedServer> server_;
 
-  DaemonInstance* daemon_;
-
   CommandServer(const CommandServer& other) = delete;
   CommandServer& operator=(const CommandServer&) = delete;
 };
