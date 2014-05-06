@@ -22,7 +22,10 @@
 
 namespace falcon {
 
-StreamServer::StreamServer() : stopped_(false) { }
+StreamServer::StreamServer()
+  : serverSocket_(-1)
+  , eventFd_(-1)
+  , stopped_(false) { }
 
 void StreamServer::openPort(unsigned int port) {
   serverSocket_ = socket(AF_INET, SOCK_STREAM, 0);
