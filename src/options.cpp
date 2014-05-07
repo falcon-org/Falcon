@@ -133,6 +133,8 @@ void GlobalConfig::setNetworkStreamPort(int const& p) {
 void GlobalConfig::setWorkingDirectoryPath(std::string const& s) {
   LOG(INFO) << "set working directory: '" << s << "'";
   workingDirectoryPath_ = s;
+  falconDir_ = s;
+  falconDir_.append("/.falcon");
 }
 std::string const& GlobalConfig::getWorkingDirectoryPath() const {
   return workingDirectoryPath_;
@@ -144,4 +146,5 @@ bool GlobalConfig::runDaemonBuilder() const { return runDaemonBuilder_; }
 std::string const& GlobalConfig::getLogDirectory() const {
   return logDirectory_;
 }
+std::string const& GlobalConfig::getFalconDir() const { return falconDir_; }
 }

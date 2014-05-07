@@ -20,6 +20,7 @@ class IStreamConsumer {
   virtual void endCommand(unsigned int cmdId, SubProcessExitStatus status) = 0;
   virtual void writeStdout(unsigned int cmdId, char* buf, std::size_t len) = 0;
   virtual void writeStderr(unsigned int cmdId, char* buf, std::size_t len) = 0;
+  virtual void cacheRetrieveAction(const std::string& path) = 0;
 };
 
 /**
@@ -32,6 +33,7 @@ class StdoutStreamConsumer : public IStreamConsumer {
   virtual void endCommand(unsigned int cmdId, SubProcessExitStatus status);
   virtual void writeStdout(unsigned int cmdId, char* buf, std::size_t len);
   virtual void writeStderr(unsigned int cmdId, char* buf, std::size_t len);
+  virtual void cacheRetrieveAction(const std::string& path);
 };
 
 /**
@@ -44,6 +46,7 @@ public:
   virtual void endCommand(unsigned int cmdId, SubProcessExitStatus status);
   virtual void writeStdout(unsigned int cmdId, char* buf, std::size_t len);
   virtual void writeStderr(unsigned int cmdId, char* buf, std::size_t len);
+  virtual void cacheRetrieveAction(const std::string& path);
 
   std::string getCoutString() const;
   std::string getCerrString() const;

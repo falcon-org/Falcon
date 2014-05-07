@@ -138,6 +138,11 @@ class StreamServer : public IStreamConsumer {
    */
   void writeStderr(unsigned int cmdId, char* buf, std::size_t len);
 
+  /**
+   * Notify that a target was retrieved from the cache.
+   */
+  void cacheRetrieveAction(const std::string& path);
+
  private:
 
   /** This will call poll to process events. */

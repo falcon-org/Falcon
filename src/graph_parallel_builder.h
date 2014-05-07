@@ -11,6 +11,7 @@
 #include <thread>
 
 #include "build_plan.h"
+#include "cache_manager.h"
 #include "graph.h"
 #include "graph_builder.h"
 #include "posix_subprocess_manager.h"
@@ -22,6 +23,7 @@ class GraphParallelBuilder : public IGraphBuilder {
  public:
   GraphParallelBuilder(Graph& Graph,
                        BuildPlan& plan,
+                       CacheManager* cache,
                        IStreamConsumer* consumer,
                        WatchmanClient* watchmanClient,
                        std::string const& workingDirectory,
@@ -41,12 +43,17 @@ class GraphParallelBuilder : public IGraphBuilder {
 
  private:
   void buildThread();
-  void markOutputsUpToDate(Rule *rule);
   void buildRule(Rule *rule);
+  bool tryBuildRuleFromCache(Rule *rule);
+  bool saveOutputsInCache(Rule *rule);
+  void markOutputsUpToDate(Rule *rule);
   BuildResult waitForNext();
+  void onRuleFinished(Rule* rule);
 
   Graph& graph_;
-  BuildPlan plan_;
+  BuildPlan& plan_;
+  CacheManager* cache_;
+  IStreamConsumer* consumer_;
   PosixSubProcessManager manager_;
   WatchmanClient * watchmanClient_;
   std::string workingDirectory_;

@@ -13,6 +13,7 @@
 
 #include "FalconService.h"
 #include "build_plan.h"
+#include "cache_manager.h"
 #include "command_server.h"
 #include "graph.h"
 #include "graph_builder.h"
@@ -89,6 +90,8 @@ class DaemonInstance {
 
   /* The thrift server. */
   std::unique_ptr<CommandServer> commandServer_;
+
+  CacheManager cache_;
 
   /**
    * When watchman notifies us of a file change, we stat it. If the file does

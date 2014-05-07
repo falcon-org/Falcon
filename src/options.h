@@ -128,6 +128,11 @@ public:
   std::string const& getLogDirectory() const;
 
 private:
+  std::string falconDir_;
+public:
+  std::string const& getFalconDir() const;
+
+private:
   bool runSequentialBuild_;
 public:
   bool runSequentialBuild() const;

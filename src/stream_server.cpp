@@ -444,4 +444,24 @@ void StreamServer::endCommand(unsigned int cmdId, SubProcessExitStatus status) {
   flushWaiting();
 }
 
+void StreamServer::cacheRetrieveAction(const std::string& path) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  assert(!builds_.empty());
+
+  if (builds_.front().firstChunk) {
+    builds_.front().firstChunk = false;
+  } else {
+    writeBuf(",\n");
+  }
+
+  writeBuf("    { \"cache\": \"");
+  std::ostringstream ss;
+  ss << path;
+  writeBuf(ss.str());
+  writeBuf("\" }");
+
+  flushWaiting();
+}
+
 } // namespace falcon

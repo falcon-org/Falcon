@@ -43,6 +43,8 @@ class BuildOutputParser:
           sys.stderr.write('\033[0m')
         elif prefix == 'result':
           result = value
+        elif prefix == 'cmds.item.cache':
+          print 'Retrieving', value, 'from cache'
 
     if result != 'SUCCEEDED':
       return False

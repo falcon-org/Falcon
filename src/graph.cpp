@@ -90,7 +90,6 @@ void Node::setHash(std::string const& hash) {
 std::string const& Node::getHash() const { return hash_; }
 std::string& Node::getHash() { return hash_; }
 
-
 bool Node::operator==(Node const& n) const { return getPath() == n.getPath(); }
 bool Node::operator!=(Node const& n) const { return getPath() != n.getPath(); }
 

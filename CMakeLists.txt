@@ -69,6 +69,8 @@ add_executable(falcond
   src/graph_consistency_checker.cpp
   src/build_plan.cpp
   src/graph_parallel_builder.cpp
+  src/cache_manager.cpp
+  src/fs.cpp
   )
 
 include_directories(src

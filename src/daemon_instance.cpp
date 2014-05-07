@@ -25,7 +25,8 @@ DaemonInstance::DaemonInstance(std::unique_ptr<GlobalConfig> gc)
     , config_(std::move(gc))
     , watchmanClient_(config_->getWorkingDirectoryPath())
     , isBuilding_(false)
-    , streamServer_() { }
+    , streamServer_()
+    , cache_(config_->getFalconDir()) { }
 
 void DaemonInstance::loadConf(std::unique_ptr<Graph> gp) {
   graph_ = std::move(gp);
@@ -103,7 +104,7 @@ StartBuildResult::type DaemonInstance::startBuild(int32_t numThreads) {
 
   auto callback = std::bind(&DaemonInstance::onBuildCompleted, this, _1);
   builder_.reset(
-      new GraphParallelBuilder(*graph_, *plan_, &streamServer_,
+      new GraphParallelBuilder(*graph_, *plan_, &cache_, &streamServer_,
                                &watchmanClient_,
                                config_->getWorkingDirectoryPath(),
                                numThreads, mutex_, callback));
@@ -215,7 +216,6 @@ void DaemonInstance::setDirty(const std::string& target) {
   }
 
   Node* node = it->second;
-
   if (!node->isSource() && node->getChild()->isPhony()) {
     /* This is a phony target. */
     node->markDirty(false);

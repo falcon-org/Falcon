@@ -12,6 +12,7 @@ namespace falcon {
 
 GraphParallelBuilder::GraphParallelBuilder(Graph& graph,
                                            BuildPlan& plan,
+                                           CacheManager* cache,
                                            IStreamConsumer* consumer,
                                            WatchmanClient* watchmanClient,
                                            std::string const& workingDirectory,
@@ -20,6 +21,8 @@ GraphParallelBuilder::GraphParallelBuilder(Graph& graph,
                                            onBuildCompletedFn callback)
     : graph_(graph)
     , plan_(plan)
+    , cache_(cache)
+    , consumer_(consumer)
     , manager_(consumer)
     , watchmanClient_(watchmanClient)
     , workingDirectory_(workingDirectory)
@@ -90,12 +93,64 @@ void GraphParallelBuilder::buildThread() {
 void GraphParallelBuilder::buildRule(Rule* rule) {
   if (rule->isPhony()) {
     /* A phony target, nothing to do. */
-    markOutputsUpToDate(rule);
-    rule->setState(State::UP_TO_DATE);
-    plan_.notifyRuleBuilt(rule);
-  } else {
-    manager_.addProcess(rule, workingDirectory_);
+    onRuleFinished(rule);
+    return;
   }
+
+  if (tryBuildRuleFromCache(rule)) {
+    /* We managed to retrieve all the outputs from the cache. */
+    onRuleFinished(rule);
+    return;
+  }
+
+  /* This is not a phony target, and we could not find all the outputs in cache.
+   * Build the rule. */
+  manager_.addProcess(rule, workingDirectory_);
+}
+
+bool GraphParallelBuilder::tryBuildRuleFromCache(Rule *rule) {
+  if (!cache_ || rule->isPhony()) {
+    return false;
+  }
+
+  auto outputs = rule->getOutputs();
+  for (auto it = outputs.begin(); it != outputs.end(); it++) {
+    if (!cache_->has((*it)->getHash())) {
+      return false;
+    }
+  }
+
+  /* All the outputs are in cache. Start retrieving them. */
+  for (auto it = outputs.begin(); it != outputs.end(); it++) {
+    if (!cache_->read((*it)->getHash(), (*it)->getPath())) {
+      return false;
+    }
+    /* Notify the consumer that we retrieved the target from the cache. */
+    consumer_->cacheRetrieveAction((*it)->getPath());
+  }
+
+  /* Update the timestamp of the rule. */
+  rule->setTimestamp(time(NULL));
+
+  return true;
+}
+
+bool GraphParallelBuilder::saveOutputsInCache(Rule *rule) {
+  if (!cache_ || rule->isPhony()) {
+    return false;
+  }
+
+  bool error = false;
+
+  auto outputs = rule->getOutputs();
+  for (auto it = outputs.begin(); it != outputs.end(); it++) {
+    if (!cache_->update((*it)->getHash(), (*it)->getPath())) {
+      LOG(ERROR) << "could not save " << (*it)->getPath() << " in cache";
+      error = true;
+    }
+  }
+
+  return error;
 }
 
 void GraphParallelBuilder::markOutputsUpToDate(Rule *rule) {
@@ -123,20 +178,6 @@ BuildResult GraphParallelBuilder::waitForNext() {
         BuildResult::INTERRUPTED : BuildResult::FAILED;
   }
 
-  /* Mark all the outputs up to date. */
-  markOutputsUpToDate(rule);
-
-  /* Mark all the inputs that are source files up to date.
-   * Contrary to the inputs that are generated, this is done only after the
-   * command succeeds, because the source files must remain dirty if the
-   * command fails. */
-  auto inputs = rule->getInputs();
-  for (auto it = inputs.begin(); it != inputs.end(); it++) {
-    if ((*it)->getChild() == nullptr) {
-      (*it)->setState(State::UP_TO_DATE);
-    }
-  }
-
   /* Now that the rule was built, parse its depfile (if any). */
   if (rule->hasDepfile()) {
     auto res = Depfile::loadFromfile(rule->getDepfile(), rule,
@@ -146,13 +187,30 @@ BuildResult GraphParallelBuilder::waitForNext() {
     }
   }
 
+  /* Save the outputs in cache. */
+  saveOutputsInCache(rule);
+
+  onRuleFinished(rule);
+  return BuildResult::SUCCEEDED;
+}
+
+void GraphParallelBuilder::onRuleFinished(Rule* rule) {
+  /* Mark all the outputs up to date. */
+  markOutputsUpToDate(rule);
+
+  /* Mark all the inputs that are source files up to date. */
+  auto inputs = rule->getInputs();
+  for (auto it = inputs.begin(); it != inputs.end(); it++) {
+    if ((*it)->getChild() == nullptr) {
+      (*it)->setState(State::UP_TO_DATE);
+    }
+  }
+
   /* Mark the rule up to date. */
   rule->setState(State::UP_TO_DATE);
 
   /* Inform the plan that the rule is built. */
   plan_.notifyRuleBuilt(rule);
-
-  return BuildResult::SUCCEEDED;
 }
 
 } // namespace falcon

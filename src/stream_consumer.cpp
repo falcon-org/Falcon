@@ -27,6 +27,10 @@ void StdoutStreamConsumer::writeStderr(unsigned int cmdId,
   std::cerr.write(buf, len);
 }
 
+void StdoutStreamConsumer::cacheRetrieveAction(const std::string& path) {
+  std::cout << "Retrieving " << path << " from cache.";
+}
+
 void StringStreamConsumer::newCommand(unsigned int cmdId,
                                       const std::string& cmd) { }
 
@@ -50,5 +54,8 @@ void StringStreamConsumer::writeStderr(unsigned int cmdId,
   sscerr_.write(buf, len);
 }
 
+void StringStreamConsumer::cacheRetrieveAction(const std::string& path) {
+  sscout_ << "Retrieving " << path << " from cache.";
+}
 
 } // namespace falcon

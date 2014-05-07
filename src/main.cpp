@@ -9,6 +9,7 @@
 #include "build_plan.h"
 #include "daemon_instance.h"
 #include "exceptions.h"
+#include "fs.h"
 #include "graph.h"
 #include "graph_consistency_checker.h"
 #include "graph_dependency_scan.h"
@@ -109,7 +110,9 @@ static int build(const std::unique_ptr<falcon::GlobalConfig>& config,
    * TODO: the user should be able to explicitly give the targets to build. */
   falcon::BuildPlan plan(graph->getRoots());
 
-  falcon::GraphParallelBuilder builder(*graph, plan, &consumer,
+  falcon::GraphParallelBuilder builder(*graph, plan,
+                                       nullptr /* cache */,
+                                       &consumer,
                                        nullptr /* watchmanClient */,
                                        config->getWorkingDirectoryPath(),
                                        1, mutex, false /* No callback. */);
@@ -135,6 +138,8 @@ int main (int const argc, char const* const* argv) {
   }
 
   std::unique_ptr<falcon::GlobalConfig> config(new falcon::GlobalConfig(opt));
+
+  falcon::fs::mkdir(config->getFalconDir());
 
   /* Analyze the graph given in the configuration file */
   falcon::GraphParser graphParser;
