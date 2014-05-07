@@ -51,8 +51,8 @@ private:
   virtual void checkRule(Rule *rule);
 
   Graph* graph_;
-  size_t nbRootsSeen_;
-  size_t nbSourcesSeen_;
+  std::size_t nbRootsSeen_;
+  std::size_t nbSourcesSeen_;
 
   NodeSet nodesSeen_;
   RuleSet rulesSeen_;

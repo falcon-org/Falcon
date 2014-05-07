@@ -128,7 +128,7 @@ class StreamServer : public IStreamConsumer {
    * @param buf   Buffer to be written.
    * @param len   Size of the buffer.
    */
-  void writeStdout(unsigned int cmdId, char* buf, size_t len);
+  void writeStdout(unsigned int cmdId, char* buf, std::size_t len);
 
   /**
    * Write a buffer coming from error output of a command.
@@ -136,7 +136,7 @@ class StreamServer : public IStreamConsumer {
    * @param buf   Buffer to be written.
    * @param len   Size of the buffer.
    */
-  void writeStderr(unsigned int cmdId, char* buf, size_t len);
+  void writeStderr(unsigned int cmdId, char* buf, std::size_t len);
 
  private:
 
@@ -182,7 +182,7 @@ class StreamServer : public IStreamConsumer {
   void notifyPoll();
 
   void writeBuf(const std::string& str);
-  void writeBufEscapeJson(const char* buf, size_t len);
+  void writeBufEscapeJson(const char* buf, std::size_t len);
 
   struct BuildInfo {
     unsigned int id;
@@ -210,7 +210,8 @@ class StreamServer : public IStreamConsumer {
    * @param len      Size of the buffer;
    * @param isStdout Define if the data comes from the standard output.
    */
-  void writeCmdOutput(unsigned int cmdId, char* buf, size_t len, bool isStdout);
+  void writeCmdOutput(unsigned int cmdId,
+                      char* buf, std::size_t len, bool isStdout);
 
   /** Queue of builds. Each new build is pushed to the front. */
   std::list<BuildInfo> builds_;
@@ -238,7 +239,7 @@ class StreamServer : public IStreamConsumer {
     std::list<BuildInfo>::iterator itBuild;
     /* Current pointer in itBuild->buf. Everything before this pointer has been
      * already sent. */
-    size_t bufPtr;
+    std::size_t bufPtr;
     /* Iterator to the fd entry in fds_ or waiting_, depending on isWaiting. */
     std::list<int>::iterator itFd;
     /* Indicate if the fd is waiting for new data. In this case, it is stored in

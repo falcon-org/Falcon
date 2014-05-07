@@ -18,8 +18,8 @@ class IStreamConsumer {
   virtual ~IStreamConsumer() {}
   virtual void newCommand(unsigned int cmdId, const std::string& cmd) = 0;
   virtual void endCommand(unsigned int cmdId, SubProcessExitStatus status) = 0;
-  virtual void writeStdout(unsigned int cmdId, char* buf, size_t len) = 0;
-  virtual void writeStderr(unsigned int cmdId, char* buf, size_t len) = 0;
+  virtual void writeStdout(unsigned int cmdId, char* buf, std::size_t len) = 0;
+  virtual void writeStderr(unsigned int cmdId, char* buf, std::size_t len) = 0;
 };
 
 /**
@@ -30,8 +30,8 @@ class StdoutStreamConsumer : public IStreamConsumer {
   virtual ~StdoutStreamConsumer() {}
   virtual void newCommand(unsigned int cmdId, const std::string& cmd);
   virtual void endCommand(unsigned int cmdId, SubProcessExitStatus status);
-  virtual void writeStdout(unsigned int cmdId, char* buf, size_t len);
-  virtual void writeStderr(unsigned int cmdId, char* buf, size_t len);
+  virtual void writeStdout(unsigned int cmdId, char* buf, std::size_t len);
+  virtual void writeStderr(unsigned int cmdId, char* buf, std::size_t len);
 };
 
 /**
@@ -42,8 +42,8 @@ public:
   virtual ~StringStreamConsumer() {}
   virtual void newCommand(unsigned int cmdId, const std::string& cmd);
   virtual void endCommand(unsigned int cmdId, SubProcessExitStatus status);
-  virtual void writeStdout(unsigned int cmdId, char* buf, size_t len);
-  virtual void writeStderr(unsigned int cmdId, char* buf, size_t len);
+  virtual void writeStdout(unsigned int cmdId, char* buf, std::size_t len);
+  virtual void writeStderr(unsigned int cmdId, char* buf, std::size_t len);
 
   std::string getCoutString() const;
   std::string getCerrString() const;

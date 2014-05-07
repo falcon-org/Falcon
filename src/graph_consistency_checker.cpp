@@ -117,7 +117,7 @@ void GraphConsistencyChecker::checkRule(Rule* rule) {
     }
   }
 
-  size_t nbReady = 0;
+  std::size_t nbReady = 0;
 
   /* Traverse inputs. */
   for (auto it = inputs.begin(); it != inputs.end(); ++it) {

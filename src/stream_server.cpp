@@ -262,7 +262,7 @@ void StreamServer::processClient(int fd) {
   assert(info.bufPtr < itBuild->buf.size());
 
   std::string& buf = itBuild->buf;
-  size_t bufSize = buf.size() - info.bufPtr;
+  std::size_t bufSize = buf.size() - info.bufPtr;
   const char* bufPtr = &buf[info.bufPtr];
   do {
     int r = send(fd, bufPtr, bufSize, MSG_NOSIGNAL);
@@ -359,10 +359,10 @@ void StreamServer::writeBuf(const std::string& str) {
   builds_.front().buf.append(str);
 }
 
-void StreamServer::writeBufEscapeJson(const char* buf, size_t len) {
+void StreamServer::writeBufEscapeJson(const char* buf, std::size_t len) {
   assert(!builds_.empty());
 
-  for (size_t i = 0; i < len; i++) {
+  for (std::size_t i = 0; i < len; i++) {
     char c = buf[i];
     if (c == '"' || c == '\\') {
       builds_.front().buf.push_back('\\');
@@ -376,7 +376,7 @@ void StreamServer::writeBufEscapeJson(const char* buf, size_t len) {
 }
 
 void StreamServer::writeCmdOutput(unsigned int cmdId, char* buf,
-                                  size_t len, bool isStdout) {
+                                  std::size_t len, bool isStdout) {
   std::lock_guard<std::mutex> lock(mutex_);
   assert(!builds_.empty());
   assert(!builds_.front().firstChunk);
@@ -397,11 +397,11 @@ void StreamServer::writeCmdOutput(unsigned int cmdId, char* buf,
   flushWaiting();
 }
 
-void StreamServer::writeStdout(unsigned int cmdId, char* buf, size_t len) {
+void StreamServer::writeStdout(unsigned int cmdId, char* buf, std::size_t len) {
   writeCmdOutput(cmdId, buf, len, true);
 }
 
-void StreamServer::writeStderr(unsigned int cmdId, char* buf, size_t len) {
+void StreamServer::writeStderr(unsigned int cmdId, char* buf, std::size_t len) {
   writeCmdOutput(cmdId, buf, len, false);
 }
 

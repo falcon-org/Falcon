@@ -11,6 +11,9 @@
 # include <vector>
 # include <unordered_map>
 
+/* use for clock and time */
+# include <ctime>
+
 /** This file defines the data structure for storing the Graph of Nodes and
  * Rules.
  *
@@ -36,7 +39,7 @@ typedef std::unordered_map<std::string, Node*> NodeMap;
 typedef std::vector<Rule*>                     RuleArray;
 typedef std::set<Rule*>                        RuleSet;
 
-typedef unsigned int                           Timestamp;
+typedef std::time_t                            Timestamp;
 
 /** Define the state of a node or rule. */
 enum class State { UP_TO_DATE, OUT_OF_DATE };
@@ -166,7 +169,7 @@ class Rule {
    * This means the rule can safely be built. */
   bool ready() const;
   /** Return the number of inputs that are ready. */
-  size_t numReady() const;
+  std::size_t numReady() const;
   /** Increase the counter of ready inputs. */
   void markInputReady();
   /** Decrease the counter of ready inputs. */
@@ -199,7 +202,7 @@ class Rule {
 
   /* Number of inputs that are ready. A ready input is a input that has been
    * built, or a soure file. */
-  size_t numInputsReady_;
+  std::size_t numInputsReady_;
 
   Rule(const Rule& other) = delete;
   Rule& operator=(const Rule&) = delete;

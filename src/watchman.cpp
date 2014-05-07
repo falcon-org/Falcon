@@ -11,11 +11,12 @@
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
+
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <time.h>
 #include <fcntl.h>
 
 #if !defined(UNIX_PATH_MAX)
@@ -38,6 +39,8 @@ WatchmanClient::WatchmanClient(std::string const& workingDirectory)
   socketPath_ = workingDirectory + "/.watchman.socket";
   logPath_ = workingDirectory + "/.watchman.log";
   statePath_ = workingDirectory + "/.watchman.state";
+
+  assert(socketPath_.size() < UNIX_PATH_MAX);
 }
 
 WatchmanClient::~WatchmanClient() {
@@ -95,16 +98,16 @@ void WatchmanClient::startWatchmanInstance() {
 
 void WatchmanClient::openWatchmanSocket() {
   assert(!isConnected_);
-  struct sockaddr_un addr;
 
   watchmanSocket_ = socket(AF_UNIX, SOCK_STREAM, 0);
   if (watchmanSocket_ < 0) {
     THROW_ERROR(errno, "unable to open the watchman's socket");
   }
 
+  struct sockaddr_un addr;
   memset(&addr, 0, sizeof (struct sockaddr_un));
   addr.sun_family = AF_UNIX;
-  snprintf(addr.sun_path, UNIX_PATH_MAX, "%s", socketPath_.c_str());
+  std::strncpy(addr.sun_path, socketPath_.c_str(), socketPath_.size());
 
   if (connect(watchmanSocket_, (struct sockaddr*)&addr,
               sizeof (struct sockaddr_un)) != 0) {
@@ -164,7 +167,7 @@ void WatchmanClient::watchNode(const Node& n) {
   /* Passing the current time to watchman as a parameter to the "since"
    * expression prevents watchman from triggering our trigger immediately when
    * we create it. */
-  time_t t = time(NULL) - 1;
+  std::time_t time = std::time(NULL) - 1;
 
   std::stringstream ss;
   ss << "[ ";
@@ -175,7 +178,7 @@ void WatchmanClient::watchNode(const Node& n) {
   ss << "       [\"name\", \"" << targetPattern << "\", \"wholename\"], ";
   ss << "       [\"anyof\", ";
   ss << "           [\"not\", \"exists\"],";
-  ss << "           [\"since\", " << t << ", \"mtime\"]]], ";
+  ss << "           [\"since\", " << time << ", \"mtime\"]]], ";
   ss << "\"command\": [";
   ss << "    \"falcon\", \"--set-dirty\", \"" << n.getPath() << "\"";
   ss << "]}]\n";

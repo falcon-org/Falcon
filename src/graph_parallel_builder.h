@@ -25,7 +25,7 @@ class GraphParallelBuilder : public IGraphBuilder {
                        IStreamConsumer* consumer,
                        WatchmanClient* watchmanClient,
                        std::string const& workingDirectory,
-                       size_t numThreads,
+                       std::size_t numThreads,
                        std::mutex& mutex,
                        onBuildCompletedFn callback);
 
@@ -50,7 +50,7 @@ class GraphParallelBuilder : public IGraphBuilder {
   PosixSubProcessManager manager_;
   WatchmanClient * watchmanClient_;
   std::string workingDirectory_;
-  size_t numThreads_;
+  std::size_t numThreads_;
   BuildResult result_;
 
   std::unique_lock<std::mutex> lock_;

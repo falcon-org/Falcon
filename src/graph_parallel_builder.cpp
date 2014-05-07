@@ -15,7 +15,7 @@ GraphParallelBuilder::GraphParallelBuilder(Graph& graph,
                                            IStreamConsumer* consumer,
                                            WatchmanClient* watchmanClient,
                                            std::string const& workingDirectory,
-                                           size_t numThreads,
+                                           std::size_t numThreads,
                                            std::mutex& mutex,
                                            onBuildCompletedFn callback)
     : graph_(graph)
@@ -116,7 +116,7 @@ BuildResult GraphParallelBuilder::waitForNext() {
   SubProcessExitStatus status = res.second;
 
   /* Update the timestamp of the rule. */
-  rule->setTimestamp(time(NULL));
+  rule->setTimestamp(std::time(NULL));
 
   if (status != SubProcessExitStatus::SUCCEEDED) {
     return status == SubProcessExitStatus::INTERRUPTED ?

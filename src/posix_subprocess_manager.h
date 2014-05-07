@@ -52,7 +52,7 @@ class PosixSubProcessManager {
    */
   BuiltRule waitForNext();
 
-  size_t nbRunning() const { return running_.size() + finished_.size(); }
+  std::size_t nbRunning() const { return running_.size() + finished_.size(); }
 
   /** Interrupt all the running processes by sending the SIGINT signal. */
   void interrupt();

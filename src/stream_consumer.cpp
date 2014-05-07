@@ -18,12 +18,12 @@ void StdoutStreamConsumer::endCommand(unsigned int cmdId,
                                       SubProcessExitStatus status) {}
 
 void StdoutStreamConsumer::writeStdout(unsigned int cmdId,
-                                       char* buf, size_t len) {
+                                       char* buf, std::size_t len) {
   std::cout.write(buf, len);
 }
 
 void StdoutStreamConsumer::writeStderr(unsigned int cmdId,
-                                       char* buf, size_t len) {
+                                       char* buf, std::size_t len) {
   std::cerr.write(buf, len);
 }
 
@@ -41,12 +41,12 @@ std::string StringStreamConsumer::getCerrString() const {
 }
 
 void StringStreamConsumer::writeStdout(unsigned int cmdId,
-                                       char* buf, size_t len) {
+                                       char* buf, std::size_t len) {
   sscout_.write(buf, len);
 }
 
 void StringStreamConsumer::writeStderr(unsigned int cmdId,
-                                       char* buf, size_t len) {
+                                       char* buf, std::size_t len) {
   sscerr_.write(buf, len);
 }
 

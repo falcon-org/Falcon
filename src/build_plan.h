@@ -79,7 +79,7 @@ class BuildPlan {
   /**
    * Number of rules that were returned by findWork().
    */
-  size_t numStarted_;
+  std::size_t numStarted_;
 };
 
 } // namespace falcon
