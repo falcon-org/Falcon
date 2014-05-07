@@ -75,9 +75,10 @@ class Node {
 
   /**
    * Set the state as Dirty and mark all the parents as dirty too.
-   * This will recompute the hash of the node and all its outputs.
+   * @param recomputeHash If set to true, this will traverse the nodes up to the
+   * roots that depend on this target, and recompute their hashes.
    */
-  void markDirty();
+  void markDirty(bool recomputeHash);
 
   Timestamp getTimestamp() const;
   void setTimestamp(Timestamp);
@@ -149,9 +150,10 @@ class Rule {
 
   /**
    * Set the state as Dirty and mark all the parents as dirty too.
-   * This will recompute the hash of the rule and all its outputs.
+   * @param recomputeHash If set to true, this will traverse the nodes up to the
+   * roots that depend on this target, and recompute their hashes.
    */
-  void markDirty();
+  void markDirty(bool recomputeHash);
 
   void setHash(std::string const&);
   std::string const& getHash() const;

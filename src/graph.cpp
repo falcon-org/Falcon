@@ -50,14 +50,21 @@ bool Node::isDirty() const { return state_ == State::OUT_OF_DATE; }
 
 void Node::setState(State state) { state_ = state; }
 
-void Node::markDirty() {
-  DLOG(INFO) << "marking " << path_ << " dirty";
-  updateNodeHash(*this);
+void Node::markDirty(bool recomputeHash) {
+  if (isDirty() && !recomputeHash) {
+    /* We do no need to recompute the hash and we are already dirty. Nothing to
+     * do. */
+    return;
+  }
+
+  if (recomputeHash) {
+    updateNodeHash(*this);
+  }
 
   /* Mark all the parent rules dirty and increase their counter of dirty
    * inputs. */
   for (auto it = parentRules_.begin(); it != parentRules_.end(); ++it) {
-    (*it)->markDirty();
+    (*it)->markDirty(recomputeHash);
     if (!isSource() && !isDirty()) {
       /* If the node is not a source file, increase the counter of inputs
        * that are not ready for the rule. */
@@ -65,6 +72,7 @@ void Node::markDirty() {
     }
   }
 
+  DLOG(INFO) << "marking " << path_ << " dirty";
   setState(State::OUT_OF_DATE);
 }
 
@@ -124,14 +132,23 @@ State&       Rule::getState()       { return state_; }
 bool Rule::isDirty() const { return state_ == State::OUT_OF_DATE; }
 void Rule::setState(State state) { state_ = state; }
 
-void Rule::markDirty() {
-  setState(State::OUT_OF_DATE);
-  updateRuleHash(*this);
+void Rule::markDirty(bool recomputeHash) {
+  if (isDirty() && !recomputeHash) {
+    /* We do no need to recompute the hash and we are already dirty. Nothing to
+     * do. */
+    return;
+  }
+
+  if (recomputeHash) {
+    updateRuleHash(*this);
+  }
 
   /* Mark all the outputs dirty. */
   for (auto it = outputs_.begin(); it != outputs_.end(); ++it) {
-    (*it)->markDirty();
+    (*it)->markDirty(recomputeHash);
   }
+
+  setState(State::OUT_OF_DATE);
 }
 
 void Rule::setHash(std::string const& hash) { hash_ = hash; }
