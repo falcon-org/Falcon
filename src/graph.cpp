@@ -4,9 +4,10 @@
  */
 
 #include <algorithm>
-#include "exceptions.h"
+#include <cassert>
 
 #include "graph.h"
+#include "exceptions.h"
 #include "graph_hash.h"
 #include "logging.h"
 
@@ -25,6 +26,7 @@ Node::Node(const std::string& path)
 
 const std::string& Node::getPath() const { return path_; }
 
+bool Node::isSource() const { return childRule_ == nullptr; }
 const Rule* Node::getChild() const { return childRule_; }
 Rule*       Node::getChild()       { return childRule_; }
 
@@ -50,13 +52,20 @@ void Node::setState(State state) { state_ = state; }
 
 void Node::markDirty() {
   DLOG(INFO) << "marking " << path_ << " dirty";
-  setState(State::OUT_OF_DATE);
   updateNodeHash(*this);
 
-  /* Mark all the parent rules dirty. */
+  /* Mark all the parent rules dirty and increase their counter of dirty
+   * inputs. */
   for (auto it = parentRules_.begin(); it != parentRules_.end(); ++it) {
     (*it)->markDirty();
+    if (!isSource() && !isDirty()) {
+      /* If the node is not a source file, increase the counter of inputs
+       * that are not ready for the rule. */
+      (*it)->markInputDirty();
+    }
   }
+
+  setState(State::OUT_OF_DATE);
 }
 
 Timestamp Node::getTimestamp() const { return timestamp_; }
@@ -87,6 +96,7 @@ Rule::Rule(const NodeArray& inputs, const NodeArray& outputs)
   , missingDepfile_(false)
   , state_(State::UP_TO_DATE)
   , timestamp_(0)
+  , numInputsReady_(0)
 { }
 
 const NodeArray& Rule::getInputs() const { return inputs_; }
@@ -131,6 +141,13 @@ std::string& Rule::getHash() { return hash_; }
 Timestamp Rule::getTimestamp() const { return timestamp_; }
 void Rule::setTimestamp(Timestamp t) { timestamp_ = t; }
 
+bool Rule::ready() const { return numInputsReady_ == inputs_.size(); }
+size_t Rule::numReady() const { return numInputsReady_; }
+void Rule::markInputReady() {
+  numInputsReady_++; assert(numInputsReady_ <= inputs_.size());
+}
+void Rule::markInputDirty() { assert(numInputsReady_ > 0); numInputsReady_--; }
+
 /* ************************************************************************* */
 /*                                Graph                                      */
 /* ************************************************************************* */
@@ -142,7 +159,7 @@ void Graph::addNode(Node* node) {
     roots_.insert(node);
   }
 
-  if (node->getChild() == nullptr) {
+  if (node->isSource()) {
     sources_.insert(node);
   }
 

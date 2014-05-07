@@ -16,7 +16,7 @@
 #include "stream_server.h"
 
 #include "exceptions.h"
-#include "graph_sequential_builder.h"
+#include "graph_builder.h"
 #include "logging.h"
 #include "posix_subprocess.h"
 

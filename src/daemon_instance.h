@@ -12,9 +12,10 @@
 #include <thread>
 
 #include "FalconService.h"
+#include "build_plan.h"
 #include "command_server.h"
 #include "graph.h"
-#include "graph_sequential_builder.h"
+#include "graph_builder.h"
 #include "graphparser.h"
 #include "options.h"
 #include "stream_server.h"
@@ -44,7 +45,7 @@ class DaemonInstance {
   /* Commands.
    * See thrift/FalconService.thrift for a description of these commands. */
 
-  StartBuildResult::type startBuild();
+  StartBuildResult::type startBuild(int32_t numThreads);
   FalconStatus::type getStatus();
   void getDirtySources(std::set<std::basic_string<char>>& sources);
   void getDirtyTargets(std::set<std::basic_string<char>>& targets);
@@ -73,6 +74,7 @@ class DaemonInstance {
   std::unique_ptr<GlobalConfig> config_;
   std::thread serverThread_;
 
+  std::unique_ptr<BuildPlan> plan_;
   std::unique_ptr<IGraphBuilder> builder_;
 
   WatchmanClient watchmanClient_;

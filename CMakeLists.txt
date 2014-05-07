@@ -51,14 +51,15 @@ add_executable(falcond
   src/graph_cycle.cpp
   src/graph_dependency_scan.cpp
   src/graph_printers.cpp
-  src/graph_sequential_builder.cpp
   src/graphparser.cpp
+  src/graph_builder.cpp
   src/json/json.c
   src/json/parser.cpp
   src/logging.cpp
   src/main.cpp
   src/options.cpp
   src/posix_subprocess.cpp
+  src/posix_subprocess_manager.cpp
   src/command_server.cpp
   src/stream_consumer.cpp
   src/stream_server.cpp
@@ -66,6 +67,8 @@ add_executable(falcond
   src/depfile.cpp
   src/depfile_parser.cpp
   src/graph_consistency_checker.cpp
+  src/build_plan.cpp
+  src/graph_parallel_builder.cpp
   )
 
 include_directories(src

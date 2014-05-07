@@ -76,7 +76,7 @@ bool GraphDependencyScan::compareInputsWithOutputs(Rule *r) {
   for (auto it = inputs.begin(); it != inputs.end(); it++) {
     Node* input = *it;
     if (input->getTimestamp() > oldestOutput->getTimestamp()) {
-      if (input->getChild() == nullptr) {
+      if (input->isSource()) {
         /* Only mark the input dirty if it is a source file. */
         input->setState(State::OUT_OF_DATE);
       }
@@ -90,7 +90,7 @@ bool GraphDependencyScan::compareInputsWithOutputs(Rule *r) {
 bool GraphDependencyScan::updateNode(Node* n) {
   bool dirty = false;
 
-  if (n->getChild() != nullptr) {
+  if (!n->isSource()) {
     /* Traverse the child rule. */
     dirty = updateRule(n->getChild());
     /* If the child rule is dirty, this node is dirty. */
@@ -117,7 +117,14 @@ bool GraphDependencyScan::updateRule(Rule* r) {
   /* Traverse all the inputs. */
   auto inputs  = r->getInputs();
   for (auto it = inputs.begin(); it != inputs.end(); it++) {
-    isDirty |= updateNode(*it);
+    if (updateNode(*it)) {
+      isDirty = true;
+      if (!(*it)->isSource()) {
+        /* If the input is not a source file, increase the counter of inputs
+         * that are not ready for the rule. */
+        r->markInputDirty();
+      }
+    }
   }
 
   updateRuleHash(*r);

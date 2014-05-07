@@ -83,12 +83,11 @@ void WatchmanClient::startWatchmanInstance() {
      << " --sockname=\"" << socketPath_ << "\""
      << " --logfile=\"" << logPath_ << "\"";
 
-  std::unique_ptr<StdoutStreamConsumer> consumer(new StdoutStreamConsumer());
-  PosixSubProcessManager manager(consumer.get());
-  manager.addProcess(ss.str(), workingDirectory_);
-  PosixSubProcessPtr p = manager.waitForNext();
-
-  auto status = p->status();
+  StdoutStreamConsumer consumer;
+  PosixSubProcess p(ss.str(), workingDirectory_, 0, &consumer);
+  p.start();
+  p.waitFinished();
+  auto status = p.status();
   if (status != SubProcessExitStatus::SUCCEEDED) {
     THROW_ERROR(EINVAL, "can't start watchman");
   }

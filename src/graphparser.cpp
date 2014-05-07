@@ -136,6 +136,7 @@ void GraphParser::processJson(JsonVal const* rules)
 
     for (auto it = inputs.begin(); it != inputs.end(); it++) {
       (*it)->addParentRule(rule);
+      rule->markInputReady();
       graph_->roots_.erase(*it);
     }
     for (auto it = outputs.begin(); it != outputs.end(); it++) {

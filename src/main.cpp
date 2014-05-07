@@ -6,11 +6,13 @@
 #include <iostream>
 #include <cstdlib>
 
+#include "build_plan.h"
 #include "daemon_instance.h"
 #include "exceptions.h"
 #include "graph.h"
 #include "graph_consistency_checker.h"
 #include "graph_dependency_scan.h"
+#include "graph_parallel_builder.h"
 #include "logging.h"
 #include "options.h"
 #include "stream_consumer.h"
@@ -102,11 +104,16 @@ static int build(const std::unique_ptr<falcon::GlobalConfig>& config,
                       const std::unique_ptr<falcon::Graph>& graph) {
   falcon::StdoutStreamConsumer consumer;
   std::mutex mutex;
-  falcon::GraphSequentialBuilder builder(*graph, mutex,
-                                         nullptr /* watchmanClient */,
-                                         config->getWorkingDirectoryPath(),
-                                         &consumer);
-  builder.startBuild(graph->getRoots(), false /* No callback. */);
+
+  /* Create a build plan that builds everything.
+   * TODO: the user should be able to explicitly give the targets to build. */
+  falcon::BuildPlan plan(graph->getRoots());
+
+  falcon::GraphParallelBuilder builder(*graph, plan, &consumer,
+                                       nullptr /* watchmanClient */,
+                                       config->getWorkingDirectoryPath(),
+                                       1, mutex, false /* No callback. */);
+  builder.startBuild();
   builder.wait();
   FALCON_CHECK_GRAPH_CONSISTENCY(graph.get(), mutex);
   return builder.getResult() == falcon::BuildResult::SUCCEEDED ? 0 : 1;

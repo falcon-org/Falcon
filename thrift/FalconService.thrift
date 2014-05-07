@@ -20,7 +20,7 @@ service FalconService {
   i64 getPid()
 
   /* Start a build. */
-  StartBuildResult startBuild() throws(1:InvalidGraphError e)
+  StartBuildResult startBuild(1:i32 numThreads) throws(1:InvalidGraphError e)
 
   /* Get the current status of the daemon. */
   FalconStatus getStatus()

@@ -117,14 +117,24 @@ void GraphConsistencyChecker::checkRule(Rule* rule) {
     }
   }
 
+  size_t nbReady = 0;
+
   /* Traverse inputs. */
   for (auto it = inputs.begin(); it != inputs.end(); ++it) {
     if ((*it)->isDirty()) {
       FCHECK(rule->isDirty()) << "Input " << (*it)->getPath() << " of rule " <<
         rule << " is dirty but the rule is not.";
     }
+
+    if ((*it)->getChild() == nullptr || !(*it)->isDirty()) {
+      nbReady++;
+    }
+
     checkNode(*it);
   }
+
+  FCHECK_EQ(nbReady, rule->numReady()) << "Invalid number of ready inputs for "
+    "rule " << rule;
 }
 
 } // namespace falcon

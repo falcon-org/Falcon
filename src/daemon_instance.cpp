@@ -11,6 +11,7 @@
 #include "command_server.h"
 #include "exceptions.h"
 #include "graph_consistency_checker.h"
+#include "graph_parallel_builder.h"
 #include "graphparser.h"
 #include "logging.h"
 #include "watchman.h"
@@ -81,7 +82,7 @@ void DaemonInstance::checkSourcesMissing() {
 
 /* Commands */
 
-StartBuildResult::type DaemonInstance::startBuild() {
+StartBuildResult::type DaemonInstance::startBuild(int32_t numThreads) {
   assert(graph_);
 
   if (isBuilding_.load(std::memory_order_acquire)) {
@@ -96,15 +97,17 @@ StartBuildResult::type DaemonInstance::startBuild() {
 
   streamServer_.newBuild(buildId_);
 
-  builder_.reset(
-      new GraphSequentialBuilder(*graph_, mutex_,
-                                 &watchmanClient_,
-                                 config_->getWorkingDirectoryPath(),
-                                 &streamServer_));
+  /* Create a build plan that builds everything.
+   * TODO: the user should be able to explicitly give the targets to build. */
+  plan_.reset(new BuildPlan(graph_->getRoots()));
 
-  /* Build all the roots by default. */
-  builder_->startBuild(graph_->getRoots(),
-      std::bind(&DaemonInstance::onBuildCompleted, this, _1));
+  auto callback = std::bind(&DaemonInstance::onBuildCompleted, this, _1);
+  builder_.reset(
+      new GraphParallelBuilder(*graph_, *plan_, &streamServer_,
+                               &watchmanClient_,
+                               config_->getWorkingDirectoryPath(),
+                               numThreads, mutex_, callback));
+  builder_->startBuild();
 
   return StartBuildResult::OK;
 }

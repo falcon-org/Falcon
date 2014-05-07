@@ -7,7 +7,6 @@
 
 #include <cassert>
 #include <fcntl.h>
-#include <poll.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -167,105 +166,6 @@ void PosixSubProcess::waitFinished() {
     << toString(status_);
 
   consumer_->endCommand(id_, status_);
-}
-
-PosixSubProcessManager::PosixSubProcessManager(IStreamConsumer *consumer)
-    : id_(0), consumer_(consumer) { }
-
-PosixSubProcessManager::~PosixSubProcessManager() {
-  /* The user should wait for all the processes to complete before
-   * destroying this object. */
-  assert(nbRunning() == 0);
-}
-
-void PosixSubProcessManager::addProcess(const std::string& command,
-                                        const std::string& workingDirectory) {
-  PosixSubProcessPtr proc(new PosixSubProcess(command, workingDirectory,
-                                              id_++, consumer_));
-  proc->start();
-  int stdout = proc->stdoutFd_;
-  int stderr = proc->stderrFd_;
-
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    running_.push_back(std::move(proc));
-  }
-
-  size_t runningPos = running_.size() - 1;
-
-  short events = POLLIN | POLLPRI;
-
-  /* Setup the file descriptor for stdout for monitoring. */
-  pollfds_.push_front({ stdout, events, 0 });
-  map_[stdout] = { runningPos, pollfds_.begin(), true };
-
-  /* Setup the file descriptor for stderr for monitoring. */
-  pollfds_.push_front({ stderr, events, 0 });
-  map_[stderr] = { runningPos, pollfds_.begin(), false };
-}
-
-void PosixSubProcessManager::run() {
-  sigset_t set;
-  sigemptyset(&set);
-
-  VectorFds fds(pollfds_.begin(), pollfds_.end());
-
-  if (ppoll(&fds.front(), fds.size(), NULL, &set) < 0) {
-    THROW_ERROR(errno, "ppol failed");
-  }
-
-  /* Try to read data from each fd that is ready. */
-  for (auto it = fds.begin(); it != fds.end(); ++it) {
-    if (it->revents) {
-      readFd(it->fd);
-    }
-  }
-}
-
-PosixSubProcessPtr PosixSubProcessManager::waitForNext() {
-  while (finished_.empty()) {
-    run();
-  }
-  PosixSubProcessPtr proc = std::move(finished_.front());
-  finished_.pop();
-  proc->waitFinished();
-
-  return proc;
-}
-
-void PosixSubProcessManager::interrupt() {
-  std::lock_guard<std::mutex> lock(mutex_);
-
-  for (auto it = running_.begin(); it != running_.end(); ++it) {
-    (*it)->interrupt();
-  }
-}
-
-void PosixSubProcessManager::readFd(int fd) {
-  Map::iterator itMap = map_.find(fd);
-  assert(itMap != map_.end());
-
-  size_t runningPos = itMap->second.runningPos;
-  PosixSubProcessPtr& proc = running_[runningPos];
-
-  bool fdDone = itMap->second.isStdout
-    ? proc->readStdout() : proc->readStderr();
-
-  if (fdDone) {
-    /* This file descriptor is closed, remove the corresponding entries from
-     * map_ and pollfds_. */
-    pollfds_.erase(itMap->second.itFd);
-    map_.erase(itMap);
-
-    if (proc->completed()) {
-      /* Both stdout and stderr fds were closed. The process is complete so we
-       * move it from running_ to finished_. */
-      finished_.push(std::move(proc));
-
-      std::lock_guard<std::mutex> lock(mutex_);
-      running_.erase(running_.begin() + runningPos);
-    }
-  }
 }
 
 } // namespace falcon

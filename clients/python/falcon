@@ -14,6 +14,7 @@ import json
 import socket
 import subprocess
 import time
+import multiprocessing
 from BuildOutputParser import BuildOutputParser
 from thrift import Thrift
 from thrift.transport import TSocket
@@ -90,10 +91,10 @@ def connectSpawnIfNeeded():
   else:
     return r
 
-def build(client):
+def build(client, numThreads, displayJson):
   """Start a build"""
   try:
-    r = client.startBuild()
+    r = client.startBuild(numThreads)
     if r == 1:
       print "Already building..."
       return False
@@ -105,8 +106,16 @@ def build(client):
   sock = socket.socket()
   sock.connect(("localhost", stream_port))
 
-  parser = BuildOutputParser(sock)
-  return parser.parse()
+  if displayJson:
+    while True:
+      data = sock.recv(1024)
+      if not data:
+        break
+      print data
+    return True
+  else:
+    parser = BuildOutputParser(sock)
+    return parser.parse()
 
 def setDirty(transport, client, targets):
   """Set the given list of targets as dirty."""
@@ -166,6 +175,14 @@ def main(argv):
            " Will interrupt the current build, if any.")
   group.add_argument('--no-start', action='store_true',
       help="Do no start the daemon if not started")
+
+  parser.add_argument('-j', '--jobs', metavar='<num_threads>', type=int,
+      nargs='?', default=1, const=multiprocessing.cpu_count(),
+      help="Specify the number of commands to run simultaneously. If no value "
+      "specified, the value will be deduced from the number of cpus available.")
+
+  parser.add_argument('--json', action='store_true',
+      help="Print the build output in json format (for debugging).")
 
   group = parser.add_mutually_exclusive_group()
   group.add_argument('-b', '--build', metavar='TARGET', nargs='*',
@@ -248,7 +265,7 @@ def main(argv):
 
   if args.build != None:
     # TODO: pass the array of targets to build.
-    ret = 0 if build(client) else 1
+    ret = 0 if build(client, args.jobs, args.json) else 1
   elif args.get_dirty_sources:
     data = client.getDirtySources()
     print json.dumps(list(data))

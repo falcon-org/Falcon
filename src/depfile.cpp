@@ -51,6 +51,13 @@ void Depfile::setRuleDependency(const std::string& dep, Rule* rule,
     graph.addNode(target);
   }
 
+  /* Update the counter of ready inputs for the rule. */
+  if (target->isDirty() && !target->isSource()) {
+    rule->markInputDirty();
+  } else {
+    rule->markInputReady();
+  }
+
   /* Watch the target with watchman. */
   if (watchmanClient) {
     try {
