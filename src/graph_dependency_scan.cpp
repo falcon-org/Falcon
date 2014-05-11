@@ -3,11 +3,15 @@
  * LICENSE : see accompanying LICENSE file for details.
  */
 
+#include <iostream>
+
 #include <algorithm>
 #include <cassert>
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "cache_manager.h"
+#include "depfile.h"
 #include "graph_dependency_scan.h"
 #include "graph.h"
 #include "graph_hash.h"
@@ -15,8 +19,9 @@
 
 namespace falcon {
 
-GraphDependencyScan::GraphDependencyScan(Graph& graph)
-    : graph_(graph) {}
+GraphDependencyScan::GraphDependencyScan(Graph& graph, CacheManager* cache)
+    : graph_(graph)
+    , cache_(cache) {}
 
 void GraphDependencyScan::scan() {
   /* Update the timestamp of every node */
@@ -99,7 +104,9 @@ bool GraphDependencyScan::updateNode(Node* n) {
     }
   }
 
-  updateNodeHash(*n);
+  if (n->getHash().empty()) {
+    hash::updateNodeHash(*n, true, true);
+  }
 
   return dirty;
 }
@@ -127,28 +134,33 @@ bool GraphDependencyScan::updateRule(Rule* r) {
     }
   }
 
-  updateRuleHash(*r);
+  hash::updateRuleHash(*r, true, true);
 
-  /* If any of the inputs are dirty, the rule is dirty and we don't need to
-   * compare the timestamps. */
+  if (r->hasDepfile()) {
+    std::string name = r->getHashDepfile();
+    name.append(".deps");
+    if (cache_->read(name, r->getDepfile())) {
+      auto res = Depfile::loadFromfile(r->getDepfile(), r,
+                                       nullptr, graph_,
+                                       false);
+      hash::updateRuleHash(*r, true, false);
+      isDirty |= res != Depfile::Res::SUCCESS;
+    } else {
+      /* TODO: Fallback to parsing real depfile located in r->getDepfile(), only
+       * if it is more recent than the rule's outputs. */
+      isDirty = true;
+    }
+  }
+
+  if (!r->isPhony() && compareInputsWithOutputs(r)) {
+    isDirty = true;
+  }
+
   if (isDirty) {
     r->setState(State::OUT_OF_DATE);
     return true;
   }
 
-  if (!r->isPhony()) {
-    /* If we get here, none of the inputs are known dirty so far. However, they
-     * might be if one of the outputs is older than of the inputs. */
-    isDirty |= compareInputsWithOutputs(r);
-
-    /* The rule is dirty if we could not find its depfile. */
-    isDirty |= r->missingDepfile();
-  }
-
-  if (isDirty) {
-    r->setState(State::OUT_OF_DATE);
-    return true;
-  }
   return false;
 }
 

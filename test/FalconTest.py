@@ -4,6 +4,7 @@ import os
 import os.path
 import subprocess
 import tempfile
+import json
 
 class FalconTest:
   """Test engine. Provides methods for communicating with the falcon daemon"""
@@ -96,11 +97,9 @@ class FalconTest:
 
   def build(self):
     """Trigger a build.."""
-    # TODO: for now we pipe the output to stdout. We will parse the output
-    # later.
-    FNULL = open(os.devnull, 'w')
-    return subprocess.call([self._falcon_client, "--no-start", "--build"],
-                           stdout=FNULL)
+    data = subprocess.check_output([self._falcon_client, "--no-start",
+                                    "--build", "--json"])
+    return json.loads(data)
 
   def write_file(self, name, content):
     """Write to a file"""

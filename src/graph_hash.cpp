@@ -3,6 +3,8 @@
  * LICENSE : see accompanying LICENSE file for details.
  */
 
+#include <iostream>
+
 #include <fstream>
 #include <openssl/sha.h>
 #include <cassert>
@@ -11,77 +13,163 @@
 #include "graph.h"
 #include "graph_hash.h"
 
-namespace falcon {
+#include "cache_manager.h"
+#include "depfile.h"
 
-static std::string digestToString(unsigned char digest[SHA256_DIGEST_LENGTH]) {
-  char mdString[SHA256_DIGEST_LENGTH*2 + 1];
-  memset(mdString, 0, sizeof(mdString));
-  for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-    sprintf(&mdString[i*2], "%02x", (unsigned int)digest[i]);
+#include "logging.h"
+
+namespace falcon { namespace hash {
+
+class Hasher {
+ public:
+  Hasher() {
+    SHA256_Init(&ctx_);
   }
-  std::string tmp(mdString);
 
-  return tmp;
-}
+  Hasher& operator<<(const std::string& data) {
+    SHA256_Update(&ctx_, data.c_str(), data.size());
+    return *this;
+  }
 
-/*****************************************************************************
- * Compute the Sha256Sum of the given node and set the new finger print. *****/
-static void computeNodeSha256(Node& n) {
-  unsigned char digest[SHA256_DIGEST_LENGTH];
-  char buffer[256];
+  std::string get() {
+    SHA256_Final(digest_, &ctx_);
+    char mdString[SHA256_DIGEST_LENGTH*2 + 1];
+    memset(mdString, 0, sizeof(mdString));
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+      sprintf(&mdString[i*2], "%02x", (unsigned int)digest_[i]);
+    }
+    return mdString;
+  }
+
+ private:
+  SHA256_CTX ctx_;
+  unsigned char digest_[SHA256_DIGEST_LENGTH];
+};
+
+bool updateNodeHash(Node& n,
+                    bool recomputeHash,
+                    bool recomputeHashDeps) {
+  assert(recomputeHash || recomputeHashDeps);
   auto child = n.getChild();
-  std::ifstream ifs;
-  SHA256_CTX ctx;
-  SHA256_Init(&ctx);
-
-  SHA256_Update(&ctx, n.getPath().c_str(), n.getPath().size());
+  bool changed = false;
 
   if (child == nullptr) {
+    std::ifstream ifs;
     ifs.open(n.getPath(), std::ios::in | std::ios::binary);
-    while (ifs) {
-      ifs.read(buffer, sizeof(buffer));
-      SHA256_Update(&ctx, buffer, ifs.gcount());
-    }
+    std::string data((std::istreambuf_iterator<char>(ifs)),
+                     std::istreambuf_iterator<char>());
     ifs.close();
+    Hasher hasher;
+    hasher << n.getPath() << data;
+    std::string hash = hasher.get();
+    if (recomputeHash) {
+      changed |= n.getHash() != hash;
+      n.setHash(hash);
+    }
+    if (recomputeHashDeps) {
+      changed |= n.getHash() != hash;
+      n.setHashDepfile(hash);
+    }
   } else {
-    /* The hash of the child rule should have been computed already. */
-    assert(!child->getHash().empty());
-    SHA256_Update(&ctx, child->getHash().c_str(), child->getHash().size());
+    if (recomputeHash) {
+      assert(!child->getHash().empty());
+      Hasher hasher;
+      hasher << n.getPath() << child->getHash();
+      std::string hash = hasher.get();
+      changed |= n.getHash() != hash;
+      n.setHash(hash);
+    }
+    if (recomputeHashDeps) {
+      assert(!child->getHashDepfile().empty());
+      Hasher hasher;
+      hasher << n.getPath() << child->getHashDepfile();
+      std::string hash = hasher.get();
+      changed |= n.getHashDepfile() != hash;
+      n.setHashDepfile(hash);
+    }
   }
 
-  SHA256_Final(digest, &ctx);
-
-  n.setHash(digestToString(digest));
+  return changed;
 }
 
-static void computeRuleSha256(Rule& r) {
-  unsigned char digest[SHA256_DIGEST_LENGTH];
+void updateRuleHash(Rule& r,
+                    bool recomputeHash,
+                    bool recomputeHashDeps) {
   NodeArray& inputs = r.getInputs();
 
-  SHA256_CTX ctx;
-  SHA256_Init(&ctx);
+  if (recomputeHash) {
+    Hasher hasher;
+    for (unsigned int i = 0; i < inputs.size(); i++) {
+      assert(!inputs[i]->getHash().empty());
+      hasher << inputs[i]->getHash();
+    }
+    r.setHash(hasher.get());
+  }
+  if (recomputeHashDeps) {
+    Hasher hasher;
+    for (unsigned int i = 0; i < inputs.size(); i++) {
+      if (i < inputs.size() - r.getNumImplicitInputs()) {
+        assert(!inputs[i]->getHashDepfile().empty());
+        hasher << inputs[i]->getHashDepfile();
+      }
+    }
+    r.setHashDepfile(hasher.get());
+  }
+}
 
-  for (auto it = inputs.begin(); it != inputs.end(); it++) {
-    /* The hash of the inputs should have been computed already. */
-    assert(!(*it)->getHash().empty());
-    SHA256_Update(&ctx, (*it)->getHash().c_str(), (*it)->getHash().size());
+void recomputeRuleHash(Rule* rule,
+                       WatchmanClient* watchmanClient,
+                       Graph& graph,
+                       CacheManager* cache,
+                       bool recomputeHash,
+                       bool recomputeHashDeps) {
+  std::string tmp = rule->getHashDepfile();
+
+  updateRuleHash(*rule, true, true);
+
+  /* If the deps hash changed, it means the implicit depfiles may have changed.
+   * In that case, query the cache to see if we know the new implcit
+   * dependencies. */
+  if (rule->hasDepfile() && tmp != rule->getHashDepfile()) {
+    std::string name = rule->getHashDepfile();
+    name.append(".deps");
+    /* TODO: We could load the depfile directly from the cache instead of
+     * copying it first. */
+    if (cache->read(name, rule->getDepfile())) {
+      Depfile::loadFromfile(rule->getDepfile(), rule, watchmanClient, graph,
+                            true);
+      /* The implicit dependencies may have changed, so recompute the normal
+       * hash. We don't compute the deps hash again. */
+      hash::updateRuleHash(*rule, true, false);
+    }
   }
 
-  SHA256_Update(&ctx, r.getCommand().c_str(), r.getCommand().size());
-
-  SHA256_Final(digest, &ctx);
-
-  r.setHash(digestToString(digest));
+  auto& outputs = rule->getOutputs();
+  for (auto it = outputs.begin(); it != outputs.end(); ++it) {
+    recomputeNodeHash(*it, watchmanClient, graph, cache,
+                      recomputeHash, recomputeHashDeps);
+  }
 }
 
-/*****************************************************************************
- * Methods to update the hash of a given Node or Rule.
- * These functions won't explore the graph ***********************************/
-void updateNodeHash(Node& n) {
-  computeNodeSha256(n);
-}
-void updateRuleHash(Rule& r) {
-  computeRuleSha256(r);
+bool recomputeNodeHash(Node* node,
+                       WatchmanClient* watchmanClient,
+                       Graph& graph,
+                       CacheManager* cache,
+                       bool recomputeHash,
+                       bool recomputeHashDeps) {
+  if (!updateNodeHash(*node, recomputeHash, recomputeHashDeps)) {
+    /* The hash did not change. No need to recompute the hash of the parents. */
+    LOG(INFO) << "hash of " << node->getPath() << "did not change";
+    return false;
+  }
+
+  auto& parentRules = node->getParents();
+  for (auto it = parentRules.begin(); it != parentRules.end(); ++it) {
+    recomputeRuleHash(*it, watchmanClient, graph, cache,
+                      recomputeHash, recomputeHashDeps);
+  }
+
+  return true;
 }
 
-}
+} } // namespace falcon::hash

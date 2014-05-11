@@ -6,18 +6,21 @@
 #include <fstream>
 #include <string>
 #include <cassert>
+#include <unordered_set>
 
 #include "depfile.h"
 
 #include "depfile_parser.h"
 #include "exceptions.h"
+#include "graph_hash.h"
 #include "logging.h"
 #include "watchman.h"
 
 namespace falcon {
 
-void Depfile::setRuleDependency(const std::string& dep, Rule* rule,
-                                WatchmanClient* watchmanClient, Graph& graph) {
+Node* Depfile::setRuleDependency(const std::string& dep, Rule* rule,
+                                 WatchmanClient* watchmanClient, Graph& graph)
+{
   Node* target;
 
   /* Find any existing node that matches the path. Create it if it does not
@@ -26,6 +29,7 @@ void Depfile::setRuleDependency(const std::string& dep, Rule* rule,
   bool isNewNode = itFind == graph.getNodes().end();
   if (isNewNode) {
     target = new Node(dep);
+    hash::updateNodeHash(*target, true, true);
   } else {
     target = itFind->second;
     assert(target);
@@ -34,7 +38,7 @@ void Depfile::setRuleDependency(const std::string& dep, Rule* rule,
      * that. */
     if (rule->isInput(target)) {
       /* This node is already a dependency. */
-      return;
+      return target;
     }
   }
 
@@ -42,7 +46,7 @@ void Depfile::setRuleDependency(const std::string& dep, Rule* rule,
     << rule->getOutputs()[0]->getPath();
 
   /* Set the target as a new input of the rule. */
-  rule->addInput(target);
+  rule->addImplicitInput(target);
   /* Set the rule to be a parent of the target. */
   target->addParentRule(rule);
 
@@ -66,11 +70,29 @@ void Depfile::setRuleDependency(const std::string& dep, Rule* rule,
       LOG(FATAL) << e.getErrorMessage();
     }
   }
+
+  return target;
 }
 
 bool Depfile::load(std::string& buf, Rule *rule,
                    WatchmanClient* watchmanClient, Graph& graph,
                    bool logError) {
+
+  /* Store the existing implcit deps in a set. */
+  std::unordered_set<Node*> implicitDepsBefore;
+  unsigned int numImplicitDeps = rule->getNumImplicitInputs();
+  auto& inputs = rule->getInputs();
+  for (unsigned int i = 0; i < numImplicitDeps; ++i) {
+    Node *implicitDep = inputs[inputs.size() - i - 1];
+    implicitDepsBefore.insert(implicitDep);
+    if (!implicitDep->isDirty() || implicitDep->isSource()) {
+      rule->markInputDirty();
+    }
+  }
+
+  inputs.resize(inputs.size() - numImplicitDeps);
+  rule->setNumImplicitInputs(0);
+
   DepfileParser depfile;
   string depfileErr;
   if (!depfile.Parse(&buf, &depfileErr)) {
@@ -95,7 +117,21 @@ bool Depfile::load(std::string& buf, Rule *rule,
   /* Add each input as a dependency of the rule. */
   for (auto it = depfile.ins_.begin(); it != depfile.ins_.end(); ++it) {
     std::string dep(const_cast<char*>(it->str_), it->len_);
-    setRuleDependency(dep, rule, watchmanClient, graph);
+    Node* node = setRuleDependency(dep, rule, watchmanClient, graph);
+    implicitDepsBefore.erase(node);
+  }
+
+  /* All the nodes left in the set are not implicit deps anymore. */
+  for (auto it = implicitDepsBefore.begin(); it != implicitDepsBefore.end();
+      ++it) {
+    Node* implicitDep = *it;
+    implicitDep->removeParentRule(rule);
+    if (implicitDep->getParents().empty() && !implicitDep->getChild()) {
+      graph.getNodes().erase(implicitDep->getPath());
+      graph.getRoots().erase(implicitDep);
+      graph.getSources().erase(implicitDep);
+      delete implicitDep;
+    }
   }
 
   return true;

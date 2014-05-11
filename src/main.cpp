@@ -6,6 +6,7 @@
 #include <iostream>
 #include <cstdlib>
 
+#include "cache_manager.h"
 #include "build_plan.h"
 #include "daemon_instance.h"
 #include "exceptions.h"
@@ -86,7 +87,8 @@ static int loadModule(falcon::Graph& g, std::string const& s) {
  * Daemonize the current process.
  */
 static void daemonize(std::unique_ptr<falcon::GlobalConfig> config,
-                      std::unique_ptr<falcon::Graph> graph) {
+                      std::unique_ptr<falcon::Graph> graph,
+                      std::unique_ptr<falcon::CacheManager> cache) {
 
   /** the double-fork-and-setsid trick establishes a child process that runs in
    * its own process group with its own session and that won't get killed off
@@ -95,7 +97,7 @@ static void daemonize(std::unique_ptr<falcon::GlobalConfig> config,
   setsid();
   if (fork()) { _exit(0); }
 
-  falcon::DaemonInstance daemon(std::move(config));
+  falcon::DaemonInstance daemon(std::move(config), std::move(cache));
   daemon.loadConf(std::move(graph));
   daemon.start();
 }
@@ -160,9 +162,12 @@ int main (int const argc, char const* const* argv) {
     return e.getCode();
   }
 
+  std::unique_ptr<falcon::CacheManager> cache(
+      new falcon::CacheManager(config->getFalconDir()));
+
   /* Scan the graph to discover what needs to be rebuilt, and compute the
    * hashes of all nodes. */
-  falcon::GraphDependencyScan scanner(*graphPtr);
+  falcon::GraphDependencyScan scanner(*graphPtr, cache.get());
   scanner.scan();
 
   /* if a module has been requested to execute then load it and return */
@@ -177,6 +182,6 @@ int main (int const argc, char const* const* argv) {
   }
 
   /* Start the daemon. */
-  daemonize(std::move(config), std::move(graphPtr));
+  daemonize(std::move(config), std::move(graphPtr), std::move(cache));
   return 0;
 }

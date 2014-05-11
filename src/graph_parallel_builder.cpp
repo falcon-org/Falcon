@@ -3,9 +3,11 @@
  * LICENSE : see accompanying LICENSE file for details.
  */
 
+#include <iostream>
+
 #include "graph_parallel_builder.h"
 #include "depfile.h"
-
+#include "graph_hash.h"
 #include "logging.h"
 
 namespace falcon {
@@ -113,6 +115,7 @@ bool GraphParallelBuilder::tryBuildRuleFromCache(Rule *rule) {
     return false;
   }
 
+  /* Check we have all the outputs in cache. */
   auto outputs = rule->getOutputs();
   for (auto it = outputs.begin(); it != outputs.end(); it++) {
     if (!cache_->has((*it)->getHash())) {
@@ -120,7 +123,7 @@ bool GraphParallelBuilder::tryBuildRuleFromCache(Rule *rule) {
     }
   }
 
-  /* All the outputs are in cache. Start retrieving them. */
+  /* Retrieve all the outputs. */
   for (auto it = outputs.begin(); it != outputs.end(); it++) {
     if (!cache_->read((*it)->getHash(), (*it)->getPath())) {
       return false;
@@ -135,7 +138,7 @@ bool GraphParallelBuilder::tryBuildRuleFromCache(Rule *rule) {
   return true;
 }
 
-bool GraphParallelBuilder::saveOutputsInCache(Rule *rule) {
+bool GraphParallelBuilder::saveRuleInCache(Rule *rule) {
   if (!cache_ || rule->isPhony()) {
     return false;
   }
@@ -146,6 +149,16 @@ bool GraphParallelBuilder::saveOutputsInCache(Rule *rule) {
   for (auto it = outputs.begin(); it != outputs.end(); it++) {
     if (!cache_->update((*it)->getHash(), (*it)->getPath())) {
       LOG(ERROR) << "could not save " << (*it)->getPath() << " in cache";
+      error = true;
+    }
+  }
+
+  if (rule->hasDepfile()) {
+    std::string name = rule->getHashDepfile();
+    name.append(".deps");
+    if (!cache_->update(name, rule->getDepfile())) {
+      LOG(ERROR) << "could not save " << rule->getDepfile() << " to "
+        << name << std::endl;
       error = true;
     }
   }
@@ -185,10 +198,15 @@ BuildResult GraphParallelBuilder::waitForNext() {
     if (res != Depfile::Res::SUCCESS) {
       return BuildResult::FAILED;
     }
+    /* Since the dependencies might have changed, the hash might have
+     * changed as well. */
+    /* TODO: we should be able to detect that the dependencies did not change
+     * and thus not recompute the hashes. */
+    hash::recomputeRuleHash(rule, watchmanClient_, graph_, cache_, true, false);
   }
 
   /* Save the outputs in cache. */
-  saveOutputsInCache(rule);
+  saveRuleInCache(rule);
 
   onRuleFinished(rule);
   return BuildResult::SUCCEEDED;

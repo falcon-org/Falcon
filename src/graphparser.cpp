@@ -146,23 +146,6 @@ void GraphParser::processJson(JsonVal const* rules)
       (*it)->setChild(rule);
       graph_->sources_.erase(*it);
     }
-
-    /* Load the rule's implicit dependencies. */
-    if (rule->hasDepfile()) {
-      ruleLoadDepfile(rule);
-    }
-  }
-
-  generateMandatoryNodes();
-}
-
-void GraphParser::ruleLoadDepfile(Rule* rule) {
-  auto res = Depfile::loadFromfile(rule->getDepfile(), rule, nullptr, *graph_,
-                                   false);
-  if (res != Depfile::Res::SUCCESS) {
-    /* Mark the rule as "missing depfile". Which means that it can't be marked
-     * up to date until we resolve this. */
-    rule->setMissingDepfile(true);
   }
 }
 

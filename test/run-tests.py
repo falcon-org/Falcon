@@ -7,28 +7,30 @@ import glob
 import argparse
 from FalconTest import FalconTest
 
-def log_traceback(file):
+def log_traceback(file, print_stack):
   f = open(file, 'a')
   traceback.print_exc(file=f)
   f.close()
+  if print_stack:
+    traceback.print_exc()
 
-def run_test(test, mod):
+def run_test(test, mod, print_stack):
   error_log = test.get_error_log_file()
   try:
     test.prepare()
   except:
-    log_traceback(error_log)
+    log_traceback(error_log, print_stack)
     return False
   ret = True
   try:
     mod.run(test)
   except:
-    log_traceback(error_log)
+    log_traceback(error_log, print_stack)
     ret = False
   try:
     test.finish()
   except:
-    log_traceback(error_log)
+    log_traceback(error_log, print_stack)
     ret = False
   return ret
 
@@ -40,6 +42,8 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Falcon tests.")
   parser.add_argument('-t', '--tests', metavar='<test name>', nargs='+',
       help="Define the list of tests to run")
+  parser.add_argument('-s', '--stack', action="store_true",
+      help="Print the stack trace if a test fails")
 
   args = parser.parse_args(sys.argv[1:])
 
@@ -60,7 +64,7 @@ if __name__ == "__main__":
   for mod_name in mods:
     mod = __import__(mod_name)
     test = FalconTest()
-    if not run_test(test, mod):
+    if not run_test(test, mod, args.stack):
       num_failed += 1
       print '\033[91m' + "FAIL" +  '\033[0m',
     else:

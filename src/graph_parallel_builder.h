@@ -45,7 +45,7 @@ class GraphParallelBuilder : public IGraphBuilder {
   void buildThread();
   void buildRule(Rule *rule);
   bool tryBuildRuleFromCache(Rule *rule);
-  bool saveOutputsInCache(Rule *rule);
+  bool saveRuleInCache(Rule *rule);
   void markOutputsUpToDate(Rule *rule);
   BuildResult waitForNext();
   void onRuleFinished(Rule* rule);

@@ -11,9 +11,12 @@
 
 namespace falcon {
 
+class CacheManager;
+
 class GraphReloader {
 public:
-  GraphReloader(Graph* original, Graph* newGraph, WatchmanClient& watchman);
+  GraphReloader(Graph* original, Graph* newGraph, WatchmanClient& watchman,
+                CacheManager* cache);
   ~GraphReloader();
 
   Graph* getUpdatedGraph();
@@ -22,6 +25,7 @@ private:
   Graph* original_;
   Graph* new_;
   WatchmanClient& watchman_;
+  CacheManager* cache_;
 };
 
 }

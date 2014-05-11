@@ -66,11 +66,6 @@ static void printRuleGraphiz(Rule const& r, std::ostream& os) {
                     : "black";
   std::string fillColor = "white";
 
-#if 0
-  os << "node [fontsize=10, shape=point, height=0.25, style=filled]"
-     << std::endl;
-#endif
-
   if (r.isPhony()) {
     os << "node [fontsize=10, shape=circle, height=0.25, style=\"filled, dashed\""
       "]" << std::endl;
@@ -84,16 +79,24 @@ static void printRuleGraphiz(Rule const& r, std::ostream& os) {
                    << "\"  fillcolor=\"" << fillColor
                    << "\" ]" << std::endl;
 
-  for (auto iit = inputs.cbegin(); iit != inputs.cend(); iit++) {
-      std::string c = ((*iit)->getState() == State::OUT_OF_DATE)
-                        ? "red" : "black";
-      os << "\"" << (*iit)->getHash() << "\" ->" << "\"" << r.getHash()
-         << "\" [ color=\"" << c << "\"]" << std::endl;
+  for (unsigned int i = 0; i < inputs.size(); ++i) {
+    std::string shape;
+    if (i < inputs.size() - r.getNumImplicitInputs()) {
+      shape = "solid";
+    } else {
+      shape = "dashed";
+    }
+
+    std::string c = inputs[i]->getState() == State::OUT_OF_DATE
+      ? "red" : "black";
+    os << "\"" << inputs[i]->getHash() << "\" ->" << "\"" << r.getHash()
+       << "\" [ color=\"" << c << "\", style=" << shape << " ]" << std::endl;
   }
 
   for (auto oit = outputs.cbegin(); oit != outputs.cend(); oit++) {
+      os << "edge [fontsize=10, arrowhead=vee]" << std::endl;
       os << "\"" << r.getHash() << "\" ->" << "\"" << (*oit)->getHash()
-         << "\" [ color=\"" << color << "\"]" << std::endl;
+         << "\" [ color=\"" << color << "\", style=solid]" << std::endl;
   }
 }
 

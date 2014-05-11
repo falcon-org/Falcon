@@ -42,11 +42,6 @@ class GraphParser {
     void checkNode(JsonVal const* json, NodeArray& nodeArray);
 
     /**
-     * Load the depfile of a rule.
-     */
-    void ruleLoadDepfile(Rule* rule);
-
-    /**
      * Generate mandatory Nodes (node to monitor the graph file) */
     void generateMandatoryNodes();
 

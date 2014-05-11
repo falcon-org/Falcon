@@ -10,9 +10,11 @@
 
 namespace falcon {
 
+class CacheManager;
+
 class GraphDependencyScan {
  public:
-  GraphDependencyScan(Graph& graph);
+  GraphDependencyScan(Graph& graph, CacheManager* cache);
   void scan();
 
  private:
@@ -26,6 +28,7 @@ class GraphDependencyScan {
 
   Graph& graph_;
   RuleSet seen_;
+  CacheManager* cache_;
 };
 
 } // namespace falcon

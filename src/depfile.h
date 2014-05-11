@@ -68,9 +68,11 @@ class Depfile {
    * @param rule           Rule to be updated with the new input.
    * @param watchmanClient Watchman client.
    * @param graph          Graph that contains the rule.
+   * @return Node that is set as a dependency.
    */
-  static void setRuleDependency(const std::string& dep, Rule* rule,
+  static Node* setRuleDependency(const std::string& dep, Rule* rule,
                                 WatchmanClient* watchmanClient, Graph& graph);
+
 };
 
 } // namespace falcon

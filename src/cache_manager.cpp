@@ -36,6 +36,11 @@ bool CacheManager::read(const std::string& hash, const std::string& path) {
   output.append("/");
   output.append(hash);
 
+  struct stat sb;
+  if (stat(output.c_str(), &sb) != 0) {
+    return false;
+  }
+
   /* Copy the target from the cache. */
   try {
     std::ifstream ifs(output, std::ios::binary);

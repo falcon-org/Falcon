@@ -6,10 +6,13 @@
 #include <algorithm>
 #include <cassert>
 
-#include "graph.h"
+#include "cache_manager.h"
+#include "depfile.h"
 #include "exceptions.h"
+#include "graph.h"
 #include "graph_hash.h"
 #include "logging.h"
+#include "watchman.h"
 
 namespace falcon {
 
@@ -43,6 +46,11 @@ const RuleArray& Node::getParents() const { return parentRules_; }
 RuleArray&       Node::getParents()       { return parentRules_; }
 
 void Node::addParentRule(Rule* rule) { parentRules_.push_back(rule); }
+void Node::removeParentRule(Rule* rule) {
+  auto it = std::find(parentRules_.begin(), parentRules_.end(), rule);
+  assert(it != parentRules_.end());
+  parentRules_.erase(it);
+}
 
 State const& Node::getState() const { return state_; }
 State&       Node::getState()       { return state_; }
@@ -50,21 +58,15 @@ bool Node::isDirty() const { return state_ == State::OUT_OF_DATE; }
 
 void Node::setState(State state) { state_ = state; }
 
-void Node::markDirty(bool recomputeHash) {
-  if (isDirty() && !recomputeHash) {
-    /* We do no need to recompute the hash and we are already dirty. Nothing to
-     * do. */
+void Node::markDirty() {
+  if (isDirty()) {
     return;
-  }
-
-  if (recomputeHash) {
-    updateNodeHash(*this);
   }
 
   /* Mark all the parent rules dirty and increase their counter of dirty
    * inputs. */
   for (auto it = parentRules_.begin(); it != parentRules_.end(); ++it) {
-    (*it)->markDirty(recomputeHash);
+    (*it)->markDirty();
     if (!isSource() && !isDirty()) {
       /* If the node is not a source file, increase the counter of inputs
        * that are not ready for the rule. */
@@ -90,6 +92,14 @@ void Node::setHash(std::string const& hash) {
 std::string const& Node::getHash() const { return hash_; }
 std::string& Node::getHash() { return hash_; }
 
+void Rule::setHashDepfile(std::string const& hash) {
+  hashDepfile_ = hash;
+}
+std::string const& Rule::getHashDepfile() const {
+  return hashDepfile_;
+}
+std::string& Rule::getHashDepfile() { return hashDepfile_; }
+
 bool Node::operator==(Node const& n) const { return getPath() == n.getPath(); }
 bool Node::operator!=(Node const& n) const { return getPath() != n.getPath(); }
 
@@ -100,7 +110,7 @@ bool Node::operator!=(Node const& n) const { return getPath() != n.getPath(); }
 Rule::Rule(const NodeArray& inputs, const NodeArray& outputs)
   : inputs_(inputs)
   , outputs_(outputs)
-  , missingDepfile_(false)
+  , numImplicitDeps_(0)
   , state_(State::UP_TO_DATE)
   , timestamp_(0)
   , numInputsReady_(0)
@@ -108,7 +118,18 @@ Rule::Rule(const NodeArray& inputs, const NodeArray& outputs)
 
 const NodeArray& Rule::getInputs() const { return inputs_; }
 NodeArray&       Rule::getInputs()       { return inputs_; }
-void Rule::addInput(Node* node) { inputs_.push_back(node); }
+unsigned int Rule::getNumImplicitInputs() const { return numImplicitDeps_;  }
+void Rule::setNumImplicitInputs(unsigned int n) { numImplicitDeps_ = n; }
+void Rule::addImplicitInput(Node* node) {
+  numImplicitDeps_++;
+  inputs_.push_back(node);
+
+}
+void Rule::addInput(Node* node) {
+  /* Explicit inputs should be set up before implicit ones. */
+  assert(numImplicitDeps_ == 0);
+  inputs_.push_back(node);
+}
 bool Rule::isInput(const Node* node) const {
   return std::find(inputs_.begin(), inputs_.end(), node) != inputs_.end();
 }
@@ -123,28 +144,20 @@ void Rule::setCommand(const std::string& cmd) { command_ = cmd; }
 const bool Rule::hasDepfile() const { return !depfile_.empty(); }
 const std::string& Rule::getDepfile() const { return depfile_; }
 void Rule::setDepfile(const std::string& depfile) { depfile_ = depfile; }
-bool Rule::missingDepfile() const { return missingDepfile_; }
-void Rule::setMissingDepfile(bool missing) { missingDepfile_ = missing; }
 
 State const& Rule::getState() const { return state_; }
 State&       Rule::getState()       { return state_; }
 bool Rule::isDirty() const { return state_ == State::OUT_OF_DATE; }
 void Rule::setState(State state) { state_ = state; }
 
-void Rule::markDirty(bool recomputeHash) {
-  if (isDirty() && !recomputeHash) {
-    /* We do no need to recompute the hash and we are already dirty. Nothing to
-     * do. */
+void Rule::markDirty() {
+  if (isDirty()) {
     return;
-  }
-
-  if (recomputeHash) {
-    updateRuleHash(*this);
   }
 
   /* Mark all the outputs dirty. */
   for (auto it = outputs_.begin(); it != outputs_.end(); ++it) {
-    (*it)->markDirty(recomputeHash);
+    (*it)->markDirty();
   }
 
   setState(State::OUT_OF_DATE);
@@ -153,6 +166,14 @@ void Rule::markDirty(bool recomputeHash) {
 void Rule::setHash(std::string const& hash) { hash_ = hash; }
 std::string const& Rule::getHash() const { return hash_; }
 std::string& Rule::getHash() { return hash_; }
+
+void Node::setHashDepfile(std::string const& hash) {
+  hashDepfile_ = hash;
+}
+std::string const& Node::getHashDepfile() const {
+  return hashDepfile_;
+}
+std::string& Node::getHashDepfile() { return hashDepfile_; }
 
 Timestamp Rule::getTimestamp() const { return timestamp_; }
 void Rule::setTimestamp(Timestamp t) { timestamp_ = t; }

@@ -29,7 +29,8 @@ namespace falcon {
  */
 class DaemonInstance {
  public:
-  DaemonInstance(std::unique_ptr<GlobalConfig> gc);
+  DaemonInstance(std::unique_ptr<GlobalConfig> gc,
+                 std::unique_ptr<CacheManager> cache);
 
   /**
    * load a new graph
@@ -93,7 +94,7 @@ class DaemonInstance {
   /* The thrift server. */
   std::unique_ptr<CommandServer> commandServer_;
 
-  CacheManager cache_;
+  std::unique_ptr<CacheManager> cache_;
 
   /**
    * When watchman notifies us of a file change, we stat it. If the file does

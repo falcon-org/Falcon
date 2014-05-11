@@ -72,13 +72,13 @@ def startDaemon(log_level, log_dir):
 
 def stopDaemon():
   """Stop the running daemon. Returns False if the daemon was not running."""
-  r = connectLoop()
-  if not r:
+  try:
+    (transport, client) = connect()
+    client.shutdown()
+    transport.close()
+    return True
+  except Thrift.TException:
     return False
-  (transport, client) = r
-  client.shutdown()
-  transport.close()
-  return True
 
 def connectSpawnIfNeeded():
   """Connect to the falcon daemon. Start the daemon if needed.

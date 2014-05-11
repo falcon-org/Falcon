@@ -31,7 +31,10 @@ namespace falcon {
 
 class Node;
 class Rule;
+class Graph;
 class GraphVisitor;
+class WatchmanClient;
+class CacheManager;
 
 typedef std::vector<Node*>                     NodeArray;
 typedef std::set<Node*>                        NodeSet;
@@ -67,6 +70,7 @@ class Node {
    * @param rule Rule to be set as a parent rule.
    */
   void addParentRule(Rule* rule);
+  void removeParentRule(Rule* rule);
   RuleArray& getParents();
   const RuleArray& getParents() const;
 
@@ -78,10 +82,8 @@ class Node {
 
   /**
    * Set the state as Dirty and mark all the parents as dirty too.
-   * @param recomputeHash If set to true, this will traverse the nodes up to the
-   * roots that depend on this target, and recompute their hashes.
    */
-  void markDirty(bool recomputeHash);
+  void markDirty();
 
   Timestamp getTimestamp() const;
   void setTimestamp(Timestamp);
@@ -89,6 +91,10 @@ class Node {
   void setHash(std::string const&);
   std::string const& getHash() const;
   std::string& getHash();
+
+  void setHashDepfile(std::string const&);
+  std::string const& getHashDepfile() const;
+  std::string& getHashDepfile();
 
   /* Operators */
   bool operator==(Node const& n) const;
@@ -99,6 +105,8 @@ class Node {
 
   /* A hash to represent the current state of a Node */
   std::string hash_;
+
+  std::string hashDepfile_;
 
   /* The rule used to construct this Node.
    * If nullptr, this node is a source file (a leaf node). */
@@ -128,6 +136,9 @@ class Rule {
   explicit Rule(const NodeArray& inputs, const NodeArray& outputs);
 
   void addInput(Node* node);
+  void addImplicitInput(Node* node);
+  unsigned int getNumImplicitInputs() const;
+  void setNumImplicitInputs(unsigned int n);
   const NodeArray& getInputs() const;
   NodeArray& getInputs();
   bool isInput(const Node* node) const;
@@ -142,8 +153,6 @@ class Rule {
   const bool hasDepfile() const;
   const std::string& getDepfile() const;
   void setDepfile(const std::string& depfile);
-  bool missingDepfile() const;
-  void setMissingDepfile(bool missing);
 
   /* State management */
   State const& getState() const;
@@ -153,14 +162,16 @@ class Rule {
 
   /**
    * Set the state as Dirty and mark all the parents as dirty too.
-   * @param recomputeHash If set to true, this will traverse the nodes up to the
-   * roots that depend on this target, and recompute their hashes.
    */
-  void markDirty(bool recomputeHash);
+  void markDirty();
 
   void setHash(std::string const&);
   std::string const& getHash() const;
   std::string& getHash();
+
+  void setHashDepfile(std::string const&);
+  std::string const& getHashDepfile() const;
+  std::string& getHashDepfile();
 
   Timestamp getTimestamp() const;
   void setTimestamp(Timestamp);
@@ -179,6 +190,10 @@ class Rule {
   NodeArray inputs_;
   NodeArray outputs_;
 
+  /** Number of implicit dependencies. The implicit dependencies and at the end
+   * of inputs_. */
+  unsigned int numImplicitDeps_;
+
   /** Command to execute in order to generate the outputs. All the inputs must
    * be up-to-date prior to executing the command.
    * Empty string is this is a phony rule. */
@@ -186,16 +201,17 @@ class Rule {
 
   /** Path to the file that contains the implicit dependenciess. */
   std::string depfile_;
-  /* If set to true, this means that we know there should be a depfile but
-   * weren't able to parse it. The node should not be set up to date until this
-   * is resolved. */
-  bool missingDepfile_;
 
   /* Set to UP_TO_DATE if all outputs are UP_TO_DATE, OUT_OF_DATE otherwise. */
   State state_;
 
-  /* A hash to represent the current state of a Node */
+  /* A hash to represent the current state of a Node. */
   std::string hash_;
+
+  /* A hash that helps for the retrieval of cached depfiles. This hash does not
+   * take into account the contents of the inputs that are implicit
+   * dependencies. */
+  std::string hashDepfile_;
 
   /* The timestamp of a rule is the last time it was built. */
   Timestamp timestamp_;

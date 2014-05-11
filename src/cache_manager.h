@@ -12,7 +12,7 @@ namespace falcon {
 
 class CacheManager {
  public:
-  CacheManager(const std::string& workingDirectory);
+  CacheManager(const std::string& falconDir);
 
   /**
    * Check if the cache contains an entry.
