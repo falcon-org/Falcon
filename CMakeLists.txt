@@ -51,6 +51,7 @@ add_executable(falcond
   src/graph_cycle.cpp
   src/graph_dependency_scan.cpp
   src/graph_printers.cpp
+  src/graph_reloader.cpp
   src/graphparser.cpp
   src/graph_builder.cpp
   src/json/json.c

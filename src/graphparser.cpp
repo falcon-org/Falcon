@@ -14,14 +14,15 @@
 
 namespace falcon {
 
-GraphParser::GraphParser()
-    : graph_(new Graph()) {}
+GraphParser::GraphParser(std::string const& filepath)
+  : graph_(new Graph())
+  , graphFilePath_(filepath) {}
 
 std::unique_ptr<Graph> GraphParser::getGraph() {
   return std::move(graph_);
 }
 
-void GraphParser::processFile(std::string const& filepath)
+void GraphParser::processFile()
 {
   assert(graph_);
   JsonParser parser;
@@ -30,7 +31,7 @@ void GraphParser::processFile(std::string const& filepath)
     std::ifstream ifs;
     unsigned int lineCounter = 0;
 
-    ifs.open(filepath.c_str (), std::ifstream::in);
+    ifs.open(graphFilePath_.c_str (), std::ifstream::in);
     do {
       char buffer[4096];
       memset(buffer, 0, sizeof(buffer));
@@ -151,6 +152,8 @@ void GraphParser::processJson(JsonVal const* rules)
       ruleLoadDepfile(rule);
     }
   }
+
+  generateMandatoryNodes();
 }
 
 void GraphParser::ruleLoadDepfile(Rule* rule) {
@@ -160,6 +163,18 @@ void GraphParser::ruleLoadDepfile(Rule* rule) {
     /* Mark the rule as "missing depfile". Which means that it can't be marked
      * up to date until we resolve this. */
     rule->setMissingDepfile(true);
+  }
+}
+
+void GraphParser::generateMandatoryNodes() {
+  {
+    /*  Register the graph file in order to manage it like every rule (register
+     * to watchman, manage timestamp. */
+    Node* nodeGraphFile = new Node(graphFilePath_);
+    /*  Insert this node in the array of node */
+    graph_->nodes_[graphFilePath_] = nodeGraphFile;
+    graph_->roots_.insert(nodeGraphFile);
+    graph_->sources_.insert(nodeGraphFile);
   }
 }
 

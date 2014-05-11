@@ -142,9 +142,9 @@ int main (int const argc, char const* const* argv) {
   falcon::fs::mkdir(config->getFalconDir());
 
   /* Analyze the graph given in the configuration file */
-  falcon::GraphParser graphParser;
+  falcon::GraphParser graphParser(config->getJsonGraphFile());
   try {
-    graphParser.processFile(config->getJsonGraphFile());
+    graphParser.processFile();
   } catch (falcon::Exception& e) {
     LOG(ERROR) << e.getErrorMessage ();
     return e.getCode();

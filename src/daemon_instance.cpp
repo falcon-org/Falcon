@@ -12,6 +12,7 @@
 #include "exceptions.h"
 #include "graph_consistency_checker.h"
 #include "graph_parallel_builder.h"
+#include "graph_reloader.h"
 #include "graphparser.h"
 #include "logging.h"
 #include "watchman.h"
@@ -208,6 +209,11 @@ void DaemonInstance::getHashOf(std::string& hash, const std::string& target) {
 void DaemonInstance::setDirty(const std::string& target) {
   lock_guard g(mutex_);
 
+  if (target == config_->getJsonGraphFile()) {
+    reloadGraph();
+    return;
+  }
+
   /* Find the target. */
   auto& map = graph_->getNodes();
   auto it = map.find(target);
@@ -280,6 +286,29 @@ void DaemonInstance::getGraphviz(std::string& str) {
   std::ostringstream oss;
   printGraphGraphiz(*graph_, oss);
   str = oss.str();
+}
+
+void DaemonInstance::reloadGraph() {
+  GraphParser graphParser(config_->getJsonGraphFile());
+
+  try {
+    graphParser.processFile();
+  } catch (Exception& e) {
+    LOG(ERROR) << e.getErrorMessage ();
+    return;
+  }
+
+  std::unique_ptr<Graph> graphPtr = std::move(graphParser.getGraph());
+  try {
+    checkGraphLoop(*graphPtr);
+  } catch (Exception& e) {
+    LOG(ERROR) << e.getErrorMessage();
+    delete graphPtr.release();
+    return;
+  }
+
+  GraphReloader reloader(graph_.release(), graphPtr.release());
+  graph_ = std::unique_ptr<Graph>(reloader.getUpdatedGraph());
 }
 
 } // namespace falcon

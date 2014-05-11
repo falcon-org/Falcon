@@ -29,12 +29,12 @@ namespace falcon {
  */
 class GraphParser {
   public:
-    GraphParser();
+    GraphParser(std::string const& filepath);
 
     std::unique_ptr<Graph> getGraph();
 
     /* If the input is a file */
-    void processFile(std::string const& filepath);
+    void processFile();
     /* In the case we already have a Json object */
     void processJson(JsonVal const* rules);
 
@@ -46,7 +46,15 @@ class GraphParser {
      */
     void ruleLoadDepfile(Rule* rule);
 
+    /**
+     * Generate mandatory Nodes (node to monitor the graph file) */
+    void generateMandatoryNodes();
+
     std::unique_ptr<Graph> graph_;
+
+    /**
+     * Graph file path */
+    std::string const& graphFilePath_;
 
     GraphParser(const GraphParser& other) = delete;
     GraphParser& operator=(const GraphParser&) = delete;

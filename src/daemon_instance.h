@@ -69,6 +69,8 @@ class DaemonInstance {
    * InvalidGraphError if it is the case. */
   void checkSourcesMissing();
 
+  void reloadGraph();
+
   unsigned int buildId_;
 
   std::unique_ptr<Graph> graph_;
