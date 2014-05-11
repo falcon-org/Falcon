@@ -7,12 +7,13 @@
 # define FALCON_GRAPH_RELOADER_H_
 
 # include "graph.h"
+# include "watchman.h"
 
 namespace falcon {
 
 class GraphReloader {
 public:
-  GraphReloader(Graph* original, Graph* newGraph);
+  GraphReloader(Graph* original, Graph* newGraph, WatchmanClient& watchman);
   ~GraphReloader();
 
   Graph* getUpdatedGraph();
@@ -20,7 +21,7 @@ public:
 private:
   Graph* original_;
   Graph* new_;
-
+  WatchmanClient& watchman_;
 };
 
 }

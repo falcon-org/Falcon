@@ -307,7 +307,7 @@ void DaemonInstance::reloadGraph() {
     return;
   }
 
-  GraphReloader reloader(graph_.release(), graphPtr.release());
+  GraphReloader reloader(graph_.release(), graphPtr.release(), watchmanClient_);
   graph_ = std::unique_ptr<Graph>(reloader.getUpdatedGraph());
 }
 

@@ -13,9 +13,11 @@
 
 namespace falcon {
 
-GraphReloader::GraphReloader(Graph* original, Graph* newGraph)
+GraphReloader::GraphReloader(Graph* original, Graph* newGraph,
+                             WatchmanClient& watchman)
   : original_(original)
   , new_(newGraph)
+  , watchman_(watchman)
 {
 }
 
@@ -28,6 +30,8 @@ Graph* GraphReloader::getUpdatedGraph() {
    * hashes of all nodes. */
   falcon::GraphDependencyScan scanner(*new_);
   scanner.scan();
+
+  watchman_.watchGraph(*new_);
 
   return new_;
 }
