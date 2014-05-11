@@ -27,8 +27,6 @@ class GraphDependencyScan {
   GraphDependencyScan(Graph& graph, CacheManager* cache);
   void scan();
 
- private:
-
   /**
    * @param r Rule for which to retrieve the oldest output;
    * @return Pointer to the oldest output of the rule.
@@ -47,6 +45,7 @@ class GraphDependencyScan {
   /** Stat the given node and update its timestamp. */
   void statNode(Node* node);
 
+ private:
   /**
    * Traverse a Node.
    * @param node node to traverse.
@@ -73,6 +72,9 @@ class GraphDependencyScan {
   RuleSet seen_;
   CacheManager* cache_;
 };
+
+
+void statNode(Node* node);
 
 } // namespace falcon
 
