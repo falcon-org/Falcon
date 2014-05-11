@@ -163,4 +163,16 @@ void GraphParser::generateMandatoryNodes() {
   }
 }
 
+void GraphParser::generateMandatoryNodes() {
+  {
+    /*  Register the graph file in order to manage it like every rule (register
+     * to watchman, manage timestamp amp. */
+    Node* nodeGraphFile = new Node(graphFilePath_);
+    /*  Insert this node in the array of node */
+    graph_->nodes_[graphFilePath_] = nodeGraphFile;
+    graph_->roots_.insert(nodeGraphFile);
+    graph_->sources_.insert(nodeGraphFile);
+  }
+}
+
 }
