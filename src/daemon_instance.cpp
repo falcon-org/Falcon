@@ -238,11 +238,13 @@ void DaemonInstance::setDirty(const std::string& target) {
       DLOG(WARNING) << "stat(" << node->getPath()
                     << ") [" << errno << "] " << strerror(errno);
     }
-    if (node->isSource()) {
+    if (node->isSource() && node->isExplicitDependency()) {
       /* It is a source file, and we cannot stat it. This is an error and the
-       * next build will fail. */
-      /* TODO: if it is only an implicit dependency, we should not add it to the
-       * list of missing sources because this might not be an error. */
+       * next build will fail.
+       * Note: we don't mark it as an error if the node is not an explicit
+       * depedency, ie it is only an implicit dependency of other nodes. In that
+       * case, we can't know for sure that the file being missing is an error.
+       */
       LOG(ERROR) << "Error: input file " << node->getPath() << " is missing.";
       sourcesMissing_.insert(node);
     }

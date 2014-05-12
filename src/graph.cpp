@@ -20,10 +20,11 @@ namespace falcon {
 /*                                Node                                       */
 /* ************************************************************************* */
 
-Node::Node(const std::string& path)
+Node::Node(const std::string& path, bool isExpicitDependency)
   : path_(path)
   , hash_()
   , childRule_(nullptr)
+  , isExpicitDependency_(isExpicitDependency)
   , state_(State::UP_TO_DATE)
   , timestamp_(0) { }
 
@@ -51,6 +52,8 @@ void Node::removeParentRule(Rule* rule) {
   assert(it != parentRules_.end());
   parentRules_.erase(it);
 }
+
+bool Node::isExplicitDependency() const { return isExpicitDependency_; }
 
 State const& Node::getState() const { return state_; }
 State&       Node::getState()       { return state_; }

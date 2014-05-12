@@ -72,7 +72,7 @@ void GraphParser::checkNode(JsonVal const* json, NodeArray& nodeArray) {
 
     Node* node = graph_->nodes_[json_string->_data];
     if (!node) {
-      node = new Node(json_string->_data);
+      node = new Node(json_string->_data, true);
       graph_->nodes_[json_string->_data] = node;
       graph_->roots_.insert(node);
       graph_->sources_.insert(node);
@@ -153,7 +153,7 @@ void GraphParser::generateMandatoryNodes() {
   {
     /*  Register the graph file in order to manage it like every rule (register
      * to watchman, manage timestamp. */
-    Node* nodeGraphFile = new Node(graphFilePath_);
+    Node* nodeGraphFile = new Node(graphFilePath_, true);
     /*  Insert this node in the array of node */
     graph_->nodes_[graphFilePath_] = nodeGraphFile;
     graph_->roots_.insert(nodeGraphFile);

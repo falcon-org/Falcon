@@ -28,7 +28,7 @@ Node* Depfile::setRuleDependency(const std::string& dep, Rule* rule,
   auto itFind = graph.getNodes().find(dep);
   bool isNewNode = itFind == graph.getNodes().end();
   if (isNewNode) {
-    target = new Node(dep);
+    target = new Node(dep, false);
     hash::updateNodeHash(*target, true, true);
   } else {
     target = itFind->second;

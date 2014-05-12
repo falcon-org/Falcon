@@ -50,7 +50,7 @@ enum class State { UP_TO_DATE, OUT_OF_DATE };
 /** Class that represents a node in the graph. */
 class Node {
  public:
-  explicit Node(const std::string& path);
+  explicit Node(const std::string& path, bool isExpicitDependency);
 
   const std::string& getPath() const;
 
@@ -73,6 +73,8 @@ class Node {
   void removeParentRule(Rule* rule);
   RuleArray& getParents();
   const RuleArray& getParents() const;
+
+  bool isExplicitDependency() const;
 
   /* State management */
   State const& getState() const;
@@ -116,6 +118,13 @@ class Node {
   * If empty, this node is a root node because it does not generate any other
   * node. */
   RuleArray parentRules_;
+
+  /* Set to true if this node is an explicit dependency of at least one other
+   * node.
+   * An explicit dependency is a dependency defined in the graph file, contrary
+   * to an implicit dependency which is a dependency discovered at build
+   * time. */
+  bool isExpicitDependency_;
 
   State state_;
   Timestamp timestamp_;
