@@ -95,7 +95,7 @@ static void daemonize(std::unique_ptr<falcon::GlobalConfig> config,
    * when your shell exits (for example). */
   if (fork()) { return; }
   setsid();
-  if (fork()) { _exit(0); }
+  if (fork()) { return; }
 
   falcon::DaemonInstance daemon(std::move(config), std::move(cache));
   daemon.loadConf(std::move(graph));
