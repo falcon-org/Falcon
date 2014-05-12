@@ -29,6 +29,8 @@ GraphReloader::~GraphReloader() {
 }
 
 Graph* GraphReloader::getUpdatedGraph() {
+  watchman_.unwatchGraph(*original_);
+
   /* Scan the graph to discover what needs to be rebuilt, and compute the
    * hashes of all nodes. */
   falcon::GraphDependencyScan scanner(*new_, cache_);

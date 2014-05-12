@@ -285,6 +285,8 @@ void DaemonInstance::setDirty(const std::string& target) {
 void DaemonInstance::shutdown() {
   LOG(INFO) << "Shutting down.";
 
+  watchmanClient_.unwatchGraph(*graph_);
+
   /* Interrupt the current build. */
   interruptBuild();
 

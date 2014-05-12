@@ -129,6 +129,18 @@ void WatchmanClient::watchGraph(const Graph& g) {
   }
 }
 
+void WatchmanClient::unwatchGraph(const Graph& g) {
+  if (!isConnected_) {
+    connectToWatchman();
+  }
+
+  auto nodeMap = g.getNodes();
+  for (auto it = nodeMap.cbegin(); it != nodeMap.cend(); it++) {
+    assert(it->second);
+    unwatchNode(*it->second);
+  }
+}
+
 void WatchmanClient::watchNode(const Node& n) {
   if (!isConnected_) {
     connectToWatchman();
@@ -137,32 +149,8 @@ void WatchmanClient::watchNode(const Node& n) {
   std::string targetPattern(n.getPath());
   std::string targetDirectory = workingDirectory_;
 
-  { /* Clean the target Pattern and the target directory */
-    if (targetPattern.compare(0, 3, "../") == 0) {
-      /* in case of a relative path: example:
-       * n.getPath():       "../../src/main.cpp",
-       * workingDirectory_: "/home/nicolas/falcon/build/v1.0.1"
-       * targetDirectory:   "/home/nicolas/falcon"
-       * targetPattern:     "src/main.cpp" */
-      while (targetPattern.compare(0, 3, "../") == 0) {
-        targetPattern = targetPattern.substr(3);
-        unsigned pos = targetDirectory.find_last_of("/");
-        targetDirectory = targetDirectory.substr(0, pos);
-        targetDirectory.resize(pos);
-      }
-    } else if (targetPattern[0] == '/') {
-      /* in case of a full path, example:
-       * n.getPath():     "/usr/local/lib/libboost_program_options.so",
-       * targetDirectory: "/usr/local/lib"
-       * targetPattern:   "libboost_program_options.so" */
-      unsigned pos = targetPattern.find_last_of("/");
-      targetDirectory = targetPattern.substr(0, pos);
-      targetDirectory.resize(pos);
-      unsigned size = targetPattern.size();
-      targetPattern = targetPattern.substr(pos+1);
-      targetPattern.resize(size - pos - 1);
-    }
-  }
+  /* Clean the target Pattern and the target directory */
+  updateTargetPath(targetDirectory, targetPattern);
 
   /* Passing the current time to watchman as a parameter to the "since"
    * expression prevents watchman from triggering our trigger immediately when
@@ -182,6 +170,36 @@ void WatchmanClient::watchNode(const Node& n) {
   ss << "\"command\": [";
   ss << "    \"falcon\", \"--set-dirty\", \"" << n.getPath() << "\"";
   ss << "]}]\n";
+
+  /* Send the command to watchman */
+  std::string cmd = ss.str();
+  try {
+    writeCommand(cmd);
+    readAnswer();
+  } catch (Exception& e) {
+    /* We may have lost the connection, reconnect and try again. */
+    connectToWatchman();
+    writeCommand(cmd);
+    readAnswer();
+  }
+}
+
+void WatchmanClient::unwatchNode(const Node& n) {
+  if (!isConnected_) {
+    connectToWatchman();
+  }
+
+  std::string targetPattern(n.getPath());
+  std::string targetDirectory = workingDirectory_;
+
+  /* Clean the target Pattern and the target directory */
+  updateTargetPath(targetDirectory, targetPattern);
+
+  std::stringstream ss;
+  ss << "[ ";
+  ss << "\"trigger-del\", \"" << targetDirectory << "\", ";
+  ss << "\"" << n.getPath() << "\" ";
+  ss <<"]\n";
 
   /* Send the command to watchman */
   std::string cmd = ss.str();
@@ -241,6 +259,34 @@ void WatchmanClient::readAnswer() {
   JsonVal const* error = dom->getObject("error");
   if (error) {
     THROW_ERROR(EINVAL, error->_data.c_str());
+  }
+}
+
+void WatchmanClient::updateTargetPath(std::string& targetDirectory,
+                                      std::string& targetPattern) {
+  if (targetPattern[0] == '/') {
+    /* in case of a full path, example:
+     * n.getPath():     "/usr/local/lib/libboost_program_options.so",
+     * targetDirectory: "/usr/local/lib"
+     * targetPattern:   "libboost_program_options.so" */
+    unsigned pos = targetPattern.find_last_of("/");
+    targetDirectory = targetPattern.substr(0, pos);
+    targetDirectory.resize(pos);
+    unsigned size = targetPattern.size();
+    targetPattern = targetPattern.substr(pos+1);
+    targetPattern.resize(size - pos - 1);
+  } else {
+    /* in case of a relative path: example:
+     * n.getPath():       "../../src/main.cpp",
+     * workingDirectory_: "/home/nicolas/falcon/build/v1.0.1"
+     * targetDirectory:   "/home/nicolas/falcon"
+     * targetPattern:     "src/main.cpp" */
+    while (targetPattern.compare(0, 3, "../") == 0) {
+      targetPattern = targetPattern.substr(3);
+      unsigned pos = targetDirectory.find_last_of("/");
+      targetDirectory = targetDirectory.substr(0, pos);
+      targetDirectory.resize(pos);
+    }
   }
 }
 

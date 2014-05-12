@@ -40,6 +40,16 @@ public:
    * @param n node to be watched. */
   void watchNode(const Node& n);
 
+  /** UnWatch all the leaves of the given graph.
+   * @param g Graph to be unwatched. */
+  void unwatchGraph(const Graph& g);
+
+  /** UnWatch a node
+   * @param n node to be unwatched */
+  void unwatchNode(const Node& n);
+
+  static void updateTargetPath(std::string& dir, std::string& file);
+
 private:
 
   /* Connect to watchman, start it if needed. */

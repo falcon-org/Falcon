@@ -147,6 +147,8 @@ void GraphParser::processJson(JsonVal const* rules)
       graph_->sources_.erase(*it);
     }
   }
+
+  generateMandatoryNodes();
 }
 
 void GraphParser::generateMandatoryNodes() {
