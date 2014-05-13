@@ -26,6 +26,8 @@ class GraphDependencyScan {
   bool updateNode(Node* node);
   bool updateRule(Rule* rule);
 
+  bool ruleLoadDepfile(Rule* r);
+
   Graph& graph_;
   RuleSet seen_;
   CacheManager* cache_;

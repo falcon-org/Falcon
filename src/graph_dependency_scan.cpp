@@ -111,6 +111,27 @@ bool GraphDependencyScan::updateNode(Node* n) {
   return dirty;
 }
 
+bool GraphDependencyScan::ruleLoadDepfile(Rule* r) {
+  /* First, try to load the depfile. */
+  auto res = Depfile::loadFromfile(r->getDepfile(), r, nullptr, graph_,
+                                   false);
+  if (res == Depfile::Res::SUCCESS) {
+    return true;
+  }
+
+  /* We could not load the depfile, may be it is in cache. */
+  std::string name = r->getHashDepfile();
+  name.append(".deps");
+  if (!cache_->read(name, r->getDepfile())) {
+    return false;
+  }
+
+  /* The depfile was retrieved from the cache. */
+  res = Depfile::loadFromfile(r->getDepfile(), r, nullptr, graph_,
+                              true);
+  return res == Depfile::Res::SUCCESS;
+}
+
 /* Compare the oldest output to all of the input.
  * Mark as dirty every inputs which are newer than the oldest ouput. */
 bool GraphDependencyScan::updateRule(Rule* r) {
@@ -137,18 +158,10 @@ bool GraphDependencyScan::updateRule(Rule* r) {
   hash::updateRuleHash(*r, true, true);
 
   if (r->hasDepfile()) {
-    std::string name = r->getHashDepfile();
-    name.append(".deps");
-    if (cache_->read(name, r->getDepfile())) {
-      auto res = Depfile::loadFromfile(r->getDepfile(), r,
-                                       nullptr, graph_,
-                                       false);
-      hash::updateRuleHash(*r, true, false);
-      isDirty |= res != Depfile::Res::SUCCESS;
-    } else {
-      /* TODO: Fallback to parsing real depfile located in r->getDepfile(), only
-       * if it is more recent than the rule's outputs. */
+    if (!ruleLoadDepfile(r)) {
       isDirty = true;
+    } else {
+      hash::updateRuleHash(*r, true, false);
     }
   }
 
