@@ -17,6 +17,17 @@ namespace falcon { namespace fs {
  */
 bool mkdir(const std::string& path);
 
+/**
+ * Ensure the hierarchy of directories exists for the given path.
+ */
+bool createPath(const std::string& path);
+
+/**
+ * Retrieve the directory name of a path.
+ * Ex: dirname("/path/to/a/file") returns "/path/to/a"
+ *     dirname("/path/to/a") returns "/path/to"
+ */
+std::string dirname(const std::string& path);
 
 } } //namespace falcon::fs
 

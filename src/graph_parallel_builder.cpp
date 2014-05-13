@@ -7,6 +7,7 @@
 
 #include "graph_parallel_builder.h"
 #include "depfile.h"
+#include "fs.h"
 #include "graph_hash.h"
 #include "logging.h"
 
@@ -97,6 +98,20 @@ void GraphParallelBuilder::buildRule(Rule* rule) {
     /* A phony target, nothing to do. */
     onRuleFinished(rule);
     return;
+  }
+
+  /* Create all the directories for the outputs. */
+  auto& outputs = rule->getOutputs();
+  for (auto it = outputs.begin(); it != outputs.end(); ++it) {
+    /* TODO: we could end the build immediately if this fails. */
+    if (!fs::createPath((*it)->getPath())) {
+      LOG(ERROR) << "could not create path " << (*it)->getPath();
+    }
+  }
+
+  /* Create the directory for the depfile. */
+  if (rule->hasDepfile() && !fs::createPath(rule->getDepfile())) {
+    LOG(ERROR) << "could not create path " << rule->getDepfile();
   }
 
   if (tryBuildRuleFromCache(rule)) {

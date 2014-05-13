@@ -31,5 +31,35 @@ bool mkdir(const std::string& path) {
   return true;
 }
 
+std::string dirname(const std::string& path) {
+  std::string::size_type slash_pos = path.find_last_of("/");
+  if (slash_pos == std::string::npos) {
+    return std::string();
+  }
+  /* Strip any trailing slash. */
+  while (slash_pos > 0 && path[slash_pos - 1] == '/') {
+    slash_pos--;
+  }
+  return path.substr(0, slash_pos);
+}
+
+bool createPath(const std::string& path) {
+  std::string dir = dirname(path);
+  if (dir.empty()) {
+    return true;
+  }
+
+  struct stat sb;
+  if (stat(dir.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode)) {
+    /* Path already exists. */
+    return true;
+  }
+
+  if (!createPath(dir)) {
+    return false;
+  }
+
+  return mkdir(dir);
+}
 
 } } //namespace falcon::fs
