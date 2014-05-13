@@ -93,6 +93,10 @@ StartBuildResult::type DaemonInstance::startBuild(int32_t numThreads) {
      return StartBuildResult::BUSY;
   }
 
+  if (cache_->getPolicy() == CacheManager::Policy::CACHE_GIT_REFS) {
+    cache_->gitUpdateRef();
+  }
+
   checkSourcesMissing();
 
   FALCON_CHECK_GRAPH_CONSISTENCY(graph_.get(), mutex_);

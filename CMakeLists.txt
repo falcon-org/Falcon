@@ -71,6 +71,8 @@ add_executable(falcond
   src/build_plan.cpp
   src/graph_parallel_builder.cpp
   src/cache_manager.cpp
+  src/cache_fs.cpp
+  src/cache_git_directory.cpp
   src/fs.cpp
   )
 
@@ -86,6 +88,7 @@ target_link_libraries(falcond
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
   pthread
   crypto
+  git2
   )
 
 # This project uses C++11

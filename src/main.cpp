@@ -163,7 +163,8 @@ int main (int const argc, char const* const* argv) {
   }
 
   std::unique_ptr<falcon::CacheManager> cache(
-      new falcon::CacheManager(config->getFalconDir()));
+      new falcon::CacheManager(config->getWorkingDirectoryPath(),
+                               config->getFalconDir()));
 
   /* Scan the graph to discover what needs to be rebuilt, and compute the
    * hashes of all nodes. */

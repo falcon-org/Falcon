@@ -126,24 +126,17 @@ void GraphParallelBuilder::buildRule(Rule* rule) {
 }
 
 bool GraphParallelBuilder::tryBuildRuleFromCache(Rule *rule) {
-  if (!cache_ || rule->isPhony()) {
+  if (!cache_) {
     return false;
   }
 
-  /* Check we have all the outputs in cache. */
-  auto outputs = rule->getOutputs();
-  for (auto it = outputs.begin(); it != outputs.end(); it++) {
-    if (!cache_->has((*it)->getHash())) {
-      return false;
-    }
+  if (!cache_->restoreRule(rule)) {
+    return false;
   }
 
-  /* Retrieve all the outputs. */
+  /* Notify the consumer that all the outputs were retrieved from the cache. */
+  auto outputs = rule->getOutputs();
   for (auto it = outputs.begin(); it != outputs.end(); it++) {
-    if (!cache_->read((*it)->getHash(), (*it)->getPath())) {
-      return false;
-    }
-    /* Notify the consumer that we retrieved the target from the cache. */
     consumer_->cacheRetrieveAction((*it)->getPath());
   }
 
@@ -151,34 +144,6 @@ bool GraphParallelBuilder::tryBuildRuleFromCache(Rule *rule) {
   rule->setTimestamp(time(NULL));
 
   return true;
-}
-
-bool GraphParallelBuilder::saveRuleInCache(Rule *rule) {
-  if (!cache_ || rule->isPhony()) {
-    return false;
-  }
-
-  bool error = false;
-
-  auto outputs = rule->getOutputs();
-  for (auto it = outputs.begin(); it != outputs.end(); it++) {
-    if (!cache_->update((*it)->getHash(), (*it)->getPath())) {
-      LOG(ERROR) << "could not save " << (*it)->getPath() << " in cache";
-      error = true;
-    }
-  }
-
-  if (rule->hasDepfile()) {
-    std::string name = rule->getHashDepfile();
-    name.append(".deps");
-    if (!cache_->update(name, rule->getDepfile())) {
-      LOG(ERROR) << "could not save " << rule->getDepfile() << " to "
-        << name << std::endl;
-      error = true;
-    }
-  }
-
-  return error;
 }
 
 void GraphParallelBuilder::markOutputsUpToDate(Rule *rule) {
@@ -220,8 +185,10 @@ BuildResult GraphParallelBuilder::waitForNext() {
     hash::recomputeRuleHash(rule, watchmanClient_, graph_, cache_, true, false);
   }
 
-  /* Save the outputs in cache. */
-  saveRuleInCache(rule);
+  if (cache_) {
+    /* Save the outputs and the implicit dependencies in cache. */
+    cache_->saveRule(rule);
+  }
 
   onRuleFinished(rule);
   return BuildResult::SUCCEEDED;

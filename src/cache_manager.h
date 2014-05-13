@@ -7,39 +7,78 @@
 #define FALCON_CACHE_MANAGER_H_
 
 #include <string>
+#include <unordered_map>
+
+#include "cache_fs.h"
+#include "cache_git_directory.h"
 
 namespace falcon {
 
+class Rule;
+class Node;
+
 class CacheManager {
  public:
-  CacheManager(const std::string& falconDir);
+
+  /** The cache policy dictates what is cached, and when. */
+  enum class Policy {
+    /* Nothing is cached. */
+    CACHE_NOTHING,
+    /* Everything is cached.
+     * The cache will never be clear unless instructed by the user. */
+    CACHE_EVERYTHING,
+    /* Used if the project uses git. This will only cache when not in a detached
+     * state. When building while on a given ref, all previous versions of the
+     * target that were built under the same ref will be removed from the cache.
+     * Basically, there's only one version of each target in the cache per git
+     * branch. */
+    CACHE_GIT_REFS
+  };
+
+  CacheManager(const std::string& workingDirectory,
+               const std::string& falconDir);
+
+  void setPolicy(Policy policy) { policy_ = policy; }
+  Policy getPolicy() const { return policy_; }
 
   /**
-   * Check if the cache contains an entry.
-   * @param hash Hash of the entry.
-   * @return True if the entry exists, false otherwise.
+   * Check the git repository for the current ref.
+   * Must be called before each build.
    */
-  bool has(const std::string& hash);
+  void gitUpdateRef() { gitDirectory_.updateRef(); }
 
   /**
-   * Query the cache for a target with the given hash and store it to the given
-   * path.
-   * @param hash Hash of the target.
-   * @param path Path where to store the target.
-   * @return true if the target was found, false otherwise.
+   * Called after a rule was built. Save all the outputs and the depfile
+   * in cache.
    */
-  bool read(const std::string& hash, const std::string& path);
+  void saveRule(Rule* rule);
 
   /**
-   * Update the cache for a target.
-   * @param hash of the target.
-   * @param path of the target.
-   * @return true on sucess, false otherwise.
+   * Try to restore all the outputs of the given rule from the cache.
+   * @param rule Rule to be restored.
+   * @return true if the rule was successfully restored, ie all outputs were
+   * found in cache.
    */
-  bool update(const std::string& hash, const std::string& path);
+  bool restoreRule(Rule* rule);
+
+  /**
+   * Query the cache for information on the depfiles of the given rule.
+   * Reload the depfile if found in cache.
+   * @param rule Rule for which to check for implicit dependencies in the cache.
+   * @return true if we were able to restore the depfile.
+   */
+  bool restoreDepfile(Rule* rule);
 
  private:
-  std::string localCacheDir_;
+  /**
+   * Save a node in cache.
+   */
+  bool saveNode(Node* node);
+
+  Policy policy_;
+  std::string workingDirectory_;
+  CacheFS cacheFs_;
+  CacheGitDirectory gitDirectory_;
 };
 
 } // namespace falcon

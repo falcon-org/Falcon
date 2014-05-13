@@ -128,14 +128,10 @@ void recomputeRuleHash(Rule* rule,
   updateRuleHash(*rule, true, true);
 
   /* If the deps hash changed, it means the implicit depfiles may have changed.
-   * In that case, query the cache to see if we know the new implcit
+   * In that case, query the cache to see if we know the new implicit
    * dependencies. */
   if (rule->hasDepfile() && tmp != rule->getHashDepfile()) {
-    std::string name = rule->getHashDepfile();
-    name.append(".deps");
-    /* TODO: We could load the depfile directly from the cache instead of
-     * copying it first. */
-    if (cache->read(name, rule->getDepfile())) {
+    if (cache->restoreDepfile(rule)) {
       Depfile::loadFromfile(rule->getDepfile(), rule, watchmanClient, graph,
                             true);
       /* The implicit dependencies may have changed, so recompute the normal

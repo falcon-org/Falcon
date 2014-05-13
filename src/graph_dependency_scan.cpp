@@ -120,9 +120,7 @@ bool GraphDependencyScan::ruleLoadDepfile(Rule* r) {
   }
 
   /* We could not load the depfile, may be it is in cache. */
-  std::string name = r->getHashDepfile();
-  name.append(".deps");
-  if (!cache_->read(name, r->getDepfile())) {
+  if (!cache_->restoreDepfile(r)) {
     return false;
   }
 

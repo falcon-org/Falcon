@@ -14,6 +14,8 @@
 /* use for clock and time */
 # include <ctime>
 
+# include "cache_manager.h"
+
 /** This file defines the data structure for storing the Graph of Nodes and
  * Rules.
  *
@@ -34,7 +36,6 @@ class Rule;
 class Graph;
 class GraphVisitor;
 class WatchmanClient;
-class CacheManager;
 
 typedef std::vector<Node*>                     NodeArray;
 typedef std::set<Node*>                        NodeSet;

@@ -7,79 +7,109 @@
 #include <fstream>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <stdio.h>
 
 #include "cache_manager.h"
 
 #include "exceptions.h"
-#include "logging.h"
 #include "fs.h"
+#include "graph.h"
+#include "logging.h"
 
 namespace falcon {
 
-CacheManager::CacheManager(const std::string& falconDir)
-    : localCacheDir_(falconDir) {
-  localCacheDir_.append("/cache");
+CacheManager::CacheManager(const std::string& workingDirectory,
+                           const std::string& falconDir)
+    : workingDirectory_(workingDirectory)
+    , cacheFs_(falconDir + "/cache")
+    , gitDirectory_(workingDirectory, cacheFs_) {
+
+  /* If we find a git repository, automatically use the CACHE_GIT_REFS
+   * policy. */
+  if (gitDirectory_.checkIsGitRepository()) {
+    policy_ = Policy::CACHE_GIT_REFS;
+  } else {
+    policy_ = Policy::CACHE_EVERYTHING;
+  }
 }
 
-bool CacheManager::has(const std::string& hash) {
-  assert(!hash.empty());
-  std::string output = localCacheDir_;
-  output.append("/");
-  output.append(hash);
-  struct stat sb;
-  return stat(output.c_str(), &sb) == 0;
-}
-
-bool CacheManager::read(const std::string& hash, const std::string& path) {
-  assert(!hash.empty());
-  std::string output = localCacheDir_;
-  output.append("/");
-  output.append(hash);
-
-  struct stat sb;
-  if (stat(output.c_str(), &sb) != 0) {
+bool CacheManager::saveNode(Node* node) {
+  if (!cacheFs_.writeEntry(node->getHash(), node->getPath())) {
+    LOG(ERROR) << "could not save " << node->getPath() << " in cache";
     return false;
   }
 
-  /* Copy the target from the cache. */
-  try {
-    std::ifstream ifs(output, std::ios::binary);
-    std::ofstream ofs(path, std::ios::binary);
-    ofs << ifs.rdbuf();
-  } catch (std::ios_base::failure& e) {
-    LOG(ERROR) << "Could not retrieve " << path << " in cache: " << e.what();
-    return false;
+  if (policy_ == Policy::CACHE_GIT_REFS) {
+    gitDirectory_.registerNode(node->getHash(), node);
   }
 
   return true;
 }
 
-bool CacheManager::update(const std::string& hash, const std::string& path) {
-  assert(!hash.empty());
-
-  fs::mkdir(localCacheDir_);
-
-  std::string output = localCacheDir_;
-  output.append("/");
-  output.append(hash);
-
-  struct stat sb;
-  if (stat(output.c_str(), &sb) == 0) {
-    /* The target is already in cache. */
-    return true;
+void CacheManager::saveRule(Rule *rule) {
+  if (rule->isPhony()) {
+    return;
   }
 
-  /* Copy the target in the cache. */
-  try {
-    std::ifstream ifs(path, std::ios::binary);
-    std::ofstream ofs(output, std::ios::binary);
-    ofs << ifs.rdbuf();
-  } catch (std::ios_base::failure& e) {
-    LOG(ERROR) << "Could not store " << path << " in cache: " << e.what();
+  if (policy_ == Policy::CACHE_GIT_REFS && !gitDirectory_.isInRef()) {
+    /* We are either in detached state, or there is no git repository. In either
+     * case, do not store in cache. */
+    return;
+  }
+
+  /* Save all the outputs. */
+  auto outputs = rule->getOutputs();
+  for (auto it = outputs.begin(); it != outputs.end(); it++) {
+    if (!saveNode(*it)) {
+      LOG(ERROR) << "could not save " << (*it)->getPath() << " in cache";
+    }
+  }
+
+  /* Save the depfile. */
+  if (rule->hasDepfile()) {
+    if (!cacheFs_.writeEntry(rule->getHashDepfile(), rule->getDepfile())) {
+      LOG(ERROR) << "could not save " << rule->getDepfile() << " to "
+        << rule->getHashDepfile() << std::endl;
+    }
+  }
+
+  if (policy_ == Policy::CACHE_GIT_REFS) {
+    gitDirectory_.registerRule(rule->getHashDepfile(), rule);
+  }
+}
+
+bool CacheManager::restoreRule(Rule *rule) {
+  if (rule->isPhony()) {
     return false;
   }
 
+  /* Check we have all the outputs in cache. */
+  auto outputs = rule->getOutputs();
+  for (auto it = outputs.begin(); it != outputs.end(); it++) {
+    if (!cacheFs_.hasEntry((*it)->getHash())) {
+      return false;
+    }
+    if (policy_ == Policy::CACHE_GIT_REFS) {
+      gitDirectory_.registerNode((*it)->getHash(), *it);
+    }
+  }
+
+  if (policy_ == Policy::CACHE_GIT_REFS) {
+    gitDirectory_.registerRule(rule->getHashDepfile(), rule);
+  }
+
+  /* Retrieve all the outputs. */
+  for (auto it = outputs.begin(); it != outputs.end(); it++) {
+    if (!cacheFs_.readEntry((*it)->getHash(), (*it)->getPath())) {
+      return false;
+    }
+  }
+
   return true;
+}
+
+bool CacheManager::restoreDepfile(Rule* rule) {
+  return cacheFs_.readEntry(rule->getHashDepfile(), rule->getDepfile());
 }
 
 } // namespace falcon
