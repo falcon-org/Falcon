@@ -36,7 +36,6 @@ void DaemonInstance::loadConf(std::unique_ptr<Graph> gp) {
 }
 
 void DaemonInstance::start() {
-  assert(!config_->runSequentialBuild());
   assert(!commandServer_);
   assert(graph_);
 

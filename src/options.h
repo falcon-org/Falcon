@@ -133,11 +133,6 @@ public:
   std::string const& getFalconDir() const;
 
 private:
-  bool runSequentialBuild_;
-public:
-  bool runSequentialBuild() const;
-
-private:
   bool runDaemonBuilder_;
 public:
   bool runDaemonBuilder() const;

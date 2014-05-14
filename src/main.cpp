@@ -32,7 +32,6 @@ static void setOptions(falcon::Options& opt) {
   /* *********************************************************************** */
   /* add command line options */
   opt.addCLIOption("daemon,d", "daemonize the build system");
-  opt.addCLIOption("build,b", "launch a sequential build");
   opt.addCLIOption("module,M",
                    po::value<std::string>(),
                    "use -M help for more info");
@@ -102,28 +101,6 @@ static void daemonize(std::unique_ptr<falcon::GlobalConfig> config,
   daemon.start();
 }
 
-/** Start a build. */
-static int build(const std::unique_ptr<falcon::GlobalConfig>& config,
-                      const std::unique_ptr<falcon::Graph>& graph) {
-  falcon::StdoutStreamConsumer consumer;
-  std::mutex mutex;
-
-  /* Create a build plan that builds everything.
-   * TODO: the user should be able to explicitly give the targets to build. */
-  falcon::BuildPlan plan(graph->getRoots());
-
-  falcon::GraphParallelBuilder builder(*graph, plan,
-                                       nullptr /* cache */,
-                                       &consumer,
-                                       nullptr /* watchmanClient */,
-                                       config->getWorkingDirectoryPath(),
-                                       1, mutex, false /* No callback. */);
-  builder.startBuild();
-  builder.wait();
-  FALCON_CHECK_GRAPH_CONSISTENCY(graph.get(), mutex);
-  return builder.getResult() == falcon::BuildResult::SUCCEEDED ? 0 : 1;
-}
-
 int main (int const argc, char const* const* argv) {
   falcon::Options opt;
 
@@ -175,11 +152,6 @@ int main (int const argc, char const* const* argv) {
   if (opt.isOptionSetted("module")) {
     return loadModule(*graphPtr,
                       opt.vm_["module"].as<std::string>());
-  }
-
-  /* User explicitly requires a build. Do not daemonize.*/
-  if (config->runSequentialBuild()) {
-    return build(config, graphPtr);
   }
 
   /* Start the daemon. */

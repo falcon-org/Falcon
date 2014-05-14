@@ -104,7 +104,6 @@ GlobalConfig::GlobalConfig(Options const& opt) {
   setNetworkStreamPort(opt.vm_["stream-port"].as<int>());
   setWorkingDirectoryPath(opt.vm_["working-directory"].as<std::string>());
 
-  runSequentialBuild_ = opt.isOptionSetted("build");
   runDaemonBuilder_ = opt.isOptionSetted("daemon");
   programName_ = opt.getProgramName();
   logDirectory_ = opt.getLogDirectory();
@@ -141,7 +140,6 @@ std::string const& GlobalConfig::getWorkingDirectoryPath() const {
 }
 
 std::string const& GlobalConfig::getProgramName() const { return programName_; }
-bool GlobalConfig::runSequentialBuild() const { return runSequentialBuild_; }
 bool GlobalConfig::runDaemonBuilder() const { return runDaemonBuilder_; }
 std::string const& GlobalConfig::getLogDirectory() const {
   return logDirectory_;
