@@ -15,6 +15,7 @@
 #include "graph.h"
 #include "graph_builder.h"
 #include "posix_subprocess_manager.h"
+#include "stream_server.h"
 #include "watchman.h"
 
 namespace falcon {
@@ -27,7 +28,7 @@ class GraphParallelBuilder : public IGraphBuilder {
   GraphParallelBuilder(Graph& Graph,
                        BuildPlan& plan,
                        CacheManager* cache,
-                       IStreamConsumer* consumer,
+                       IBuildOutputConsumer* consumer,
                        WatchmanClient* watchmanClient,
                        std::string const& workingDirectory,
                        std::size_t numThreads,
@@ -55,7 +56,7 @@ class GraphParallelBuilder : public IGraphBuilder {
   Graph& graph_;
   BuildPlan& plan_;
   CacheManager* cache_;
-  IStreamConsumer* consumer_;
+  IBuildOutputConsumer* consumer_;
   PosixSubProcessManager manager_;
   WatchmanClient * watchmanClient_;
   std::string workingDirectory_;

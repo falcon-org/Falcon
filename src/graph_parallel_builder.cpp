@@ -16,7 +16,7 @@ namespace falcon {
 GraphParallelBuilder::GraphParallelBuilder(Graph& graph,
                                            BuildPlan& plan,
                                            CacheManager* cache,
-                                           IStreamConsumer* consumer,
+                                           IBuildOutputConsumer* consumer,
                                            WatchmanClient* watchmanClient,
                                            std::string const& workingDirectory,
                                            std::size_t numThreads,
@@ -122,7 +122,8 @@ void GraphParallelBuilder::buildRule(Rule* rule) {
 
   /* This is not a phony target, and we could not find all the outputs in cache.
    * Build the rule. */
-  manager_.addProcess(rule, workingDirectory_);
+  unsigned int id = manager_.addProcess(rule, workingDirectory_);
+  consumer_->newCommand(id, rule->getCommand());
 }
 
 bool GraphParallelBuilder::tryBuildRuleFromCache(Rule *rule) {
@@ -160,8 +161,10 @@ void GraphParallelBuilder::markOutputsUpToDate(Rule *rule) {
 
 BuildResult GraphParallelBuilder::waitForNext() {
   auto res = manager_.waitForNext();
-  Rule* rule = res.first;
-  SubProcessExitStatus status = res.second;
+  Rule* rule = res.rule;
+  SubProcessExitStatus status = res.status;
+
+  consumer_->endCommand(res.cmdId, status);
 
   /* Update the timestamp of the rule. */
   rule->setTimestamp(std::time(NULL));

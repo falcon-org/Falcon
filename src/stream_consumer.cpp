@@ -9,53 +9,21 @@
 
 namespace falcon {
 
-void StdoutStreamConsumer::newCommand(unsigned int cmdId,
-                                      const std::string& cmd) {
-  std::cout << cmd << std::endl;
-}
-
-void StdoutStreamConsumer::endCommand(unsigned int cmdId,
-                                      SubProcessExitStatus status) {}
-
-void StdoutStreamConsumer::writeStdout(unsigned int cmdId,
-                                       char* buf, std::size_t len) {
-  std::cout.write(buf, len);
-}
-
-void StdoutStreamConsumer::writeStderr(unsigned int cmdId,
-                                       char* buf, std::size_t len) {
-  std::cerr.write(buf, len);
-}
-
-void StdoutStreamConsumer::cacheRetrieveAction(const std::string& path) {
-  std::cout << "Retrieving " << path << " from cache.";
-}
-
-void StringStreamConsumer::newCommand(unsigned int cmdId,
-                                      const std::string& cmd) { }
-
-void StringStreamConsumer::endCommand(unsigned int cmdId,
-                                      SubProcessExitStatus status) {}
-
-std::string StringStreamConsumer::getCoutString() const {
+std::string BufferStreamConsumer::getStdout() const {
   return sscout_.str();
 }
-std::string StringStreamConsumer::getCerrString() const {
+std::string BufferStreamConsumer::getStderr() const {
   return sscerr_.str();
 }
 
-void StringStreamConsumer::writeStdout(unsigned int cmdId,
+void BufferStreamConsumer::writeStdout(unsigned int cmdId,
                                        char* buf, std::size_t len) {
   sscout_.write(buf, len);
 }
 
-void StringStreamConsumer::writeStderr(unsigned int cmdId,
+void BufferStreamConsumer::writeStderr(unsigned int cmdId,
                                        char* buf, std::size_t len) {
   sscerr_.write(buf, len);
-}
-
-void StringStreamConsumer::cacheRetrieveAction(const std::string& path) {
-  sscout_ << "Retrieving " << path << " from cache.";
 }
 
 } // namespace falcon

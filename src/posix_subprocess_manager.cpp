@@ -22,12 +22,13 @@ PosixSubProcessManager::~PosixSubProcessManager() {
   assert(nbRunning() == 0);
 }
 
-void PosixSubProcessManager::addProcess(Rule *rule,
-                                        const std::string& workingDirectory) {
+unsigned int PosixSubProcessManager::addProcess(Rule *rule,
+    const std::string& workingDirectory) {
+  unsigned int id = id_++;
   const std::string& command = rule->getCommand();
   assert(!command.empty());
   PosixSubProcessPtr proc(new PosixSubProcess(command, workingDirectory,
-                                              id_++, consumer_));
+                                              id, consumer_));
   mapToRule_.insert(std::make_pair(proc.get(), rule));
   proc->start();
 
@@ -48,6 +49,8 @@ void PosixSubProcessManager::addProcess(Rule *rule,
   /* Setup the file descriptor for stderr for monitoring. */
   pollfds_.push_front({ stderr, events, 0 });
   map_[stderr] = { running_.begin(), pollfds_.begin(), false };
+
+  return id;
 }
 
 void PosixSubProcessManager::run() {
@@ -82,7 +85,7 @@ PosixSubProcessManager::BuiltRule PosixSubProcessManager::waitForNext() {
   Rule *rule = it->second;
   mapToRule_.erase(it);
 
-  return BuiltRule(rule, proc->status());
+  return BuiltRule{rule, proc->status(), proc->id()};
 }
 
 void PosixSubProcessManager::interrupt() {

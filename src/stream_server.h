@@ -20,6 +20,17 @@ namespace falcon {
 enum class BuildResult;
 
 /**
+ * Interface required by GraphParallelBuilder.
+ */
+class IBuildOutputConsumer : public IStreamConsumer {
+ public:
+  virtual ~IBuildOutputConsumer() {}
+  virtual void newCommand(unsigned int cmdId, const std::string& cmd) = 0;
+  virtual void endCommand(unsigned int cmdId, SubProcessExitStatus status) = 0;
+  virtual void cacheRetrieveAction(const std::string& path) = 0;
+};
+
+/**
  * -- A server for streaming the build output to several clients.
  *
  * When a client connects to the streaming server, it will receive the output of
@@ -75,7 +86,7 @@ enum class BuildResult;
  * // Write some data coming from stdout to the streaming server.
  * server.writeStdout(1, buf, len);
  */
-class StreamServer : public IStreamConsumer {
+class StreamServer : public IBuildOutputConsumer {
  public:
 
   /**

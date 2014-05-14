@@ -3,10 +3,12 @@
  * LICENSE : see accompanying LICENSE file for details.
  */
 
+#include <iostream>
+
 #include "test.h"
 #include "logging.h"
 #include "posix_subprocess.h"
-#include <iostream>
+#include "stream_consumer.h"
 
 class FalconPosixSubprocessTest : public falcon::Test {
 public:
@@ -14,12 +16,12 @@ public:
                             falcon::SubProcessExitStatus exitExpected,
                             std::string stdOut, std::string stdErr)
     : falcon::Test("Posix Process: " + cmd, "no error")
-    , cmd_(cmd), psp_(nullptr), ssc_()
+    , cmd_(cmd), psp_(nullptr), consumer_()
     , exitStatus_(exitExpected), stdOut_(stdOut), stdErr_(stdErr)
   {}
 
   void prepareTest() {
-    psp_ = new falcon::PosixSubProcess(cmd_, ".", 0, &ssc_);
+    psp_ = new falcon::PosixSubProcess(cmd_, ".", 0, &consumer_);
   }
   void runTest() {
     psp_->start();
@@ -31,30 +33,30 @@ public:
     }
 
     if (!stdOut_.empty()) {
-      if (psp_->readStdout() && ssc_.getCoutString().empty()) {
+      if (psp_->readStdout() && consumer_.getStdout().empty()) {
         setSuccess(false);
         setErrorMessage("Stdout expected");
         return;
       } else {
-        if (ssc_.getCoutString() != stdOut_) {
+        if (consumer_.getStdout() != stdOut_) {
           setSuccess(false);
           setErrorMessage("wrong stdout, expected(" + stdOut_ +
-                          ") got(" + ssc_.getCoutString() + ")");
+                          ") got(" + consumer_.getStdout() + ")");
           return;
         }
       }
     }
 
     if (!stdErr_.empty()) {
-      if (psp_->readStderr() && ssc_.getCerrString().empty()) {
+      if (psp_->readStderr() && consumer_.getStderr().empty()) {
         setSuccess(false);
         setErrorMessage("Stderr expected");
         return;
       } else {
-        if (ssc_.getCerrString() != stdErr_) {
+        if (consumer_.getStderr() != stdErr_) {
           setSuccess(false);
           setErrorMessage("wrong stderr, expected(" + stdErr_ +
-                          ") got(" + ssc_.getCerrString() + ")");
+                          ") got(" + consumer_.getStderr() + ")");
           return;
         }
       }
@@ -69,7 +71,7 @@ public:
 private:
   std::string cmd_;
   falcon::PosixSubProcess* psp_;
-  falcon::StringStreamConsumer ssc_;
+  falcon::BufferStreamConsumer consumer_;
 
   falcon::SubProcessExitStatus exitStatus_;
   std::string stdOut_;

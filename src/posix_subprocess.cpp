@@ -44,8 +44,6 @@ void PosixSubProcess::start() {
 
   DLOG(INFO) << "New command: ID = " << id_ << ", CMD = " << command_;
 
-  consumer_->newCommand(id_, command_);
-
   /* Create pipe for stdout redirection. */
   int stdout_pipe[2];
   if (pipe(stdout_pipe) < 0) {
@@ -164,8 +162,6 @@ void PosixSubProcess::waitFinished() {
 
   DLOG(INFO) << "Completed command: ID = " << id_ << ", STATUS = "
     << toString(status_);
-
-  consumer_->endCommand(id_, status_);
 }
 
 } // namespace falcon

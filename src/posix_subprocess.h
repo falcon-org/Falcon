@@ -91,6 +91,8 @@ class PosixSubProcess {
 
   pid_t pid() const { return pid_; }
 
+  unsigned int id() const { return id_; }
+
   unsigned int id_;
 
   std::string command_;

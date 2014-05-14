@@ -23,7 +23,11 @@ namespace falcon {
 class PosixSubProcessManager {
  public:
 
-  typedef std::pair<Rule*, SubProcessExitStatus> BuiltRule;
+  struct BuiltRule {
+    Rule* rule;
+    SubProcessExitStatus status;
+    unsigned int cmdId;
+  };
 
   PosixSubProcessManager(IStreamConsumer *consumer);
 
@@ -35,8 +39,9 @@ class PosixSubProcessManager {
    * and map_ so that they can be monitored with ppoll.
    *
    * @param rule Rule to be built. Must not be a phony rule.
+   * @return id of the command that was started.
    */
-  void addProcess(Rule *rule, const std::string& workingDirectory);
+  unsigned int addProcess(Rule *rule, const std::string& workingDirectory);
 
   /**
    * Use ppoll to monitor the file descriptors of the running processes and read
