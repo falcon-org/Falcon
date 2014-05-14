@@ -48,9 +48,16 @@ very quickly. Falcon will be able to retrieve already built targets by querying
 the cache of another Falcon daemon running in a continuous build server. Why
 build something that someone already built for you?
 
+### Thrift API
+
+Falcon uses Thrift to provide an API that will allow developers to develop
+applications around Falcon. Clients are able to query Falcon for the state of
+the project's graph, trigger builds, manage the cache, etc. Among other things,
+this will permit a deep integration to IDEs and editors.
+
 ## Current state
 
-Right now falcon is in a working (but experimental) state. There are still a fe
+Right now falcon is in a working (but experimental) state. There are still a few
 important missing parts:
 
 - We plan on building a CMake generator for the graph configuration file;
