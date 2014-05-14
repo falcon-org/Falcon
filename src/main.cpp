@@ -68,7 +68,7 @@ static int loadModule(falcon::Graph& g, std::string const& s) {
   LOG(INFO) << "load module '" << s << "'";
 
   if (0 == s.compare("dot")) {
-    printGraphGraphiz(g, std::cout);
+    printGraphGraphviz(g, std::cout);
   } else if (0 == s.compare("make")) {
     printGraphMakefile(g, std::cout);
   } else if (0 == s.compare("help")) {

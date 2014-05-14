@@ -41,10 +41,10 @@ void printGraphMakefile(Graph const& g, std::ostream& os) {
 }
 
 /* ************************************************************************* */
-/* Graphiz printer                                                           */
+/* Graphviz printer                                                           */
 /* ************************************************************************* */
 
-static void printNodeGraphiz(Node const& n, std::ostream& os) {
+static void printNodeGraphviz(Node const& n, std::ostream& os) {
   std::string color = (n.getState() == State::OUT_OF_DATE)
                     ? "red"
                     : "black";
@@ -57,7 +57,7 @@ static void printNodeGraphiz(Node const& n, std::ostream& os) {
                    << "\" ]" << std::endl;
 }
 
-static void printRuleGraphiz(Rule const& r, std::ostream& os) {
+static void printRuleGraphviz(Rule const& r, std::ostream& os) {
   NodeArray const& inputs = r.getInputs();
   NodeArray const& outputs = r.getOutputs();
 
@@ -100,7 +100,7 @@ static void printRuleGraphiz(Rule const& r, std::ostream& os) {
   }
 }
 
-void printGraphGraphiz(Graph const& g, std::ostream& os) {
+void printGraphGraphviz(Graph const& g, std::ostream& os) {
   NodeMap const& nodeMap = g.getNodes();
   RuleArray const& rules = g.getRules();
 
@@ -110,12 +110,12 @@ void printGraphGraphiz(Graph const& g, std::ostream& os) {
 
   /* print all the Nodes */
   for (auto it = nodeMap.cbegin(); it != nodeMap.cend(); it++) {
-    printNodeGraphiz(*(it->second), os);
+    printNodeGraphviz(*(it->second), os);
   }
 
   /* print all the rules */
   for (auto it = rules.cbegin(); it != rules.cend(); it++) {
-    printRuleGraphiz(*(*it), os);
+    printRuleGraphviz(*(*it), os);
   }
 
   os << "}" << std::endl;

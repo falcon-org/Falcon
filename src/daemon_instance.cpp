@@ -302,7 +302,7 @@ void DaemonInstance::getGraphviz(std::string& str) {
 
   assert(graph_);
   std::ostringstream oss;
-  printGraphGraphiz(*graph_, oss);
+  printGraphGraphviz(*graph_, oss);
   str = oss.str();
 }
 

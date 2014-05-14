@@ -304,8 +304,8 @@ void checkGraphLoop(Graph const& g);
  *******************/
 /* Makefile compatible ouput */
 void printGraphMakefile(Graph const&, std::ostream&);
-/* Graphiz compatible ouput */
-void printGraphGraphiz(Graph const&, std::ostream&);
+/* Graphviz compatible ouput */
+void printGraphGraphviz(Graph const&, std::ostream&);
 
 }
 
