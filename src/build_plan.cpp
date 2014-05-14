@@ -74,7 +74,7 @@ void BuildPlan::notifyRuleBuilt(Rule *rule) {
   assert(readyRules_.find(rule) == readyRules_.end());
   assert(itRule != rules_.end());
 
-  /* Travers the outputs to find any rule that became ready. */
+  /* Traverse the outputs to find any rule that became ready. */
   auto outputs = rule->getOutputs();
   for (auto it = outputs.begin(); it != outputs.end(); ++it) {
     auto parentRules = (*it)->getParents();

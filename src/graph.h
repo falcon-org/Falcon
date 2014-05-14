@@ -25,8 +25,7 @@
  * - Rule: it takes several nodes as input and generates several output nodes.
  *
  * - Graph: this is the data structure that stores the graph of Nodes and
- *   Rules. It stores a vector of root nodes, ie the nodes that do not generate
- *   any other node, ie the nodes that have no parent.
+ *   Rules.
  */
 
 namespace falcon {
@@ -170,9 +169,7 @@ class Rule {
   bool isDirty() const;
   void setState(State state);
 
-  /**
-   * Set the state as Dirty and mark all the parents as dirty too.
-   */
+  /** Set the state as Dirty and mark all the parents as dirty too. */
   void markDirty();
 
   void setHash(std::string const&);
@@ -197,7 +194,15 @@ class Rule {
   void markInputDirty();
 
  private:
+  /** Targets that need to be built before this rule can be run.
+   * The first (inputs_.size() - numImplicitDeps_) elements are the explicit
+   * dependencies of the rule, ie the inputs that were explicitly defined in the
+   * graph configuration file. The remaining numImplicitDeps_ are implicit
+   * dependencies discovered at build time. They are at the end of the array
+   * because we always discover them after the explicit dependencies. */
   NodeArray inputs_;
+
+  /** Targets that this rule generates. */
   NodeArray outputs_;
 
   /** Number of implicit dependencies. The implicit dependencies and at the end
@@ -227,7 +232,10 @@ class Rule {
   Timestamp timestamp_;
 
   /* Number of inputs that are ready. A ready input is a input that has been
-   * built, or a soure file. */
+   * built, or a soure file. (Indeed, a source file is always ready, even if it
+   * is dirty).
+   * This rule can only be run when all the inputs are ready, ie numInputsReady_
+   * equals inputs_.size(). */
   std::size_t numInputsReady_;
 
   Rule(const Rule& other) = delete;
@@ -261,10 +269,10 @@ class Graph {
  private:
 
   /* Contains all the root nodes, ie the nodes that are not an input to any
-   * Rule. Typically, 'all' is a root node. */
+   * Rule. Typically, 'all' is a root node. This is a subset of nodes_. */
   NodeSet roots_;
 
-  /* Contains all the leaf nodes, ie the sources. */
+  /* Contains all the leaf nodes, ie the sources. This is a subset of nodes_. */
   NodeSet sources_;
 
   /* Contains all the nodes, mapped by their path. */

@@ -281,8 +281,6 @@ void DaemonInstance::setDirty(const std::string& target) {
     if (!node->isSource()) {
       node->getChild()->setState(State::OUT_OF_DATE);
     }
-  } else {
-    LOG(INFO) << "Not marking " << node->getPath();
   }
 }
 
@@ -296,7 +294,6 @@ void DaemonInstance::shutdown() {
 
   /* Stop the thrift server. */
   assert(commandServer_);
-  /* TODO: is this a problem to call stop from a thrift handler? */
   commandServer_->stop();
 }
 

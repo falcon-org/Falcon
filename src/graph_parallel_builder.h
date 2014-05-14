@@ -19,6 +19,9 @@
 
 namespace falcon {
 
+/** GraphParallelBuilder is a class that takes care of building a BuildPlan in
+ * parallel. It uses PosixSubProcessManager to manager multiple commands running
+ * at the same time. */
 class GraphParallelBuilder : public IGraphBuilder {
  public:
   GraphParallelBuilder(Graph& Graph,

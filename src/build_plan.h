@@ -12,6 +12,12 @@ namespace falcon {
 
 /**
  * BuildPlan is a class that maintains a list of rules we are planning to build.
+ * It does not know how to build a rule, but it knows how to schedule them for
+ * execution.
+ * The builder class can retrieve a rule that is ready to be built with
+ * findWork(). When the rule is built, it notifies the build plan with
+ * notifyRuleBuilt(). The build plan can then deduce new rules that are ready.
+ * This goes on until there are no more rules to build.
  *
  * Usage:
  *

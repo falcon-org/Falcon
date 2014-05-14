@@ -36,8 +36,8 @@ Rule*       Node::getChild()       { return childRule_; }
 
 void Node::setChild(Rule* rule) {
   if (childRule_ != nullptr) {
-    std::string message = "Invalide Graph -> Node '" + getPath()
-                        + "' has already a child";
+    std::string message = "Invalid Graph -> Node '" + getPath()
+                        + "' already has a child";
     THROW_ERROR(EINVAL, message.c_str());
   }
   childRule_ = rule;
@@ -57,9 +57,8 @@ bool Node::isExplicitDependency() const { return isExpicitDependency_; }
 
 State const& Node::getState() const { return state_; }
 State&       Node::getState()       { return state_; }
-bool Node::isDirty() const { return state_ == State::OUT_OF_DATE; }
-
 void Node::setState(State state) { state_ = state; }
+bool Node::isDirty() const { return state_ == State::OUT_OF_DATE; }
 
 void Node::markDirty() {
   if (isDirty()) {
@@ -82,25 +81,13 @@ void Node::markDirty() {
 }
 
 Timestamp Node::getTimestamp() const { return timestamp_; }
-void Node::setTimestamp(Timestamp t) {
-  DLOG(INFO) << "node(" << path_ << ") update timestamp: ("
-             << timestamp_ << ") -> (" << t << ")";
-  timestamp_ = t;
-}
+void Node::setTimestamp(Timestamp t) { timestamp_ = t; }
 
-void Node::setHash(std::string const& hash) {
-  DLOG(INFO) << "hash(" << getPath() << ") = [" << hash << "]";
-  hash_ = hash;
-}
+void Node::setHash(std::string const& hash) { hash_ = hash; }
 std::string const& Node::getHash() const { return hash_; }
 std::string& Node::getHash() { return hash_; }
-
-void Rule::setHashDepfile(std::string const& hash) {
-  hashDepfile_ = hash;
-}
-std::string const& Rule::getHashDepfile() const {
-  return hashDepfile_;
-}
+void Rule::setHashDepfile(std::string const& hash) { hashDepfile_ = hash; }
+std::string const& Rule::getHashDepfile() const { return hashDepfile_; }
 std::string& Rule::getHashDepfile() { return hashDepfile_; }
 
 bool Node::operator==(Node const& n) const { return getPath() == n.getPath(); }
@@ -126,7 +113,6 @@ void Rule::setNumImplicitInputs(unsigned int n) { numImplicitDeps_ = n; }
 void Rule::addImplicitInput(Node* node) {
   numImplicitDeps_++;
   inputs_.push_back(node);
-
 }
 void Rule::addInput(Node* node) {
   /* Explicit inputs should be set up before implicit ones. */
@@ -169,13 +155,8 @@ void Rule::markDirty() {
 void Rule::setHash(std::string const& hash) { hash_ = hash; }
 std::string const& Rule::getHash() const { return hash_; }
 std::string& Rule::getHash() { return hash_; }
-
-void Node::setHashDepfile(std::string const& hash) {
-  hashDepfile_ = hash;
-}
-std::string const& Node::getHashDepfile() const {
-  return hashDepfile_;
-}
+void Node::setHashDepfile(std::string const& hash) { hashDepfile_ = hash; }
+std::string const& Node::getHashDepfile() const { return hashDepfile_; }
 std::string& Node::getHashDepfile() { return hashDepfile_; }
 
 Timestamp Rule::getTimestamp() const { return timestamp_; }
