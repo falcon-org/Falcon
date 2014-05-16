@@ -73,7 +73,8 @@ You need to following libraries:
 - thrift-compiler, python-thrift;
 - libgit2;
 - libboost-program-options-dev;
-- libgoogle-glog-dev.
+- libgoogle-glog-dev;
+- ijson for python (pip install ijson).
 
 You will also need to build and install Watchman
 (https://github.com/facebook/watchman).
