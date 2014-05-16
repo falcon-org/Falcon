@@ -50,7 +50,7 @@ enum class State { UP_TO_DATE, OUT_OF_DATE };
 /** Class that represents a node in the graph. */
 class Node {
  public:
-  explicit Node(const std::string& path, bool isExpicitDependency);
+  explicit Node(const std::string& path, bool isExplicitDependency);
 
   const std::string& getPath() const;
 
@@ -124,7 +124,7 @@ class Node {
    * An explicit dependency is a dependency defined in the graph file, contrary
    * to an implicit dependency which is a dependency discovered at build
    * time. */
-  bool isExpicitDependency_;
+  bool isExplicitDependency_;
 
   State state_;
   Timestamp timestamp_;
