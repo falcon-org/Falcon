@@ -95,3 +95,16 @@ target_link_libraries(falcond
 set (CMAKE_CXX_FLAGS "-Wall -std=c++11 -ggdb3")
 
 set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG")
+
+
+install(
+  PROGRAMS
+    ${CMAKE_BINARY_DIR}/falcond
+    ${CMAKE_SOURCE_DIR}/clients/python/falcon
+  DESTINATION bin)
+install(
+  FILES
+    ${CMAKE_SOURCE_DIR}/clients/python/FalconService.py
+    ${CMAKE_SOURCE_DIR}/clients/python/ttypes.py
+    ${CMAKE_SOURCE_DIR}/clients/python/BuildOutputParser.py
+  DESTINATION bin)

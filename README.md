@@ -75,6 +75,9 @@ You need to following libraries:
 - libboost-program-options-dev;
 - libgoogle-glog-dev.
 
+You will also need to build and install Watchman
+(https://github.com/facebook/watchman).
+
 ## Build
 
 We use CMake to build falcon.
@@ -84,6 +87,7 @@ mkdir build
 cd build
 cmake ..
 make
+sudo make install
 ```
 
 Note: we plan on making it possible to use Falcon to build itself once we
