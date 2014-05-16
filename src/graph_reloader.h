@@ -13,6 +13,7 @@ namespace falcon {
 
 class CacheManager;
 
+
 class GraphReloader {
 public:
   GraphReloader(Graph* original, Graph* newGraph, WatchmanClient& watchman,
@@ -26,6 +27,29 @@ private:
   Graph* new_;
   WatchmanClient& watchman_;
   CacheManager* cache_;
+
+private:
+
+  typedef struct {
+    bool updateHash;
+    bool updateDepsHash;
+  } res;
+
+  void updateRoots();
+
+  res updateSubGraph(Node* node, Node const* newNode);
+  res updateSubGraph(Rule* rule, Rule const* newRule);
+
+  Rule* createNewRule(Rule const* newRule);
+  void deleteChildRule(Node* node);
+  void deleteParentRule(Node* node, Rule const* rule);
+
+  Node* createNewNode(Node const* newNode);
+  void clearSubGraph(Node* n);
+
+private:
+  NodeMap originalNodes_;
+  NodeSet nodesSeen_;
 };
 
 }

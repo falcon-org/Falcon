@@ -320,7 +320,6 @@ void DaemonInstance::reloadGraph() {
     checkGraphLoop(*graphPtr);
   } catch (Exception& e) {
     LOG(ERROR) << e.getErrorMessage();
-    delete graphPtr.release();
     return;
   }
 

@@ -45,10 +45,6 @@ class GraphParser {
      * Generate mandatory Nodes (node to monitor the graph file) */
     void generateMandatoryNodes();
 
-    /**
-     * Generate mandatory Nodes (node to monitor the graph file) */
-    void generateMandatoryNodes();
-
     std::unique_ptr<Graph> graph_;
 
     /**
