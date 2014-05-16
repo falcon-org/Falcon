@@ -79,7 +79,8 @@ You need to following libraries:
 
 We use CMake to build falcon.
 
-```mkdir build
+```
+mkdir build
 cd build
 cmake ..
 make
