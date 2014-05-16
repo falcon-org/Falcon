@@ -28,7 +28,8 @@ class FalconServiceHandler : virtual public FalconServiceIf {
 
   /* See thrift/FalconService.thrift for a description of these commands. */
   int64_t getPid();
-  StartBuildResult::type startBuild(int32_t numThreads, bool lazyFetch);
+  StartBuildResult::type startBuild(const std::set<std::string>& targets,
+                                    int32_t numThreads, bool lazyFetch);
   FalconStatus::type getStatus();
   void getDirtySources(std::set<std::basic_string<char>>& sources);
   void getDirtyTargets(std::set<std::basic_string<char>>& targets);

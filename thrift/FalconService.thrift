@@ -9,7 +9,7 @@ enum StartBuildResult {
   BUSY        /* A build is already ongoing. */
 }
 
-exception InvalidGraphError {
+exception InvalidBuildError {
   1:string desc;
 }
 
@@ -20,8 +20,9 @@ service FalconService {
   i64 getPid()
 
   /* Start a build. */
-  StartBuildResult startBuild(1:i32 numThreads, 2:bool lazyFetch)
-    throws(1:InvalidGraphError e)
+  StartBuildResult startBuild(1:set<string> targets, 2:i32 numThreads,
+                              3:bool lazyFetch)
+                              throws(1:InvalidBuildError e)
 
   /* Get the current status of the daemon. */
   FalconStatus getStatus()

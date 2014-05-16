@@ -78,7 +78,7 @@ void DaemonInstance::checkSourcesMissing() {
       }
       oss << (*it)->getPath();
     }
-    InvalidGraphError e;
+    InvalidBuildError e;
     e.desc = oss.str();
     throw e;
   }
@@ -86,8 +86,8 @@ void DaemonInstance::checkSourcesMissing() {
 
 /* Commands */
 
-StartBuildResult::type DaemonInstance::startBuild(int32_t numThreads,
-                                                  bool lazyFetch) {
+StartBuildResult::type DaemonInstance::startBuild(
+    const std::set<std::string>& targets, int32_t numThreads, bool lazyFetch) {
   assert(graph_);
 
   if (isBuilding_.load(std::memory_order_acquire)) {
@@ -102,12 +102,24 @@ StartBuildResult::type DaemonInstance::startBuild(int32_t numThreads,
 
   FALCON_CHECK_GRAPH_CONSISTENCY(graph_.get(), mutex_);
 
+  NodeSet targetsToBuild;
+  if (targets.empty()) {
+    targetsToBuild = graph_->getRoots();
+  } else {
+    for (auto it = targets.begin(); it != targets.end(); ++it) {
+      auto itFind = graph_->getNodes().find(*it);
+      if (itFind == graph_->getNodes().end()) {
+        InvalidBuildError e;
+        e.desc = "Unknown target " + *it;
+        throw e;
+      } else {
+        targetsToBuild.insert(itFind->second);
+      }
+    }
+  }
+
   isBuilding_.store(true, std::memory_order_release);
-
   streamServer_.newBuild(buildId_);
-
-  /* TODO: the user should be able to explicitly give the targets to build. */
-  NodeSet& targetsToBuild = graph_->getRoots();
 
   if (lazyFetch) {
     {

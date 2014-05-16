@@ -91,14 +91,14 @@ def connectSpawnIfNeeded():
   else:
     return r
 
-def build(client, numThreads, displayJson, noLazyFetch):
+def build(client, targets, numThreads, displayJson, noLazyFetch):
   """Start a build"""
   try:
-    r = client.startBuild(numThreads, not noLazyFetch)
+    r = client.startBuild(targets, numThreads, not noLazyFetch)
     if r == 1:
       print "Already building..."
       return False
-  except InvalidGraphError as e:
+  except InvalidBuildError as e:
     print e.desc
     return False
 
@@ -266,7 +266,8 @@ def main(argv):
 
   if args.build != None:
     # TODO: pass the array of targets to build.
-    ret = 0 if build(client, args.jobs, args.json, args.no_lazy_fetch) else 1
+    ret = 0 if build(client, args.build, args.jobs, args.json,
+        args.no_lazy_fetch) else 1
   elif args.get_dirty_sources:
     data = client.getDirtySources()
     print json.dumps(list(data))
