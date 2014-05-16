@@ -63,3 +63,34 @@ important missing parts:
 - We plan on building a CMake generator for the graph configuration file;
 - The reload of the graph configuration file is not fully working yet;
 - Distributed caching is not implemented.
+
+## System Requirements
+
+Falcon is known to compile on Ubuntu 13.10.
+
+You need to following libraries:
+
+- thrift-compiler, python-thrift;
+- libgit2;
+- libboost-program-options-dev;
+- libgoogle-glog-dev.
+
+## Build
+
+We use CMake to build falcon.
+
+```mkdir build
+cd build
+cmake ..
+make
+```
+
+Note: we plan on making it possible to use Falcon to build itself once we
+implement the CMake generator.
+
+## Usage
+
+Falcon is made of a binary "falcond" that acts as the daemon that monitors the
+files of your project and builds it. We also provide a python client which you
+must use to trigger a build (see ./clients/python/falcon).
+
