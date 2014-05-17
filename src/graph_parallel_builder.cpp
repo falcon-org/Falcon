@@ -136,7 +136,7 @@ bool GraphParallelBuilder::tryBuildRuleFromCache(Rule *rule) {
   }
 
   /* Notify the consumer that all the outputs were retrieved from the cache. */
-  auto outputs = rule->getOutputs();
+  auto& outputs = rule->getOutputs();
   for (auto it = outputs.begin(); it != outputs.end(); it++) {
     consumer_->cacheRetrieveAction((*it)->getPath());
   }
@@ -148,7 +148,7 @@ bool GraphParallelBuilder::tryBuildRuleFromCache(Rule *rule) {
 }
 
 void GraphParallelBuilder::markOutputsUpToDate(Rule *rule) {
-  auto outputs = rule->getOutputs();
+  auto& outputs = rule->getOutputs();
   for (auto it = outputs.begin(); it != outputs.end(); it++) {
     (*it)->setState(State::UP_TO_DATE);
     /* Notify the parents of this output that one of their inputs is ready. */
@@ -202,7 +202,7 @@ void GraphParallelBuilder::onRuleFinished(Rule* rule) {
   markOutputsUpToDate(rule);
 
   /* Mark all the inputs that are source files up to date. */
-  auto inputs = rule->getInputs();
+  auto& inputs = rule->getInputs();
   for (auto it = inputs.begin(); it != inputs.end(); it++) {
     if ((*it)->getChild() == nullptr) {
       (*it)->setState(State::UP_TO_DATE);

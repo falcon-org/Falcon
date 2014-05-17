@@ -35,7 +35,7 @@ void GraphDependencyScan::scan() {
 
   /* Now do a DFS on the whole graph to scan dependencies that need to be
    * rebuilt and recompute hashes. */
-  NodeSet roots = graph_.getRoots();
+  auto& roots = graph_.getRoots();
   for (auto it = roots.begin(); it != roots.end(); ++it) {
     updateNode(*it);
   }
@@ -60,7 +60,7 @@ void GraphDependencyScan::statNode(Node* n) {
 }
 
 Node* GraphDependencyScan::getOldestOutput(Rule *r) {
-  auto outputs = r->getOutputs();
+  auto& outputs = r->getOutputs();
   assert(!r->getOutputs().empty());
   auto itOldestOutput = std::min_element(outputs.cbegin(), outputs.cend(),
       [](Node const* o1, Node const* o2) {
@@ -77,7 +77,7 @@ bool GraphDependencyScan::compareInputsWithOutputs(Rule *r) {
   Node* oldestOutput = getOldestOutput(r);
   assert(oldestOutput != nullptr);
 
-  auto inputs  = r->getInputs();
+  auto& inputs  = r->getInputs();
   for (auto it = inputs.begin(); it != inputs.end(); it++) {
     Node* input = *it;
     if (input->getTimestamp() > oldestOutput->getTimestamp()) {
@@ -141,7 +141,7 @@ bool GraphDependencyScan::updateRule(Rule* r) {
   bool isDirty = false;
 
   /* Traverse all the inputs. */
-  auto inputs  = r->getInputs();
+  auto& inputs  = r->getInputs();
   for (auto it = inputs.begin(); it != inputs.end(); it++) {
     if (updateNode(*it)) {
       isDirty = true;

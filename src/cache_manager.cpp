@@ -58,7 +58,7 @@ void CacheManager::saveRule(Rule *rule) {
   }
 
   /* Save all the outputs. */
-  auto outputs = rule->getOutputs();
+  auto& outputs = rule->getOutputs();
   for (auto it = outputs.begin(); it != outputs.end(); it++) {
     if (!saveNode(*it)) {
       LOG(ERROR) << "could not save " << (*it)->getPath() << " in cache";
@@ -84,7 +84,7 @@ bool CacheManager::restoreRule(Rule *rule) {
   }
 
   /* Check we have all the outputs in cache. */
-  auto outputs = rule->getOutputs();
+  auto& outputs = rule->getOutputs();
   for (auto it = outputs.begin(); it != outputs.end(); it++) {
     if (!cacheFs_.hasEntry((*it)->getHash())) {
       return false;

@@ -39,7 +39,7 @@ GraphConsistencyChecker::GraphConsistencyChecker(Graph* graph)
   , isConsistent_(true) { }
 
 void GraphConsistencyChecker::check() {
-  auto roots = graph_->getRoots();
+  auto& roots = graph_->getRoots();
 
   for (auto it = roots.begin(); it != roots.end(); it++) {
     checkNode(*it);
@@ -94,8 +94,8 @@ void GraphConsistencyChecker::checkRule(Rule* rule) {
   }
   rulesSeen_.insert(rule);
 
-  auto outputs = rule->getOutputs();
-  auto inputs = rule->getInputs();
+  auto& outputs = rule->getOutputs();
+  auto& inputs = rule->getInputs();
 
   /* A rule must have at least one output. */
   FCHECK(!outputs.empty()) << "Rule " << rule << " has no output.";

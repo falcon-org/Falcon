@@ -48,7 +48,7 @@ void BuildPlan::addTarget(Node* target) {
   } else {
     /* Traverse the graph to add any other rule that will build the required
      * inputs. */
-    auto inputs = rule->getInputs();
+    auto& inputs = rule->getInputs();
     for (auto it = inputs.begin(); it != inputs.end(); ++it) {
       addTarget(*it);
     }
@@ -75,9 +75,9 @@ void BuildPlan::notifyRuleBuilt(Rule *rule) {
   assert(itRule != rules_.end());
 
   /* Traverse the outputs to find any rule that became ready. */
-  auto outputs = rule->getOutputs();
+  auto& outputs = rule->getOutputs();
   for (auto it = outputs.begin(); it != outputs.end(); ++it) {
-    auto parentRules = (*it)->getParents();
+    auto& parentRules = (*it)->getParents();
     for (auto it2 = parentRules.begin(); it2 != parentRules.end(); ++it2) {
       Rule *parentRule = *it2;
       /* If the rule is ready and in the plan, add it to readyRules_. */
