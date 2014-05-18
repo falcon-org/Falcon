@@ -37,8 +37,53 @@ Graph* GraphReloader::getUpdatedGraph() {
   return original_;
 }
 
+/* Helper to find a Node in the given NodeArray */
+Node* GraphReloader::getNodeFromSource(NodeArray& source, Node* newNode) {
+  Node* node = nullptr;
+
+  auto nodeIt = std::find_if(source.begin(), source.end(),
+      [newNode](Node* n) { return newNode->getPath() == n->getPath(); }
+    );
+
+  if (nodeIt != source.end()) {
+    node = *nodeIt;
+    /* Erase it from the given NodeArray */
+    source.erase(nodeIt);
+    /* Erase the occurence from the originalNodes_ (remember the remaining
+     * nodes in this array will be deleted at the end) */
+    originalNodes_.erase(node->getPath());
+  }
+
+  return node;
+}
+
+/* Helper to find a Node from:
+ *  -- originalNodes_ (the node comes from the original graph and hasn't been
+ *                     visited yet)
+ *  or original_ (the node has been visited or created and already exist in the
+ *                updated graph)
+ *  or create it */
+Node* GraphReloader::getNodeFromAll(Node* newNode) {
+  Node* node = nullptr;
+
+  auto nodeItPair = originalNodes_.find(newNode->getPath());
+  if (nodeItPair == originalNodes_.end()) {
+    nodeItPair = original_->nodes_.find(newNode->getPath());
+
+    if (nodeItPair == originalNodes_.end()) {
+      node = createNewNode(newNode);
+    } else {
+      node = nodeItPair->second;
+    }
+  } else {
+    node = nodeItPair->second;
+    originalNodes_.erase(nodeItPair);
+  }
+
+  return node;
+}
+
 void GraphReloader::updateRoots() {
-  /* Rebuild the Graph from the roots: */
   originalNodes_ = original_->nodes_;
   original_->nodes_.clear();
   original_->roots_.clear();
@@ -47,19 +92,10 @@ void GraphReloader::updateRoots() {
   for (auto it = new_->getRoots().cbegin();
        it != new_->getRoots().cend();
        ++it) {
-    auto rootIt = originalNodes_.find((*it)->getPath());
-    Node* root = nullptr;
+    Node* root = getNodeFromAll(*it);
 
-    if (rootIt == originalNodes_.end()) {
-      /* TODO: even if the node has been already visited, we don't know yet if
-       * it is a root node. So, we may need to look on the original_->nodes_ */
-      /* This is a new root (a new Node): create it. */
-      root = createNewNode(*it);
-    } else {
-      root = rootIt->second;
-      /* Remove it from the originalNodes */
-      originalNodes_.erase(rootIt);
-    }
+    DLOG(INFO) << "Update graph root: " << root->getPath();
+
     res ret = updateSubGraph(root, *it);
     if (ret.updateHash || ret.updateDepsHash) {
       hash::updateNodeHash(*root, ret.updateHash, ret.updateDepsHash);
@@ -69,19 +105,23 @@ void GraphReloader::updateRoots() {
     original_->roots_.insert(root);
   }
 
+  /* Delete no longer needed nodes */
   for (auto it = originalNodes_.begin(); it != originalNodes_.end(); ++it) {
-    /* request watchman stop to wath it */
-    DLOG(INFO) << "delete node: " << it->first << " parents("
-               << it->second->parentRules_.size() << ")";
     assert(it->second->parentRules_.empty());
+
+    /* request watchman stop to wath it */
     watchman_.unwatchNode(*(it->second));
 
     if (!it->second->isSource()) {
       deleteChildRule(it->second);
+      /* TODO: At this point, the output can be deleted?
+       * -1- unlink the file or remove the directory ?
+       * -2- if it is a socket ? close it and remove it ?
+       * -3- if it is a symbolic link ?
+       * -4- a named pipe ? */
     }
+
     original_->nodes_.erase(it->first);
-  }
-  for (auto it = originalNodes_.begin(); it != originalNodes_.end(); ++it) {
     delete it->second;
   }
 }
@@ -95,27 +135,31 @@ GraphReloader::updateSubGraph(Node* node, Node const* newNode) {
   }
   nodesSeen_.insert(node);
 
-  DLOG(INFO) << "update Node(" << node->getPath() << ")";
-
   if (node->isSource() && newNode->isSource()) {
+    DLOG(INFO) << "  node '" << node->getPath() << "' is a source file";
     /* Nothing to change here, the node still a source file
-     * just insert it in the Graph sources set */
+     * just insert it in the Sources Set */
     original_->sources_.insert(node);
-  } else if (node->isSource() && !newNode->isSource()) {
-    /* The Node used to be a Source file. But is now an output of a rule.
-     * Create it: */
-    createNewRule(newNode->getChild());
-    r.updateHash = true;
   } else if (!node->isSource() && newNode->isSource()) {
+    DLOG(INFO) << "  node '" << node->getPath() << "' is now a source file";
     /* The node is now a source */
     deleteChildRule(node);
     statNode(node);
     original_->sources_.insert(node);
     r.updateHash = true;
-  } else {
+  } else { /* !newNode->isSource() */
+    if (node->isSource()) {
+      DLOG(INFO) << "  node '" << node->getPath() << "' is now an output";
+      /* The Node used to be a Source file. But is now an output of a rule.
+       * Create it: */
+      Rule* rule = createNewRule(newNode->getChild(), node);
+      original_->rules_.push_back(rule);
+    }
     /* Update the sub rule */
     res ret = updateSubGraph(node->getChild(), newNode->getChild());
-    hash::updateRuleHash(*node->getChild(), ret.updateHash, ret.updateDepsHash);
+    if (ret.updateHash || ret.updateDepsHash) {
+      hash::updateRuleHash(*node->getChild(), ret.updateHash, ret.updateDepsHash);
+    }
     r.updateHash = ret.updateHash;
     r.updateDepsHash = ret.updateDepsHash;
   }
@@ -128,6 +172,8 @@ GraphReloader::updateSubGraph(Node* node, Node const* newNode) {
   return r;
 }
 
+
+/* Even if there is no modification, we un-build and then re-build the rule */
 GraphReloader::res
 GraphReloader::updateSubGraph(Rule* rule, Rule const* newRule) {
   res r = { .updateHash = false, .updateDepsHash = false };
@@ -137,49 +183,33 @@ GraphReloader::updateSubGraph(Rule* rule, Rule const* newRule) {
   NodeArray implicitDepsBefore(rule->inputs_.end() - rule->numImplicitDeps_,
                                rule->inputs_.end());
 
-  rule->inputs_.clear();
-  rule->numInputsReady_ = 0;
+  rule->inputs_.clear(); /* Clear inputs */
+  rule->numInputsReady_ = 0; /* no input, so no input ready */
 
+  /* Build inputs */
   for (auto it = newRule->inputs_.begin(); it != newRule->inputs_.end(); ++it) {
     Node* node = nullptr;
 
-    { /* retrieve or create the corresponding node
-       * -1- try to find it in the current input */
-      auto nodeIt = std::find_if(inputs.begin(), inputs.end(),
-          [it](Node* n) { return (*it)->getPath() == n->getPath(); }
-        );
+    /* look if the node comes from the original rule */
+    node = getNodeFromSource(inputs, *it);
+    if (node == nullptr) {
+      /* The node wasn't in the original rule's input:
+       * So this is a new node (at least from the rule point of view)
+       *
+       * The rule has been changed: we need to update the hash */
+      r.updateHash = true;
 
-      if (nodeIt != inputs.end()) {
-        /* If the node was already in the input */
-        node = *nodeIt;
-        inputs.erase(nodeIt);
-        originalNodes_.erase(node->getPath());
-      } else {
-        /* The rule has changed, we need to update the hash */
-        r.updateHash = true;
+      /* Get it from the the already existing Node or create it */
+      node = getNodeFromAll(*it);
 
-        /* -2- we are going to add a new Input, try to find it in the existing
-         * Nodes or creat it if needed */
-        auto nodeItPair = originalNodes_.find((*it)->getPath());
-        if (nodeItPair == originalNodes_.end()) {
-          nodeItPair = original_->nodes_.find((*it)->getPath());
-          if (nodeItPair == originalNodes_.end()) {
-            node = createNewNode(*it);
-          } else {
-            node = nodeItPair->second;
-          }
-        } else {
-          node = nodeItPair->second;
-          originalNodes_.erase(nodeItPair);
-        }
-        /* Since the node wasn't yet in the rule inputs, we need to add the
-         * rule in its parent rules */
-        node->addParentRule(rule);
-      }
+      /* Since the node wasn't yet in the rule's inputs, we need to add the
+       * rule in its parent rules */
+      node->addParentRule(rule);
     }
 
-    /* Update the input subgraph */
     assert(node->isExplicitDependency());
+
+    /* Update the input subgraph */
     res ret = updateSubGraph(node, *it);
     if (ret.updateHash || ret.updateDepsHash) {
       hash::updateNodeHash(*node, ret.updateHash, ret.updateDepsHash);
@@ -187,19 +217,62 @@ GraphReloader::updateSubGraph(Rule* rule, Rule const* newRule) {
     r.updateHash |= ret.updateHash;
     r.updateDepsHash |= ret.updateDepsHash;
 
-    DLOG(INFO) << "add input node: " << node->getPath();;
     rule->inputs_.push_back(node);
     if (node->isSource() || node->getState() == State::UP_TO_DATE) {
       rule->markInputReady();
     }
   }
+  /* Remove no longer needed inputs */
   for (auto it = inputs.begin(); it != inputs.end(); ++it) {
     deleteParentRule(*it, rule);
     clearSubGraph(*it);
-    DLOG(INFO) << "remove input: " << (*it)->getPath();
+    /* At this point, we don't need to really delete the node:
+     * the node may be needed in future and if not it will be deleted at the
+     * end */
   }
 
+  NodeArray outputs(rule->outputs_); /* Save the outputs */
+  rule->outputs_.clear();
+
+  /* build the rule's outputs */
+  for (auto it = newRule->outputs_.begin(); it != newRule->outputs_.end(); ++it) {
+    Node* node = nullptr;
+
+    /* get it from the original output */
+    node = getNodeFromSource(outputs, *it);
+    if (node == nullptr) {
+      /* This is a new output (at least from the rule point of view):
+       * So the rule has been changed: we will need to update the hash: */
+      r.updateHash = true;
+
+      /* Get it from the already existing Node or create it */
+      node = getNodeFromAll(*it);
+
+      /* Since the node wasn't yet in the rule inputs, we need to add the
+       * rule in its parent rules */
+      node->addParentRule(rule);
+    }
+
+    rule->outputs_.push_back(node);
+  }
+  /* Delete the no longer needed ouputs */
+  for (auto it = outputs.begin(); it != outputs.end(); ++it) {
+    deleteChildRule(*it);
+    /* At this point, we don't need to really delete the node:
+     * the node may be needed in future and if not it will be deleted at the
+     * end */
+  }
+
+  if (rule->getCommand() != newRule->getCommand()) {
+    rule->setCommand(newRule->getCommand());
+    r.updateHash = true;
+    r.updateDepsHash = true;
+  }
+
+  /* Rebuild depfile */
   if (rule->getDepfile() != newRule->getDepfile()) {
+    /* This is a new depfile:
+     * so: reset the depfile, and clear the implicitDeps */
     r.updateDepsHash = true;
     rule->setDepfile(newRule->getDepfile());
     rule->numImplicitDeps_ = 0;
@@ -210,9 +283,8 @@ GraphReloader::updateSubGraph(Rule* rule, Rule const* newRule) {
       deleteParentRule(*it, rule);
     }
   } else {
-    /* re-insert the deps */
+    /* The depfile remains the same: re-insert the implicitDeps. */
     for (auto it = implicitDepsBefore.begin(); it != implicitDepsBefore.end(); ++it) {
-      DLOG(INFO) << "Re-use dep file: " << (*it)->getPath();
       assert(!(*it)->isExplicitDependency());
       rule->inputs_.push_back(*it);
       originalNodes_.erase((*it)->getPath());
@@ -223,61 +295,11 @@ GraphReloader::updateSubGraph(Rule* rule, Rule const* newRule) {
     }
   }
 
-  NodeArray outputs(rule->outputs_);
-  rule->outputs_.clear();
-
-  for (auto it = newRule->outputs_.begin(); it != newRule->outputs_.end(); ++it) {
-    Node* node = nullptr;
-
-    { /* retrieve or create the corresponding node
-       * -1- try to find it in the current input */
-      auto nodeIt = std::find_if(outputs.begin(), outputs.end(),
-          [it](Node* n) { return (*it)->getPath() == n->getPath(); }
-        );
-
-      if (nodeIt != outputs.end()) {
-        /* If the node was already in the input */
-        node = *nodeIt;
-        outputs.erase(nodeIt);
-        originalNodes_.erase(node->getPath());
-      } else {
-        /* The rule has changed, we need to update the hash */
-        r.updateHash = true;
-
-        /* -2- we are going to add a new Input, try to find it in the existing
-         * Nodes or creat it if needed */
-        auto nodeItPair = originalNodes_.find((*it)->getPath());
-        if (nodeItPair == originalNodes_.end()) {
-          nodeItPair = original_->nodes_.find((*it)->getPath());
-          if (nodeItPair == originalNodes_.end()) {
-            node = createNewNode(*it);
-          } else {
-            node = nodeItPair->second;
-          }
-        } else {
-          node = nodeItPair->second;
-          originalNodes_.erase(nodeItPair);
-        }
-      }
-    }
-
-    DLOG(INFO) << "add output node: " << node->getPath();;
-    rule->outputs_.push_back(node);
-  }
-  for (auto it = outputs.begin(); it != outputs.end(); ++it) {
-    deleteChildRule(*it);
-    DLOG(INFO) << "delete child rule of " << (*it)->getPath();
-  }
-
-  if (rule->getCommand() != newRule->getCommand()) {
-    rule->setCommand(newRule->getCommand());
-    r.updateHash = true;
-    r.updateDepsHash = true;
-  }
-
+  /* If the rule has been changed, mark this rule dirty */
   if (r.updateHash || r.updateDepsHash) {
     rule->setState(State::OUT_OF_DATE);
   }
+
   return r;
 }
 
@@ -297,7 +319,6 @@ void GraphReloader::deleteChildRule(Node* node) {
     /* In the case there is no longer ouputs for this Rule, we can delete it
      * -1- remove it from the parentRules set in its input nodes */
     for (auto it = rule->inputs_.begin(); it != rule->inputs_.end(); ++it) {
-      DLOG(INFO) << "delete parent rule of " << (*it)->getPath();
       deleteParentRule(*it, rule);
     }
     { /* -2- delete it from the graph rule Array */
@@ -320,67 +341,15 @@ void GraphReloader::deleteParentRule(Node* node, Rule const* rule) {
   }
 }
 
-Rule* GraphReloader::createNewRule(Rule const* newRule) {
+Rule* GraphReloader::createNewRule(Rule const* newRule, Node* output) {
   NodeArray inputs;
   NodeArray outputs;
 
   Rule* rule = new Rule(inputs, outputs);
 
-  for (auto it = newRule->outputs_.begin();
-       it != newRule->outputs_.end(); ++it) {
-    auto nodeIt = original_->nodes_.find((*it)->getPath());
-    Node* node = nullptr;
-    if (nodeIt == original_->nodes_.end()) {
-      node = createNewNode(*it);
-    } else {
-      node = nodeIt->second;
-    }
+  rule->outputs_.push_back(output);
+  output->setChild(rule);
 
-    rule->outputs_.push_back(node);
-    node->setChild(rule);
-  }
-
-  for (auto it = newRule->inputs_.begin();
-       it != newRule->inputs_.end(); ++it) {
-    /* Try to find it in the NodeMap of not-already-analyzed Nodes */
-    auto nodeIt = originalNodes_.find((*it)->getPath());
-    Node* node = nullptr;
-
-    if (nodeIt == originalNodes_.end()) {
-      /* if it is not in the map of not-already analyzed, check if this node
-       * already exist: */
-      nodeIt = original_->nodes_.find((*it)->getPath());
-      if (nodeIt == original_->nodes_.end()) {
-        /* if this Node is new: create it */
-        node = createNewNode(*it);
-      } else {
-        /* This node exist and was already updated  */
-        node = nodeIt->second;
-      }
-    } else {
-      node = nodeIt->second;
-      originalNodes_.erase(nodeIt);
-    }
-    res ret = updateSubGraph(node, *it);
-    if (ret.updateHash || ret.updateDepsHash) {
-      hash::updateNodeHash(*node, ret.updateHash, ret.updateDepsHash);
-    }
-
-    rule->inputs_.push_back(node);
-    node->addParentRule(rule);
-
-    if (node->isSource() || node->getState() == State::UP_TO_DATE) {
-      rule->markInputReady();
-    }
-  }
-
-  rule->setCommand(newRule->getCommand());
-  rule->setDepfile(newRule->getDepfile());
-
-  original_->rules_.push_back(rule);
-
-  hash::updateRuleHash(*rule, true, true);
-  rule->setState(State::OUT_OF_DATE);
   return rule;
 }
 
