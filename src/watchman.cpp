@@ -84,7 +84,8 @@ void WatchmanClient::startWatchmanInstance() {
   ss << "watchman"
      << " --no-save-state"
      << " --sockname=\"" << socketPath_ << "\""
-     << " --logfile=\"" << logPath_ << "\"";
+     << " --logfile=\"" << logPath_ << "\""
+     << " get-pid";
 
   BufferStreamConsumer consumer;
   PosixSubProcess p(ss.str(), workingDirectory_, 0, &consumer);
