@@ -80,6 +80,7 @@ class Node {
   State const& getState() const;
   State& getState();
   bool isDirty() const;
+  /* This will restore isLazyFetched_ to false. */
   void setState(State state);
 
   /**
@@ -97,6 +98,12 @@ class Node {
   void setHashDepfile(std::string const&);
   std::string const& getHashDepfile() const;
   std::string& getHashDepfile();
+
+  bool isLazyFetched() const;
+  /** Mark the node as lazy fetched. (see isLazyFetched_).
+   * Note: any call to setState() that follows will reset isLazyFetched_ to
+   * false. */
+  void setLazyFetched(bool val);
 
   /* Operators */
   bool operator==(Node const& n) const;
@@ -125,6 +132,12 @@ class Node {
    * to an implicit dependency which is a dependency discovered at build
    * time. */
   bool isExplicitDependency_;
+
+  /* Set to true if this node was lazy fetched from the cache. This should not
+   * be true if the node is out of date.
+   * If a node is lazy fetched, this means that some of the nodes that take part
+   * in building this node are potentially dirty. */
+  bool isLazyFetched_;
 
   State state_;
   Timestamp timestamp_;

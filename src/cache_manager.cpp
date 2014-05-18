@@ -78,6 +78,16 @@ void CacheManager::saveRule(Rule *rule) {
   }
 }
 
+bool CacheManager::restoreNode(Node* node) {
+  if (!cacheFs_.hasEntry(node->getHash())) {
+    return false;
+  }
+  if (policy_ == Policy::CACHE_GIT_REFS) {
+    gitDirectory_.registerNode(node->getHash(), node);
+  }
+  return cacheFs_.readEntry(node->getHash(), node->getPath());
+}
+
 bool CacheManager::restoreRule(Rule *rule) {
   if (rule->isPhony()) {
     return false;

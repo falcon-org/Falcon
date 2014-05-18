@@ -47,7 +47,7 @@ class DaemonInstance {
   /* Commands.
    * See thrift/FalconService.thrift for a description of these commands. */
 
-  StartBuildResult::type startBuild(int32_t numThreads);
+  StartBuildResult::type startBuild(int32_t numThreads, bool lazyFetch);
   FalconStatus::type getStatus();
   void getDirtySources(std::set<std::basic_string<char>>& sources);
   void getDirtyTargets(std::set<std::basic_string<char>>& targets);

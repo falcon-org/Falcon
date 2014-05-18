@@ -54,6 +54,13 @@ class CacheManager {
   void saveRule(Rule* rule);
 
   /**
+   * Try to restore a node from the cache.
+   * @param node Node to be restored.
+   * @return true if the node was succesfully restored.
+   */
+  bool restoreNode(Node* node);
+
+  /**
    * Try to restore all the outputs of the given rule from the cache.
    * @param rule Rule to be restored.
    * @return true if the rule was successfully restored, ie all outputs were

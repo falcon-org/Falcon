@@ -57,14 +57,10 @@ bool Node::isExplicitDependency() const { return isExplicitDependency_; }
 
 State const& Node::getState() const { return state_; }
 State&       Node::getState()       { return state_; }
-void Node::setState(State state) { state_ = state; }
+void Node::setState(State state) { state_ = state; isLazyFetched_ = false; }
 bool Node::isDirty() const { return state_ == State::OUT_OF_DATE; }
 
 void Node::markDirty() {
-  if (isDirty()) {
-    return;
-  }
-
   /* Mark all the parent rules dirty and increase their counter of dirty
    * inputs. */
   for (auto it = parentRules_.begin(); it != parentRules_.end(); ++it) {
@@ -86,9 +82,12 @@ void Node::setTimestamp(Timestamp t) { timestamp_ = t; }
 void Node::setHash(std::string const& hash) { hash_ = hash; }
 std::string const& Node::getHash() const { return hash_; }
 std::string& Node::getHash() { return hash_; }
-void Rule::setHashDepfile(std::string const& hash) { hashDepfile_ = hash; }
-std::string const& Rule::getHashDepfile() const { return hashDepfile_; }
-std::string& Rule::getHashDepfile() { return hashDepfile_; }
+void Node::setHashDepfile(std::string const& hash) { hashDepfile_ = hash; }
+std::string const& Node::getHashDepfile() const { return hashDepfile_; }
+std::string& Node::getHashDepfile() { return hashDepfile_; }
+
+bool Node::isLazyFetched() const { return isLazyFetched_; }
+void Node::setLazyFetched(bool val) { isLazyFetched_ = val; }
 
 bool Node::operator==(Node const& n) const { return getPath() == n.getPath(); }
 bool Node::operator!=(Node const& n) const { return getPath() != n.getPath(); }
@@ -140,10 +139,6 @@ bool Rule::isDirty() const { return state_ == State::OUT_OF_DATE; }
 void Rule::setState(State state) { state_ = state; }
 
 void Rule::markDirty() {
-  if (isDirty()) {
-    return;
-  }
-
   /* Mark all the outputs dirty. */
   for (auto it = outputs_.begin(); it != outputs_.end(); ++it) {
     (*it)->markDirty();
@@ -155,9 +150,9 @@ void Rule::markDirty() {
 void Rule::setHash(std::string const& hash) { hash_ = hash; }
 std::string const& Rule::getHash() const { return hash_; }
 std::string& Rule::getHash() { return hash_; }
-void Node::setHashDepfile(std::string const& hash) { hashDepfile_ = hash; }
-std::string const& Node::getHashDepfile() const { return hashDepfile_; }
-std::string& Node::getHashDepfile() { return hashDepfile_; }
+void Rule::setHashDepfile(std::string const& hash) { hashDepfile_ = hash; }
+std::string const& Rule::getHashDepfile() const { return hashDepfile_; }
+std::string& Rule::getHashDepfile() { return hashDepfile_; }
 
 Timestamp Rule::getTimestamp() const { return timestamp_; }
 void Rule::setTimestamp(Timestamp t) { timestamp_ = t; }

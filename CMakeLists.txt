@@ -43,37 +43,38 @@ target_link_libraries(tests/posix_subprocess
 
 add_executable(falcond
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService.cpp
-  ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService_types.cpp
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService_constants.cpp
+  ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService_types.cpp
+  src/build_plan.cpp
+  src/cache_fs.cpp
+  src/cache_git_directory.cpp
+  src/cache_manager.cpp
+  src/command_server.cpp
   src/daemon_instance.cpp
+  src/depfile.cpp
+  src/depfile_parser.cpp
+  src/fs.cpp
   src/graph.cpp
-  src/graph_hash.cpp
+  src/graph_builder.cpp
+  src/graph_consistency_checker.cpp
   src/graph_cycle.cpp
   src/graph_dependency_scan.cpp
+  src/graph_hash.cpp
+  src/graph_parallel_builder.cpp
   src/graph_printers.cpp
   src/graph_reloader.cpp
   src/graphparser.cpp
-  src/graph_builder.cpp
   src/json/json.c
   src/json/parser.cpp
+  src/lazy_cache.cpp
   src/logging.cpp
   src/main.cpp
   src/options.cpp
   src/posix_subprocess.cpp
   src/posix_subprocess_manager.cpp
-  src/command_server.cpp
   src/stream_consumer.cpp
   src/stream_server.cpp
   src/watchman.cpp
-  src/depfile.cpp
-  src/depfile_parser.cpp
-  src/graph_consistency_checker.cpp
-  src/build_plan.cpp
-  src/graph_parallel_builder.cpp
-  src/cache_manager.cpp
-  src/cache_fs.cpp
-  src/cache_git_directory.cpp
-  src/fs.cpp
   )
 
 include_directories(src

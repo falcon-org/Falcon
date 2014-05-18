@@ -15,6 +15,7 @@
 #include "graph_parallel_builder.h"
 #include "graph_reloader.h"
 #include "graphparser.h"
+#include "lazy_cache.h"
 #include "logging.h"
 #include "watchman.h"
 
@@ -85,7 +86,8 @@ void DaemonInstance::checkSourcesMissing() {
 
 /* Commands */
 
-StartBuildResult::type DaemonInstance::startBuild(int32_t numThreads) {
+StartBuildResult::type DaemonInstance::startBuild(int32_t numThreads,
+                                                  bool lazyFetch) {
   assert(graph_);
 
   if (isBuilding_.load(std::memory_order_acquire)) {
@@ -104,9 +106,22 @@ StartBuildResult::type DaemonInstance::startBuild(int32_t numThreads) {
 
   streamServer_.newBuild(buildId_);
 
-  /* Create a build plan that builds everything.
-   * TODO: the user should be able to explicitly give the targets to build. */
-  plan_.reset(new BuildPlan(graph_->getRoots()));
+  /* TODO: the user should be able to explicitly give the targets to build. */
+  NodeSet& targetsToBuild = graph_->getRoots();
+
+  if (lazyFetch) {
+    {
+      lock_guard g(mutex_);
+      LazyCache lazyCache(targetsToBuild, *cache_, &streamServer_);
+      lazyCache.fetch();
+    }
+    FALCON_CHECK_GRAPH_CONSISTENCY(graph_.get(), mutex_);
+  }
+
+  /* Create a build plan that builds everything. */
+  /* TODO: if lazy fetch is disabled, BuildPlan should make sure that any target
+   * that was lazy fetched in the past is marked dirty. */
+  plan_.reset(new BuildPlan(targetsToBuild));
 
   auto callback = std::bind(&DaemonInstance::onBuildCompleted, this, _1);
   builder_.reset(
@@ -256,10 +271,14 @@ void DaemonInstance::setDirty(const std::string& target) {
       /* This is a source file and it is not missing. */
       sourcesMissing_.erase(node);
     } else {
-      /* This node is an output. Compare its timestamp with the timestamp of the
-       * rule that generated it. If it is younger, it means we are notified
-       * because the file was built by it, so don't mark it dirty. */
-      if (node->getChild()->getTimestamp() >= st.st_mtime) {
+      /* This node is an output. We might be notified because:
+       * - we just ran the rule that generates it. In that case the timestamp of
+       *   the rule should be greater or equal;
+       * - we just lazy fetched the output from the cache. In that case the
+       *   timestamp of the node output should be greater or equal.
+       * In either case, don't mark the output dirty. */
+      if (node->getChild()->getTimestamp() >= st.st_mtime
+          || (node->isLazyFetched() && node->getTimestamp() >= st.st_mtime)) {
         return;
       }
     }

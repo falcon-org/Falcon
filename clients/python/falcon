@@ -91,10 +91,10 @@ def connectSpawnIfNeeded():
   else:
     return r
 
-def build(client, numThreads, displayJson):
+def build(client, numThreads, displayJson, noLazyFetch):
   """Start a build"""
   try:
-    r = client.startBuild(numThreads)
+    r = client.startBuild(numThreads, not noLazyFetch)
     if r == 1:
       print "Already building..."
       return False
@@ -180,9 +180,10 @@ def main(argv):
       nargs='?', default=1, const=multiprocessing.cpu_count(),
       help="Specify the number of commands to run simultaneously. If no value "
       "specified, the value will be deduced from the number of cpus available.")
-
   parser.add_argument('--json', action='store_true',
       help="Print the build output in json format (for debugging).")
+  parser.add_argument('--no-lazy-fetch', action='store_true',
+      help="Do not lazy fetch targets in the cache.")
 
   group = parser.add_mutually_exclusive_group()
   group.add_argument('-b', '--build', metavar='TARGET', nargs='*',
@@ -265,7 +266,7 @@ def main(argv):
 
   if args.build != None:
     # TODO: pass the array of targets to build.
-    ret = 0 if build(client, args.jobs, args.json) else 1
+    ret = 0 if build(client, args.jobs, args.json, args.no_lazy_fetch) else 1
   elif args.get_dirty_sources:
     data = client.getDirtySources()
     print json.dumps(list(data))

@@ -95,10 +95,13 @@ class FalconTest:
                          stdout=FNULL)
     assert(r == 0)
 
-  def build(self):
+  def build(self, lazyFetch = False):
     """Trigger a build.."""
-    data = subprocess.check_output([self._falcon_client, "--no-start",
-                                    "--build", "--json"])
+    p = [self._falcon_client, "--no-start", "--build", "--json"]
+    if not lazyFetch:
+      p.append("--no-lazy-fetch")
+    data = subprocess.check_output(p)
+
     return json.loads(data)
 
   def write_file(self, name, content):

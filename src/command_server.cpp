@@ -24,8 +24,9 @@ int64_t FalconServiceHandler::getPid() {
   return getpid();
 }
 
-StartBuildResult::type FalconServiceHandler::startBuild(int32_t numThreads) {
-  return daemon_->startBuild(numThreads);
+StartBuildResult::type FalconServiceHandler::startBuild(int32_t numThreads,
+                                                        bool lazyFetch) {
+  return daemon_->startBuild(numThreads, lazyFetch);
 }
 
 FalconStatus::type FalconServiceHandler::getStatus() {

@@ -112,7 +112,8 @@ void GraphConsistencyChecker::checkRule(Rule* rule) {
   /* If a rule is out of date, its outputs must be as well. */
   if (rule->isDirty()) {
     for (auto it = outputs.begin(); it != outputs.end(); ++it) {
-      FCHECK((*it)->isDirty()) << "Rule " << rule << " is dirty but it's output "
+      FCHECK((*it)->isLazyFetched() || (*it)->isDirty())
+        << "Rule " << rule << " is dirty but its output "
         << (*it)->getPath() << " is not.";
     }
   }
