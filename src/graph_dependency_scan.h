@@ -44,9 +44,6 @@ class GraphDependencyScan {
    */
   static bool compareInputsWithOutputs(Rule *r);
 
-  /** Stat the given node and update its timestamp. */
-  void statNode(Node* node);
-
   /**
    * Traverse a Node.
    * @param node node to traverse.
@@ -73,6 +70,10 @@ class GraphDependencyScan {
   RuleSet seen_;
   CacheManager* cache_;
 };
+
+
+/** Stat the given node and update its timestamp. */
+void statNode(Node* node);
 
 } // namespace falcon
 

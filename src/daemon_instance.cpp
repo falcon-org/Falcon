@@ -243,6 +243,8 @@ void DaemonInstance::setDirty(const std::string& target) {
 
   if (target == config_->getJsonGraphFile()) {
     reloadGraph();
+    falcon::GraphConsistencyChecker checker(graph_.get());
+    checker.check();
     return;
   }
 
@@ -351,13 +353,12 @@ void DaemonInstance::reloadGraph() {
     checkGraphLoop(*graphPtr);
   } catch (Exception& e) {
     LOG(ERROR) << e.getErrorMessage();
-    delete graphPtr.release();
     return;
   }
 
-  GraphReloader reloader(graph_.release(), graphPtr.release(), watchmanClient_,
-                         cache_.get());
-  graph_ = std::unique_ptr<Graph>(reloader.getUpdatedGraph());
+  sourcesMissing_.clear();
+  GraphReloader reloader(*graph_, *graphPtr, watchmanClient_);
+  reloader.updateGraph();
 }
 
 } // namespace falcon

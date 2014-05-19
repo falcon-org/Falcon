@@ -5,5 +5,8 @@
   "unit.engine" : "FalconUnitTestEngine",
   "load" : [
     "arcanist"
-  ]
+  ],
+  "lint.pylint.codes.error"   : "^F.*",
+  "lint.pylint.codes.warning" : "^(W|E).*",
+  "lint.pylint.codes.advice"  : "^(C|R).*"
 }

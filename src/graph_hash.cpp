@@ -103,6 +103,7 @@ void updateRuleHash(Rule& r,
       assert(!inputs[i]->getHash().empty());
       hasher << inputs[i]->getHash();
     }
+    hasher << r.getCommand();
     r.setHash(hasher.get());
   }
   if (recomputeHashDeps) {
@@ -113,6 +114,7 @@ void updateRuleHash(Rule& r,
         hasher << inputs[i]->getHashDepfile();
       }
     }
+    hasher << r.getCommand();
     r.setHashDepfile(hasher.get());
   }
 }

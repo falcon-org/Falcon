@@ -41,24 +41,6 @@ void GraphDependencyScan::scan() {
   }
 }
 
-void GraphDependencyScan::statNode(Node* n) {
-  struct stat st;
-  Timestamp t = 0;
-
-  if (stat(n->getPath().c_str(), &st) < 0) {
-    if (errno != ENOENT && errno != ENOTDIR) {
-      LOG(WARNING) << "Updating timestamp for Node '" << n->getPath()
-                   << "' failed, this might affect the build system";
-      DLOG(WARNING) << "stat(" << n->getPath()
-                    << ") [" << errno << "] " << strerror(errno);
-    }
-  } else {
-    t = st.st_mtime;
-  }
-
-  n->setTimestamp(t);
-}
-
 Node* GraphDependencyScan::getOldestOutput(Rule *r) {
   auto& outputs = r->getOutputs();
   assert(!r->getOutputs().empty());
@@ -173,6 +155,24 @@ bool GraphDependencyScan::updateRule(Rule* r) {
   }
 
   return false;
+}
+
+void statNode(Node* n) {
+  struct stat st;
+  Timestamp t = 0;
+
+  if (stat(n->getPath().c_str(), &st) < 0) {
+    if (errno != ENOENT && errno != ENOTDIR) {
+      LOG(WARNING) << "Updating timestamp for Node '" << n->getPath()
+                   << "' failed, this might affect the build system";
+      DLOG(WARNING) << "stat(" << n->getPath()
+                    << ") [" << errno << "] " << strerror(errno);
+    }
+  } else {
+    t = st.st_mtime;
+  }
+
+  n->setTimestamp(t);
 }
 
 } // namespace falcon

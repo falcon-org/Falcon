@@ -35,6 +35,7 @@ class Rule;
 class Graph;
 class GraphVisitor;
 class WatchmanClient;
+class GraphReloader;
 
 typedef std::vector<Node*>                     NodeArray;
 typedef std::set<Node*>                        NodeSet;
@@ -145,6 +146,8 @@ class Node {
 
   Node(const Node& other) = delete;
   Node& operator=(const Node&) = delete;
+
+  friend class GraphReloader;
 };
 
 /** Class that represents a rule in the graph.
@@ -254,6 +257,8 @@ class Rule {
 
   Rule(const Rule& other) = delete;
   Rule& operator=(const Rule&) = delete;
+
+  friend class GraphReloader;
 };
 
 class GraphParser;
@@ -299,6 +304,7 @@ class Graph {
   Graph& operator=(const Graph&) = delete;
 
   friend class GraphParser;
+  friend class GraphReloader;
 };
 
 } // namespace falcon
