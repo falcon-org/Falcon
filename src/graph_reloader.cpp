@@ -156,9 +156,6 @@ bool GraphReloader::updateRuleInputs(Rule* rule, NodeArray& inputs,
   /* Build inputs */
   for (auto it = newRule->inputs_.begin(); it != newRule->inputs_.end(); ++it) {
     /* look if the node comes from the original rule */
-#if 0
-    Node* node = getNodeFromSource(inputs, *it);
-#endif
     auto ret = getNode(inputs, *it);
     Node* node = ret.first;
     if (!ret.second) {

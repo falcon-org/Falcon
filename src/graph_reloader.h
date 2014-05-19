@@ -48,9 +48,6 @@ private:
   /* Rules management */
   Rule* createNewRule(Rule const* newRule, Node* output);
   void deleteChildRule(Node* node);
-#if 0
-  void deleteParentRule(Node* node, Rule const* rule);
-#endif
 
   /* Node management */
   void clearSubGraph(Node* n);
