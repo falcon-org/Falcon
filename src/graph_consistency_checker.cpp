@@ -61,6 +61,10 @@ void GraphConsistencyChecker::checkNode(Node* node) {
   }
   nodesSeen_.insert(node);
 
+  /* The hashes must have been computed. */
+  FCHECK(!node->getHash().empty()) << "the hash of the rule is empty";
+  FCHECK(!node->getHashDepfile().empty()) << "the hash of the rule is empty";
+
   /* Check that the node is in the map. */
   FCHECK(graph_->getNodes().find(node->getPath()) != graph_->getNodes().end())
     << node->getPath() << " not found in the map.";
@@ -86,6 +90,16 @@ void GraphConsistencyChecker::checkNode(Node* node) {
     }
     checkRule(node->getChild());
   }
+
+  /* Check if the node has duplicate parents. */
+  RuleSet parents;
+  for (auto it = node->getParents().begin(); it != node->getParents().end();
+      ++it) {
+    FCHECK(parents.find(*it) == parents.end()) << "duplicate parent rule "
+      << *it << " which has first output " << (*it)->getOutputs()[0]->getPath()
+      << ", for node " << node->getPath();
+    parents.insert(*it);
+  }
 }
 
 void GraphConsistencyChecker::checkRule(Rule* rule) {
@@ -96,6 +110,10 @@ void GraphConsistencyChecker::checkRule(Rule* rule) {
 
   auto& outputs = rule->getOutputs();
   auto& inputs = rule->getInputs();
+
+  /* The hashes must have been computed. */
+  FCHECK(!rule->getHash().empty()) << "the hash of the rule is empty";
+  FCHECK(!rule->getHashDepfile().empty()) << "the hash of the rule is empty";
 
   /* A rule must have at least one output. */
   FCHECK(!outputs.empty()) << "Rule " << rule << " has no output.";
@@ -121,7 +139,13 @@ void GraphConsistencyChecker::checkRule(Rule* rule) {
   std::size_t nbReady = 0;
 
   /* Traverse inputs. */
+  NodeSet seen;
   for (auto it = inputs.begin(); it != inputs.end(); ++it) {
+    FCHECK(seen.find(*it) == seen.end()) << "duplicate input "
+      << (*it)->getPath() << " for rule with first output "
+      << rule->getOutputs()[0]->getPath();
+    seen.insert(*it);
+
     if ((*it)->isDirty()) {
       FCHECK(rule->isDirty()) << "Input " << (*it)->getPath() << " of rule " <<
         rule << " is dirty but the rule is not.";

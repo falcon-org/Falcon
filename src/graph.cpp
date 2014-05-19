@@ -53,6 +53,11 @@ void Node::removeParentRule(Rule* rule) {
   parentRules_.erase(it);
 }
 
+bool Node::hasParent(Rule *rule) const {
+  auto it = std::find(parentRules_.begin(), parentRules_.end(), rule);
+  return it != parentRules_.end();
+}
+
 bool Node::isExplicitDependency() const { return isExplicitDependency_; }
 
 State const& Node::getState() const { return state_; }

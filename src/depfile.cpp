@@ -47,8 +47,9 @@ Node* Depfile::setRuleDependency(const std::string& dep, Rule* rule,
 
   /* Set the target as a new input of the rule. */
   rule->addImplicitInput(target);
-  /* Set the rule to be a parent of the target. */
-  target->addParentRule(rule);
+  if (!target->hasParent(rule)) {
+    target->addParentRule(rule);
+  }
 
   if (isNewNode) {
     /* Notify the graph of the new node. */

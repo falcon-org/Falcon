@@ -71,6 +71,7 @@ class Node {
    */
   void addParentRule(Rule* rule);
   void removeParentRule(Rule* rule);
+  bool hasParent(Rule* rule) const;
   RuleArray& getParents();
   const RuleArray& getParents() const;
 
