@@ -61,6 +61,7 @@ void GraphParser::processFile()
 }
 
 void GraphParser::checkNode(JsonVal const* json, NodeArray& nodeArray) {
+  NodeSet nodeSet;
   for (std::deque<JsonVal*>::const_iterator it = json->_array.cbegin();
        it != json->_array.cend();
        ++it) {
@@ -78,8 +79,10 @@ void GraphParser::checkNode(JsonVal const* json, NodeArray& nodeArray) {
       graph_->sources_.insert(node);
     }
 
-    nodeArray.push_back(node);
+    nodeSet.insert(node);
   }
+
+  nodeArray.assign(nodeSet.begin(), nodeSet.end());
 }
 
 void GraphParser::processJson(JsonVal const* rules)

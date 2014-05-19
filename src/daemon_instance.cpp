@@ -47,6 +47,8 @@ void DaemonInstance::start() {
     LOG(ERROR) << e.getErrorMessage();
   }
 
+  FALCON_CHECK_GRAPH_CONSISTENCY(graph_.get(), mutex_);
+
   /* Open the stream server's socket and accept clients in another thread. */
   streamServer_.openPort(config_->getNetworkStreamPort());
   std::thread streamServerThread = std::thread(&StreamServer::run,
