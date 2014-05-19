@@ -34,7 +34,7 @@ private:
   void updateRoots();
 
   /* remove no longer needed nodes */
-  void cleanSlateSubgraph();
+  void cleanStaleSubgraph();
 
   bool updateSubGraph(Node* node, Node const* newNode);
   bool updateSubGraph(Rule* rule, Rule const* newRule);

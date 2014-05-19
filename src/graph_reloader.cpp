@@ -27,7 +27,7 @@ GraphReloader::GraphReloader(Graph& original, Graph& newGraph,
 
 void GraphReloader::updateGraph() {
   updateRoots();
-  cleanSlateSubgraph();
+  cleanStaleSubgraph();
 }
 
 std::pair<Node*, bool> GraphReloader::getNode(NodeArray& source, Node* newNode)
@@ -88,7 +88,7 @@ void GraphReloader::updateRoots() {
   }
 }
 
-void GraphReloader::cleanSlateSubgraph() {
+void GraphReloader::cleanStaleSubgraph() {
   /* Delete no longer needed nodes */
   for (auto it = originalNodes_.begin(); it != originalNodes_.end(); ++it) {
     assert(it->second->parentRules_.empty());
