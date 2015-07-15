@@ -55,13 +55,16 @@ unsigned int PosixSubProcessManager::addProcess(Rule *rule,
 
 void PosixSubProcessManager::run() {
   sigset_t set;
+  sigset_t origmask;
   sigemptyset(&set);
 
   std::vector<pollfd> fds(pollfds_.begin(), pollfds_.end());
 
-  if (ppoll(&fds.front(), fds.size(), NULL, &set) < 0) {
-    THROW_ERROR(errno, "ppoll failed");
+  sigprocmask(SIG_SETMASK, &set, &origmask);
+  if (poll(&fds.front(), fds.size(), -1) < 0) {
+    THROW_ERROR(errno, "poll failed");
   }
+  sigprocmask(SIG_SETMASK, &origmask, NULL);
 
   /* Try to read data from each fd that is ready. */
   for (auto it = fds.begin(); it != fds.end(); ++it) {
