@@ -21,11 +21,11 @@ CacheGitDirectory::CacheGitDirectory(const std::string& gitRepository,
     , cacheFs_(cacheFs) { }
 
 bool CacheGitDirectory::checkIsGitRepository() const {
-  git_threads_init();
+  git_libgit2_init();
   git_repository *repo = NULL;
   bool found = !git_repository_open(&repo, gitRepository_.c_str());
   git_repository_free(repo);
-  git_threads_shutdown();
+  git_libgit2_shutdown();
   return found;
 }
 
@@ -34,7 +34,7 @@ void CacheGitDirectory::updateRef() {
   git_repository *repo = NULL;
   git_reference *head = NULL;
 
-  git_threads_init();
+  git_libgit2_init();
   int r = git_repository_open(&repo, gitRepository_.c_str());
   if (r != 0) {
     LOG(INFO) << "Cannot open git repository " << gitRepository_;
@@ -57,7 +57,7 @@ void CacheGitDirectory::updateRef() {
 
 cleanup:
   git_repository_free(repo);
-  git_threads_shutdown();
+  git_libgit2_shutdown();
 }
 
 bool CacheGitDirectory::isInRef() const {
