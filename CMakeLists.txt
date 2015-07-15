@@ -9,8 +9,10 @@ find_package(Thrift REQUIRED)
 set(glog_USE_STATIC_LIBS "TRUE")
 find_package(Glog REQUIRED)
 
-set(Boost_USE_STATIC_LIBS ON)
-find_package( Boost "1.55" REQUIRED COMPONENTS program_options)
+set(Boost_USE_STATIC_LIBS "TRUE")
+find_package( Boost "1.58" REQUIRED COMPONENTS program_options)
+
+find_package( Libgit2 REQUIRED )
 
 include (cmake/GenThrift.cmake)
 include (cmake/GenClients.cmake)
