@@ -248,7 +248,12 @@ void StreamServer::processClient(int fd) {
   std::size_t bufSize = buf.size() - info.bufPtr;
   const char* bufPtr = &buf[info.bufPtr];
   do {
+#ifndef MSG_NOSIGNAL
+    #warning "MSG_NOSIGNAL is not defined in your environment: this may have unexpected side effect"
+    int r = send(fd, bufPtr, bufSize, 0);
+#else
     int r = send(fd, bufPtr, bufSize, MSG_NOSIGNAL);
+#endif
     if (r < 0) {
       if (errno != EAGAIN && errno != EWOULDBLOCK) {
         closeClient(fd);
