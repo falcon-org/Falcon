@@ -6,7 +6,7 @@ set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(thrift_USE_STATIC_LIBS "TRUE")
 find_package(Thrift REQUIRED)
 
-set(glog_USE_STATIC_LIBS "TRUE")
+find_package(Gflags REQUIRED)
 find_package(Glog REQUIRED)
 
 set(Boost_USE_STATIC_LIBS "TRUE")
@@ -41,6 +41,7 @@ target_link_libraries(tests/posix_subprocess
   ${thrift_LIBRARIES}
   ${glog_LIBRARIES}
   ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  gflags
   pthread)
 
 add_executable(falcond
@@ -93,6 +94,7 @@ target_link_libraries(falcond
   pthread
   crypto
   git2
+  gflags
   )
 
 # This project uses C++11
