@@ -47,6 +47,7 @@ add_executable(falcond
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService.cpp
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService_constants.cpp
   ${CMAKE_BINARY_DIR}/thrift/gen-cpp/FalconService_types.cpp
+  src/util/event.cpp
   src/build_plan.cpp
   src/cache_fs.cpp
   src/cache_git_directory.cpp

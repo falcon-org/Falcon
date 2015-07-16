@@ -14,6 +14,7 @@
 #include <unordered_map>
 
 #include "stream_consumer.h"
+#include "util/event.h"
 
 namespace falcon {
 
@@ -237,7 +238,7 @@ class StreamServer : public IBuildOutputConsumer {
 
   /* File descriptor used to notify poll. When data is appended to buf_, we
    * write to this fd in order to wake-up poll. */
-  int eventFd_;
+  EventNotifier eventFd_;
 
   /* List of fds monitored with ppoll. */
   std::list<int> fds_;

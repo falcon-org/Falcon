@@ -8,13 +8,13 @@
 #include <netinet/in.h>
 #include <poll.h>
 #include <signal.h>
-#include <sys/eventfd.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
 #include "stream_server.h"
 
+#include "util/event.h"
 #include "exceptions.h"
 #include "graph_builder.h"
 #include "logging.h"
@@ -24,7 +24,7 @@ namespace falcon {
 
 StreamServer::StreamServer()
   : serverSocket_(-1)
-  , eventFd_(-1)
+  , eventFd_()
   , stopped_(false) { }
 
 void StreamServer::openPort(unsigned int port) {
@@ -59,13 +59,6 @@ void StreamServer::openPort(unsigned int port) {
     close(serverSocket_);
     THROW_ERROR(errno, "listen");
   }
-
-  eventFd_ = eventfd(0, 0);
-  if (eventFd_ < 0) {
-    close(serverSocket_);
-    THROW_ERROR(errno, "eventfd");
-  }
-
 }
 
 StreamServer::~StreamServer() {
@@ -79,7 +72,6 @@ StreamServer::~StreamServer() {
   }
 
   /* Only the server socket should remain in fds_. Close it. */
-  close(eventFd_);
   close(serverSocket_);
 }
 
@@ -155,7 +147,7 @@ void StreamServer::processEvents() {
     );
 
     fds.push_back({ serverSocket_, POLLIN });
-    fds.push_back({ eventFd_, POLLIN });
+    fds.push_back({ eventFd_.get(), POLLIN });
   }
 
   int r = poll(&fds.front(), fds.size(), -1);
@@ -183,7 +175,7 @@ void StreamServer::processEvents() {
       } else {
         LOG(ERROR) << "Unexpected poll event " << it->revents;
       }
-    } else if (it->fd != eventFd_) {
+    } else if (it->fd != eventFd_.get()) {
       if (it->revents & POLLOUT) {
         processClient(it->fd);
       } else {
@@ -197,16 +189,7 @@ void StreamServer::processEvents() {
 }
 
 void StreamServer::flushEventFd() {
-  uint64_t buf;
-  int r;
-
-  do {
-    r = read(eventFd_, &buf, sizeof(uint64_t));
-  } while (r == -1 && errno == EINTR);
-
-  if (r != sizeof(uint64_t)) {
-    THROW_ERROR(errno, "read");
-  }
+  eventFd_.flush();
 }
 
 void StreamServer::acceptClients() {
@@ -347,10 +330,8 @@ void StreamServer::flushWaiting() {
 }
 
 void StreamServer::notifyPoll() {
-  uint64_t u = 1;
-  int r = write(eventFd_, &u, sizeof(uint64_t));
-  if (r != sizeof(uint64_t)) {
-    THROW_ERROR(errno, "write");
+  if (eventFd_.raise() != 0) {
+    THROW_ERROR(errno, "raise event failed");
   }
 }
 
