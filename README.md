@@ -1,5 +1,5 @@
-Falcon
-======
+# Falcon
+
 
 A Fast, Reliable, Distributed Build System.
 
@@ -64,9 +64,9 @@ important missing parts:
 - The reload of the graph configuration file is not fully working yet;
 - Distributed caching is not implemented.
 
-## System Requirements
+# How to build Falcon
 
-Falcon is known to compile on Ubuntu 13.10.
+## System Requirements
 
 You need to following libraries:
 
@@ -76,8 +76,18 @@ You need to following libraries:
 - libgoogle-glog-dev;
 - ijson for python (pip install ijson).
 
+### Linux
+
+Falcon is known to compile on Ubuntu 13.10.
+
 You will also need to build and install Watchman
 (https://github.com/facebook/watchman).
+
+### OSX
+
+Falcon is known to compile on OSX 10.10.4.
+
+you can install the needed libraries with [brew](http://brew.sh).
 
 ## Build
 
