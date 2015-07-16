@@ -12,7 +12,8 @@ find_path(libgit2_INCLUDE_DIR git2.h NO_DEFAULT_PATH PATHS
   /usr/include
   /sw/include)
 
-find_library(libgit2_LIBRARY NAMES libgit2.a libgit2.so libgit2.dylib NO_DEFAULT_PATH PATHS
+set(libgit2_NAMES ${libgit2_NAMES} git2 )
+find_library(libgit2_LIBRARY NAMES ${libgit2_NAMES} NO_DEFAULT_PATH PATHS
   /opt/local/lib
   /usr/local/lib
   /usr/lib
